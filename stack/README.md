@@ -73,6 +73,6 @@ Reúne exactamente lo que más se usa en los proyectos del ecosistema Jolifoods 
 | **[`celery_redis_architecture.md`](./celery_redis_architecture.md)** | Arquitectura de tareas asíncronas y llamados constantes en background con Redis y Celery (worker + beat). |
 | **[`init_project.py`](./init_project.py)** | Script de inicialización que automatiza el Paso 0, crea el entorno virtual `.venv` con `pip`, inyecta branding Jolifoods, `.dockerignore`, `.vscode/settings.json` y `.env` blindado. |
 | **[`init_project.ps1`](./init_project.ps1)** | Wrapper nativo de PowerShell para ejecutar el scaffolding en Windows con un clic. |
-| **[`00_normativa_buenas_practicas_y_auditoria.md`](../greenyard/00_normativa_buenas_practicas_y_auditoria.md)** | Normativa maestra que prescribe los criterios de conformidad para que todo nuevo proyecto obtenga 100/100 en auditorías. |
+| **[`00_normativa_buenas_practicas_y_auditoria.md`](../greenfield/00_normativa_buenas_practicas_y_auditoria.md)** | Normativa maestra que prescribe los criterios de conformidad para que todo nuevo proyecto obtenga 100/100 en auditorías. |
 
 

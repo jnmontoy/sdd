@@ -17,7 +17,7 @@ Repositorio oficial y estándar de ingeniería de software guiado por especifica
 .sdd/
 ├── assets/          # Identidad corporativa, logos SVG y recursos visuales oficiales
 ├── components/      # Catálogo y especificaciones de componentes de UI/UX reutilizables
-├── greenyard/       # Especificaciones canónicas por módulo/página y guía maestra
+├── greenfield/      # Especificaciones canónicas por módulo/página y guía maestra
 │   ├── pages/       # Login, Dashboard, Auditoría, Roles, Usuarios, Perfil, etc.
 │   └── SPEC_GUIDE.md# Guía maestra y protocolo de desarrollo con IA
 ├── mock/            # Entorno de prototipado interactivo sin dependencias (No-Code/Mockups)
@@ -29,7 +29,7 @@ Repositorio oficial y estándar de ingeniería de software guiado por especifica
 
 ## 🚀 Módulos y Contenido Principal
 
-### 1. [Greenyard / Especificaciones](greenyard/SPEC_GUIDE.md)
+### 1. [Greenfield / Especificaciones](greenfield/SPEC_GUIDE.md)
 Guías maestras para desarrolladores e IA:
 - Protocolo de preguntas de negocio vs. desarrollo técnico.
 - Especificaciones de arquitectura de páginas:
@@ -62,7 +62,7 @@ Arquitectura de producción lista para desplegar:
 
 1. **Para un nuevo proyecto:**
    - Clona este repositorio o copia la carpeta `.sdd` en la raíz de tu proyecto.
-   - Consulta `greenyard/SPEC_GUIDE.md` para seguir el protocolo de generación de código guiado por especificaciones.
+   - Consulta `greenfield/SPEC_GUIDE.md` para seguir el protocolo de generación de código guiado por especificaciones.
 2. **Para validar una pantalla con usuarios de negocio:**
    - Utiliza la plantilla de `mock/` para generar una vista interactiva navegable en cualquier navegador web.
 3. **Para inicializar la infraestructura:**

@@ -1,4 +1,4 @@
-﻿# Especificación SDD: Módulo de Login y Autenticación
+# Especificación SDD: Módulo de Login y Autenticación
 ## Ecosistema Greenyard / Jolifoods — Spec-Driven Development (SDD)
 
 Este directorio reúne la suite normativa de especificación canónica del módulo **Login** bajo la metodología **Spec-Driven Development (SDD)** para el ecosistema **Greenyard**.
@@ -39,4 +39,4 @@ El Login de Greenyard se ensambla mediante los componentes atómicos especificad
 
 ## 3. Principio de Autonomía y Portabilidad
 
-Esta especificación **no asume ninguna ruta local de disco preexistente**. Cualquier agente de IA o desarrollador que reciba la carpeta `.sdd` puede estructurar y levantar un proyecto funcional completo siguiendo el Blueprint descrito en el Complemento 08 y configurando las variables de [`.sdd/greenyard/config_referencia.env.example`](../../config_referencia.env.example).
+Esta especificación **no asume ninguna ruta local de disco preexistente**. Cualquier agente de IA o desarrollador que reciba la carpeta `.sdd` puede estructurar y levantar un proyecto funcional completo siguiendo el Blueprint descrito en el Complemento 08 y configurando las variables de [`.sdd/greenfield/config_referencia.env.example`](../../config_referencia.env.example).

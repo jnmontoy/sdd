@@ -1,7 +1,7 @@
 # Guía Maestra de Desarrollo Guiado por Especificaciones (SDD - Spec-Driven Development)
-## Ecosistema Greenyard / Jolifoods — Metodología Universal y Portátil
+## Ecosistema Greenfield / Jolifoods — Metodología Universal y Portátil
 
-Esta guía define el estándar operacional y metodológico que la **Inteligencia Artificial (IA)** y los desarrolladores deben seguir obligatoriamente para documentar, diseñar e implementar cualquier página o módulo dentro de las aplicaciones del ecosistema **Greenyard**.
+Esta guía define el estándar operacional y metodológico que la **Inteligencia Artificial (IA)** y los desarrolladores deben seguir obligatoriamente para documentar, diseñar e implementar cualquier página o módulo dentro de las aplicaciones del ecosistema **Greenfield** (desarrollo limpio desde cero).
 
 ---
 
@@ -136,7 +136,7 @@ Cuando el usuario pida agregar una funcionalidad, módulo o complemento a un pro
  [2] Tablero de Control y Métricas KPI (Estándar BI Cartera)
      -> Incluye: Rejilla inteligente .cartera-kpi-row, Cards interactivas con halo cromático,
         indicador flotante 'FILTRO ACTIVO', Skeleton loaders y filtrado dinámico cruzado.
-     -> Ref: .sdd/components/kpi/kpi_cards.md | .sdd/greenyard/pages/dashboard/
+     -> Ref: .sdd/components/kpi/kpi_cards.md | .sdd/greenfield/pages/dashboard/
 
  [3] Panel Lateral Deslizable de Detalle o Edición (Drawer / Slide-Over)
      -> Incluye: Deslizamiento lateral (sm: 400px, md: 600px, lg: 840px), backdrop blur,
@@ -176,12 +176,12 @@ Cuando el usuario pida agregar una funcionalidad, módulo o complemento a un pro
 [10] Matriz de Control de Acceso por Roles (Módulo RBAC)
      -> Incluye: Pantalla administrativa para asignar permisos por módulo (ver, crear, editar,
         eliminar, exportar) con protección de roles de sistema y auditoría obligatoria.
-     -> Ref: .sdd/greenyard/pages/roles/ | .sdd/model/roles/spec_model_roles_permisos.md
+     -> Ref: .sdd/greenfield/pages/roles/ | .sdd/model/roles/spec_model_roles_permisos.md
 
 [11] Flujo Obligatorio de Activación y Cambio de Clave (Primer Ingreso)
      -> Incluye: Pantalla forzada para usuarios con debe_cambiar_password = true, medidor
         de entropía visual en tiempo real (Débil a Fuerte) y validación de reglas estrictas.
-     -> Ref: .sdd/greenyard/pages/primer_ingreso/
+     -> Ref: .sdd/greenfield/pages/primer_ingreso/
 
 [12] Capa Backend de Alta Velocidad FastAPI (Zero N+1)
      -> Incluye: Servidor ASGI híbrido (Django + FastAPI /fast), consultas con select_related
@@ -378,7 +378,7 @@ El repositorio de especificaciones se organiza de forma modular y jerárquica:
 │   ├── settings_security_template.py          # Plantilla Django de seguridad pre-auditada
 │   ├── init_project.py                        # Scaffolding automatizado con creación de .venv
 │   └── init_project.ps1                       # Scaffolding PowerShell para Windows
-└── greenyard/
+└── greenfield/
     ├── README.md                              # Manifiesto y visión del ecosistema
     ├── SPEC_GUIDE.md                          # Esta guía maestra de desarrollo
     ├── 00_normativa_buenas_practicas_y_auditoria.md # Normativa de Conformidad y Hardening (100/100)
@@ -479,7 +479,7 @@ Cualquier proyecto nuevo que implemente el módulo de login a partir de este `.s
 ## 4. Instrucciones de Ejecución para la IA
 
 Cuando se le pida a la IA: *"Crea el login a partir del SDD"*:
-1. Leer los complementos `01` a `08` de `.sdd/greenyard/pages/login/`.
+1. Leer los complementos `01` a `08` de `.sdd/greenfield/pages/login/`.
 2. Tomar el **Blueprint canónico** anterior para crear los directorios en el espacio de trabajo objetivo.
 3. **AISLAMIENTO OBLIGATORIO DE PYTHON (`.venv`)**: Crear inmediatamente el entorno virtual en la raíz del proyecto (`python -m venv .venv`), configurar `.vscode/settings.json` vinculando el intérprete (`${workspaceFolder}/.venv/Scripts/python.exe`), e instalar las librerías exclusivamente usando el ejecutable de dicho entorno (`.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt`). **PROHIBIDO TERMINANTEMENTE ejecutar `pip install` o comandos de Python en el entorno global del equipo anfitrión.**
 4. Implementar los contratos de `03_contrato_api_y_modelos_datos.md` sin alterar los nombres de campos ni códigos de error.

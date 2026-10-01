@@ -1,7 +1,7 @@
-# Ecosistema Greenyard / Jolifoods — Especificaciones SDD
+# Ecosistema Greenfield / Jolifoods — Especificaciones SDD
 ## Guía Central de Arquitectura, Componentes y Catálogo Interactivo
 
-Bienvenido al repositorio central de especificaciones de desarrollo guiado por especificaciones (**Spec-Driven Development - SDD**) para el ecosistema de aplicaciones de **Greenyard / Jolifoods**.
+Bienvenido al repositorio central de especificaciones de desarrollo guiado por especificaciones (**Spec-Driven Development - SDD**) para el ecosistema de aplicaciones de **Greenfield / Jolifoods** (desarrollo limpio desde cero).
 
 ---
 
