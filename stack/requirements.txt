@@ -1,0 +1,49 @@
+# ==============================================================================
+# REQUIREMENTS CANÓNICO CONSOLIDADO — ECOSISTEMA JOLIFOODS
+# ==============================================================================
+# Reúne todas las dependencias estándar utilizadas en los proyectos del ecosistema
+# para evitar descargas o búsquedas adicionales al inicializar un nuevo proyecto.
+
+# --- FRAMEWORKS Y SERVIDORES ASGI/WSGI ---
+Django>=5.1.0,<6.0.0
+djangorestframework>=3.15.0
+djangorestframework_simplejwt>=5.4.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+gunicorn>=23.0.0
+asgiref>=3.8.1
+
+# --- BASES DE DATOS Y CONECTORES ---
+psycopg2-binary>=2.9.9
+PyMySQL>=1.1.1
+sqlparse>=0.5.1
+
+# --- CACHÉ, SESIONES Y RATE LIMITING ---
+redis>=5.1.0
+django-redis>=5.4.0
+
+# --- TAREAS ASÍNCRONAS Y COLA ---
+celery>=5.4.0
+
+# --- SEGURIDAD, CRIPTOGRAFÍA Y AUTENTICACIÓN ---
+cryptography>=43.0.0
+bcrypt>=4.2.0
+PyJWT>=2.9.0
+msal>=1.31.0                         # Microsoft 365 / Azure AD SSO
+django-cors-headers>=4.4.0
+
+# --- SERIALIZACIÓN, RENDIMIENTO Y VALIDACIÓN (ANTI-N+1) ---
+pydantic>=2.9.0
+pydantic-settings>=2.5.0
+msgpack>=1.1.0
+
+# --- UTILIDADES, RED Y ARCHIVOS ---
+requests>=2.32.3
+httpx>=0.27.2
+python-dotenv>=1.0.1
+python-dateutil>=2.9.0
+tzdata>=2024.1
+Pillow>=10.4.0                       # Procesamiento de imágenes y avatares
+fpdf2>=2.8.0                         # Generación de reportes PDF
+weasyprint>=62.0                     # Conversión HTML/CSS a PDF institucional
+openpyxl>=3.1.5                      # Procesamiento de hojas de cálculo Excel

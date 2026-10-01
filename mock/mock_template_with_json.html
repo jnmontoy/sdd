@@ -1,0 +1,3021 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plantilla Maestra No-Code — Ecosistema Jolifoods SDD</title>
+  
+  <!-- Dependencias Externas CDN (Sin compilación ni terminal) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    /* ==========================================================================
+       VARIABLES Y TEMAS OFICIALES JOLIFOODS SDD (FUENTE: variables.css)
+       Control Central de Textos, Superficies y Tematización Día/Noche
+       ========================================================================== */
+    :root {
+      /* --- Familia Tipográfica y Escala de Texto --- */
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --font-family-mono: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      --font-size-root: 16px;
+      
+      --font-size-2xs: 0.6875rem; /* 11px */
+      --font-size-xs: 0.75rem;    /* 12px */
+      --font-size-sm: 0.875rem;   /* 14px */
+      --font-size-base: 1rem;     /* 16px */
+      --font-size-lg: 1.125rem;   /* 18px */
+      --font-size-xl: 1.25rem;    /* 20px */
+      --font-size-2xl: 1.5rem;    /* 24px */
+      --font-size-3xl: 1.875rem;  /* 30px */
+      --font-size-4xl: 2.25rem;   /* 36px */
+
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --font-weight-bold: 700;
+      --font-weight-extrabold: 800;
+
+      --line-height-tight: 1.2;
+      --line-height-normal: 1.5;
+      --line-height-relaxed: 1.625;
+
+      /* --- Espaciado, Layout y Radios --- */
+      --topbar-height: 60px;
+      --radius-sm: 0.375rem;      /* 6px */
+      --radius-md: 0.5rem;        /* 8px */
+      --radius-lg: 0.75rem;       /* 12px */
+      --radius-xl: 1rem;          /* 16px */
+      --radius-2xl: 1.5rem;       /* 24px */
+      --radius-full: 9999px;
+
+      /* --- Transiciones y Z-Index --- */
+      --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+      --transition-base: 250ms cubic-bezier(0.16, 1, 0.3, 1);
+      --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+
+      --z-base: 1;
+      --z-card: 10;
+      --z-sticky: 100;
+      --z-drawer: 1000;
+      --z-popover: 1050;
+      --z-modal: 10000;
+      --z-toast: 10010;
+
+      /* --- Colores de Marca y Estados (Inmutables) --- */
+      --brand-primary: #10b981;
+      --brand-primary-hover: #059669;
+      --brand-primary-light: #34d399;
+      --brand-glow: rgba(16, 185, 129, 0.35);
+
+      --status-success: #10b981;
+      --status-error: #f43f5e;
+      --status-warning: #f59e0b;
+      --status-info: #0ea5e9;
+
+      --status-success-bg: rgba(16, 185, 129, 0.15);
+      --status-error-bg: rgba(244, 63, 94, 0.15);
+      --status-warning-bg: rgba(245, 158, 11, 0.15);
+      --status-info-bg: rgba(14, 165, 233, 0.15);
+    }
+
+    /* --------------------------------------------------------------------------
+       TEMA MODO NOCHE (DARK MODE - POR DEFECTO)
+       -------------------------------------------------------------------------- */
+    :root,
+    [data-theme='dark'],
+    [data-bs-theme='dark'] {
+      color-scheme: dark;
+
+      /* Superficies y Fondos */
+      --bg-viewport: #0f121d;
+      --bg-card: #151928;
+      --bg-elevated: #1e2438;
+      --bg-active: #29304a;
+      --bg-hover: rgba(255, 255, 255, 0.06);
+      --bg-input: #1a2032;
+      --bg-input-focus: #151928;
+      --bg-btn-secondary: rgba(30, 36, 56, 0.85);
+      --bg-btn-secondary-hover: rgba(41, 48, 74, 0.95);
+
+      /* Jerarquía de Texto */
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+      --text-tertiary: #64748b;
+      --text-on-brand: #ffffff;
+
+      /* Bordes y Separadores */
+      --border-subtle: rgba(255, 255, 255, 0.09);
+      --border-strong: rgba(255, 255, 255, 0.18);
+      --border-card-accent: rgba(16, 185, 129, 0.35);
+      --border-focus: var(--brand-primary);
+      --border-error: var(--status-error);
+
+      /* Sombras y Glassmorphism */
+      --glass-blur: blur(20px);
+      --glass-bg: rgba(21, 25, 40, 0.88);
+      --glass-border: rgba(255, 255, 255, 0.09);
+      --glass-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 20px -5px var(--brand-glow);
+      --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.35);
+      --shadow-popover: 0 14px 35px rgba(0, 0, 0, 0.55);
+      --shadow-modal: 0 25px 60px rgba(0, 0, 0, 0.75);
+      --shadow-input-focus: 0 0 0 3px rgba(16, 185, 129, 0.25);
+      --shadow-error-focus: 0 0 0 3px rgba(244, 63, 94, 0.25);
+
+      /* Halos de Fondo */
+      --orb-color-primary: rgba(16, 185, 129, 0.22);
+      --orb-color-secondary: rgba(5, 150, 105, 0.18);
+
+      /* Alertas */
+      --alert-error-bg: rgba(244, 63, 94, 0.12);
+      --alert-error-border: rgba(244, 63, 94, 0.3);
+      --alert-error-text: #fecdd3;
+
+      /* Aliases Canónicos de Compatibilidad */
+      --background: var(--bg-viewport);
+      --surface: var(--bg-viewport);
+      --surface-card: var(--bg-card);
+      --surface-elevated: var(--bg-elevated);
+      --surface-active: var(--bg-active);
+      --border-color: var(--border-subtle);
+    }
+
+    /* --------------------------------------------------------------------------
+       TEMA MODO DÍA (LIGHT MODE)
+       -------------------------------------------------------------------------- */
+    [data-theme='light'],
+    [data-bs-theme='light'] {
+      color-scheme: light;
+
+      /* Superficies y Fondos */
+      --bg-viewport: #f4f6fa;
+      --bg-card: #ffffff;
+      --bg-elevated: #f8fafc;
+      --bg-active: #e2e8f0;
+      --bg-hover: rgba(0, 0, 0, 0.04);
+      --bg-input: #ffffff;
+      --bg-input-focus: #ffffff;
+      --bg-btn-secondary: #ffffff;
+      --bg-btn-secondary-hover: #f1f5f9;
+
+      /* Jerarquía de Texto */
+      --text-primary: #0f172a;
+      --text-secondary: #334155;
+      --text-muted: #64748b;
+      --text-tertiary: #94a3b8;
+      --text-on-brand: #ffffff;
+
+      /* Bordes y Separadores */
+      --border-subtle: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --border-card-accent: rgba(16, 185, 129, 0.5);
+      --border-focus: var(--brand-primary);
+      --border-error: var(--status-error);
+
+      /* Sombras y Glassmorphism */
+      --glass-blur: blur(16px);
+      --glass-bg: rgba(255, 255, 255, 0.94);
+      --glass-border: rgba(0, 0, 0, 0.08);
+      --glass-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08), 0 0 15px -3px rgba(16, 185, 129, 0.15);
+      --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.05);
+      --shadow-popover: 0 12px 30px rgba(0, 0, 0, 0.12);
+      --shadow-modal: 0 20px 50px rgba(0, 0, 0, 0.2);
+      --shadow-input-focus: 0 0 0 3px rgba(16, 185, 129, 0.25);
+      --shadow-error-focus: 0 0 0 3px rgba(244, 63, 94, 0.18);
+
+      /* Halos de Fondo */
+      --orb-color-primary: rgba(16, 185, 129, 0.1);
+      --orb-color-secondary: rgba(5, 150, 105, 0.06);
+
+      /* Alertas */
+      --alert-error-bg: rgba(254, 226, 226, 0.7);
+      --alert-error-border: #fca5a5;
+      --alert-error-text: #991b1b;
+
+      /* Aliases Canónicos de Compatibilidad */
+      --background: var(--bg-viewport);
+      --surface: var(--bg-viewport);
+      --surface-card: var(--bg-card);
+      --surface-elevated: var(--bg-elevated);
+      --surface-active: var(--bg-active);
+      --border-color: var(--border-subtle);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      background-color: var(--bg-viewport);
+      font-family: var(--font-family);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color var(--transition-base), color var(--transition-base);
+    }
+
+
+    /* Layout Shell: Full-Width por defecto (Cero Sidebar a menos que se pida) */
+    .main-wrapper {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* ==========================================================================
+       TOPHEADER CON TÍTULO EN EL LADO IZQUIERDO (Regla SDD Ahorro de Espacio)
+       ========================================================================== */
+    .top-header {
+      height: var(--topbar-height);
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 900;
+    }
+
+    /* LADO IZQUIERDO: LOGO JOLIFOODS + TÍTULO DE PÁGINA */
+    .topheader-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .topheader-brand {
+      display: flex;
+      align-items: center;
+    }
+
+    .topheader-logo {
+      height: 26px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .topheader-brand-divider {
+      color: var(--text-tertiary);
+      font-size: 1.15rem;
+      font-weight: 300;
+      opacity: 0.5;
+    }
+
+    .topheader-title-box {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .topheader-page-title {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.015em;
+      white-space: nowrap;
+    }
+
+    .topheader-page-badge {
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 7px;
+      border-radius: var(--radius-pill);
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      white-space: nowrap;
+    }
+
+    /* LADO DERECHO: CONTROLES DE SESIÓN Y TEMA */
+    .top-header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .icon-btn-header {
+      position: relative;
+      background: var(--bg-hover);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+
+    .icon-btn-header:hover {
+      background: var(--surface-active);
+      color: var(--text-primary);
+    }
+
+    .user-profile-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: var(--radius-pill);
+      background: var(--bg-hover);
+    }
+
+    .user-avatar-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* CONTENEDOR PRINCIPAL */
+    .cartera-page-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      padding: 1rem 1.5rem;
+      gap: 1rem;
+    }
+
+    /* BARRA SUPERIOR DE FILTROS EXPANDIBLES */
+    .cartera-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .cartera-view-switcher {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px;
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-pill);
+      gap: 2px;
+    }
+
+    .cartera-switcher-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.85rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+
+    .cartera-switcher-btn.is-active {
+      background: var(--surface-active);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .cartera-btn-group {
+      display: inline-flex;
+      align-items: stretch;
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      vertical-align: middle;
+    }
+
+    .cartera-expandable-filter {
+      display: inline-flex;
+      align-items: stretch;
+      position: relative;
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--border-color);
+      overflow: hidden;
+      transition: background-color 0.2s ease, width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .cartera-expandable-filter:last-child { border-right: none; }
+    .cartera-expandable-filter:hover:not(.is-open) { background: rgba(255, 255, 255, 0.04); }
+    .cartera-expandable-filter.has-active-val { background: rgba(99, 102, 241, 0.14); }
+    .cartera-expandable-filter.is-open { background: var(--surface-elevated, #1b1b36); }
+
+    .cartera-filter-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.48rem 0.8rem;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      outline: none;
+      transition: color 0.2s ease;
+    }
+
+    .cartera-filter-trigger:hover { color: var(--text-primary); }
+    .cartera-filter-trigger .trigger-icon { color: var(--text-muted); }
+    .cartera-filter-trigger:hover .trigger-icon { color: var(--primary); }
+
+    .trigger-badge {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(99, 102, 241, 0.22);
+      color: #c7d2fe;
+      border: 1px solid rgba(99, 102, 241, 0.45);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.15rem 0.65rem;
+      border-radius: 9999px;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+
+    .trigger-arrow {
+      color: var(--text-muted);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+    }
+
+    .cartera-expandable-filter.is-open .trigger-arrow,
+    .trigger-arrow.open {
+      transform: rotate(180deg);
+      color: var(--primary);
+    }
+
+    /* Expansión horizontal en línea idéntica a Cartera.css */
+    .cartera-filter-expanded-content {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      max-width: 0;
+      opacity: 0;
+      transform: scaleX(0.85);
+      transform-origin: left center;
+      overflow: hidden;
+      pointer-events: none;
+      transition: max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.22s ease,
+                  transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                  padding 0.3s ease;
+      padding: 0;
+      border-left: 0 solid transparent;
+    }
+
+    .cartera-expandable-filter.is-open .cartera-filter-expanded-content {
+      max-width: 480px;
+      opacity: 1;
+      transform: scaleX(1);
+      pointer-events: auto;
+      padding: 0.25rem 0.55rem 0.25rem 0.4rem;
+      border-left: 1px solid var(--border-color);
+    }
+
+    .cartera-expanded-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background-color: var(--surface-elevated);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.6rem center;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm, 6px);
+      padding: 0.32rem 1.8rem 0.32rem 0.65rem;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      min-width: 140px;
+      outline: none !important;
+      box-shadow: none !important;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .cartera-expanded-select:focus {
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25) !important;
+    }
+
+    .cartera-expanded-close {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: var(--radius-sm, 5px);
+      border: none;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .cartera-expanded-close:hover {
+      background: rgba(239, 68, 68, 0.18);
+      color: #ef4444;
+    }
+
+    .cartera-action-icon-btn {
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .cartera-action-icon-btn:hover {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+    }
+
+    /* REJILLA DE CARDS KPI */
+    .cartera-kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    .cartera-kpi-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.15rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: all 200ms ease;
+    }
+
+    .cartera-kpi-card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.2); }
+    .cartera-kpi-card.active-filter { border-color: #10b981; background: rgba(16, 185, 129, 0.08); }
+    .cartera-kpi-label { font-size: 0.74rem; color: var(--text-muted); font-weight: 500; }
+    .cartera-kpi-value { font-size: 1.38rem; font-weight: 800; color: var(--text-primary); margin: 0.2rem 0; }
+    .cartera-kpi-subtext { font-size: 0.7rem; color: var(--text-muted); }
+
+    .cartera-kpi-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cartera-icon-blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .cartera-icon-emerald { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .cartera-icon-amber { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .cartera-icon-pink { background: rgba(244, 63, 94, 0.15); color: #f43f5e; }
+
+    /* TOOLBAR DE TABLA Y CAJA COMPACTA DE ACCIONES */
+    .joli-datatable-wrapper {
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .cartera-table-header-toolbar {
+      padding: 0.75rem 1.15rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .cartera-toolbar-search {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-color);
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-md);
+    }
+
+    .cartera-toolbar-search input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: 0.8rem;
+      width: 190px;
+    }
+
+    /* Caja Compacta de Iconos Agrupados en Toolbar */
+    .cartera-compact-action-box {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .btn-compact-action {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .btn-compact-action:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .compact-action-divider { width: 1px; height: 16px; background: var(--border-color); }
+
+    /* TABLA Y ACCIONES POR FILA AGRUPADAS */
+    .table-responsive { width: 100%; overflow-x: auto; margin: 0; }
+    .joli-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 0; table-layout: fixed; }
+    .joli-table th {
+      background: var(--surface-elevated);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+      position: relative;
+      user-select: none;
+    }
+    .joli-table td {
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      vertical-align: middle;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .joli-table tbody tr:hover { background: var(--bg-hover); }
+
+    /* ==========================================================================
+       COLUMNAS REDIMENSIONABLES Y FILTROS TIPO EXCEL (ESTÁNDAR BI CARTERA)
+       ========================================================================== */
+    .th-content-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .th-label {
+      font-weight: 600;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cartera-th-resizer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 6px;
+      height: 100%;
+      cursor: col-resize;
+      user-select: none;
+      z-index: 10;
+      transition: background-color 0.15s ease;
+    }
+    .cartera-th-resizer:hover,
+    .cartera-th-resizer:active {
+      background-color: #10b981;
+    }
+
+    .filter-toggle-btn {
+      background: transparent;
+      border: none;
+      padding: 3px;
+      border-radius: 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: all 0.15s ease;
+    }
+    .filter-toggle-btn:hover,
+    .filter-toggle-btn.is-open {
+      color: var(--text-primary);
+      background: var(--bg-hover);
+    }
+    .filter-toggle-btn.has-filter {
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.15);
+    }
+    .filter-active-dot {
+      position: absolute;
+      top: 0px;
+      right: 0px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    /* Popover Desplegable Tipo Excel */
+    .cartera-excel-popover {
+      position: absolute;
+      top: calc(100% + 5px);
+      left: 0;
+      width: 240px;
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+      z-index: 1050;
+      padding: 0.65rem;
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: left;
+    }
+    .cartera-excel-popover.align-right {
+      left: auto;
+      right: 0;
+    }
+    .popover-sort-section {
+      display: flex;
+      gap: 0.4rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .btn-popover-sort {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.72rem;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-popover-sort:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    .popover-search-input {
+      width: 100%;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 0.35rem 0.55rem;
+      color: var(--text-primary);
+      font-size: 0.75rem;
+      outline: none;
+    }
+    .popover-items-list {
+      max-height: 160px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 0.2rem 0;
+    }
+    .popover-check-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.3rem 0.4rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.1s ease;
+      color: var(--text-secondary);
+    }
+    .popover-check-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    .popover-check-item input {
+      margin-right: 6px;
+      cursor: pointer;
+    }
+    .popover-check-label {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.75rem;
+    }
+    .popover-check-count {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-left: 6px;
+    }
+    .popover-footer-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .btn-popover-clear {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.72rem;
+    }
+    .btn-popover-clear:hover {
+      color: #ef4444;
+      border-color: #ef4444;
+    }
+    .btn-popover-apply {
+      background: #10b981;
+      border: none;
+      color: #ffffff;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.72rem;
+    }
+
+    /* Selector de Visibilidad de Columnas */
+    .cartera-col-visibility-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .cartera-col-visibility-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      padding: 0 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background-color: var(--surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .cartera-col-visibility-btn:hover,
+    .cartera-col-visibility-btn.active {
+      color: var(--text-primary);
+      border-color: #10b981;
+    }
+    .col-btn-badge {
+      padding: 1px 5px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      background: var(--bg-hover);
+      border-radius: 8px;
+    }
+    .cartera-col-visibility-popover {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      width: 200px;
+      background-color: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      z-index: 1050;
+      overflow: hidden;
+    }
+    .cartera-col-visibility-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background-color: var(--surface-elevated);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .cartera-col-visibility-header .link-btn {
+      background: none;
+      border: none;
+      color: #10b981;
+      font-size: 0.7rem;
+      cursor: pointer;
+      padding: 0;
+    }
+    .cartera-col-visibility-list {
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 6px 0;
+    }
+    .cartera-col-visibility-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background-color 0.1s ease;
+    }
+    .cartera-col-visibility-item:hover {
+      background-color: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    /* Botón de Limpiar Filtros de Columna en Toolbar */
+    .cartera-clear-column-filters-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 28px;
+      padding: 0 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .cartera-clear-column-filters-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+
+    /* Contenedor de Acciones por Fila Agrupadas */
+    .cartera-row-actions-group {
+      display: inline-flex;
+      align-items: center;
+      height: 26px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .btn-row-action {
+      height: 26px;
+      width: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0;
+      transition: all 150ms ease;
+    }
+
+    .btn-row-action:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .btn-row-view:hover { color: #3b82f6; background: rgba(59, 130, 246, 0.12); }
+    .btn-row-delete:hover { color: #ef4444; background: rgba(239, 68, 68, 0.12); }
+    .row-action-divider { width: 1px; height: 14px; background: var(--border-color); }
+
+    /* BADGES */
+    .badge-pill-joli {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-joli-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .badge-joli-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .badge-joli-danger { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+    /* ==========================================================================
+       RIGHT DRAWER (PANEL LATERAL DERECHO) — Regla de Oro Jolifoods
+       ========================================================================== */
+    .cartera-sidebar-backdrop {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px); z-index: 1200; opacity: 0; pointer-events: none;
+      transition: opacity 250ms ease;
+    }
+    .cartera-sidebar-backdrop.is-open { opacity: 1; pointer-events: auto; }
+    .cartera-sidebar-drawer {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: 560px; max-width: 95vw; background: var(--surface-card);
+      border-left: 1px solid var(--border-color); z-index: 1210;
+      display: flex; flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: -10px 0 35px rgba(0, 0, 0, 0.5);
+    }
+    .cartera-sidebar-drawer.is-open { transform: translateX(0); }
+    .cartera-sidebar-header {
+      padding: 1.15rem 1.5rem; border-bottom: 1px solid var(--border-color);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .drawer-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+    .drawer-subtitle { margin: 0.15rem 0 0 0; font-size: 0.75rem; color: var(--text-muted); }
+    .cartera-sidebar-close-btn {
+      background: var(--bg-hover); border: 1px solid var(--border-color);
+      color: var(--text-secondary); width: 34px; height: 34px;
+      border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .cartera-sidebar-body { flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
+    .drawer-input {
+      width: 100%; background: var(--surface-elevated); border: 1px solid var(--border-color);
+      border-radius: var(--radius-md); padding: 0.55rem 0.75rem;
+      color: var(--text-primary); font-size: 0.82rem; outline: none; margin-top: 0.25rem;
+    }
+    .drawer-form-label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
+    .cartera-sidebar-footer {
+      padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);
+      display: flex; justify-content: flex-end; gap: 0.75rem;
+    }
+    .btn-drawer-cancel {
+      background: var(--bg-hover); border: 1px solid var(--border-color);
+      color: var(--text-secondary); padding: 0.45rem 1rem; border-radius: var(--radius-md);
+      font-size: 0.82rem; cursor: pointer;
+    }
+    .btn-drawer-save {
+      background: #10b981; border: none; color: #ffffff;
+      padding: 0.45rem 1.25rem; border-radius: var(--radius-md); font-weight: 600;
+      font-size: 0.82rem; cursor: pointer;
+    }
+
+    /* ==========================================================================
+       CONFIRMMODAL CANÓNICO JOLIFOODS
+       ========================================================================== */
+    .joli-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center;
+      z-index: 100005; padding: 1rem;
+    }
+    .joli-modal-overlay.is-open { display: flex; }
+    .joli-confirm-modal-container {
+      position: relative; width: 100%; max-width: 440px; background: var(--surface-card);
+      border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+      padding: 1.75rem 1.5rem 1.5rem; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+    }
+    .joli-modal-close-icon {
+      position: absolute; top: 1rem; right: 1rem; background: transparent;
+      border: none; color: var(--text-muted); cursor: pointer;
+    }
+    .joli-modal-icon-wrapper {
+      width: 54px; height: 54px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;
+    }
+    .joli-modal-icon-wrapper.danger { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .joli-confirm-modal-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.5rem 0; }
+    .joli-confirm-modal-message { font-size: 0.82rem; color: var(--text-muted); margin: 0 0 1rem 0; }
+    .joli-confirm-modal-actions { display: flex; width: 100%; gap: 0.75rem; margin-top: 1.25rem; }
+    .joli-btn-modal-secondary {
+      flex: 1; padding: 0.55rem 1rem; background: var(--surface-elevated);
+      border: 1px solid var(--border-color); color: var(--text-secondary);
+      border-radius: var(--radius-md); font-size: 0.82rem; cursor: pointer;
+    }
+    .joli-btn-modal-primary.danger {
+      flex: 1; padding: 0.55rem 1rem; background: #ef4444; border: none;
+      color: #fff; border-radius: var(--radius-md); font-size: 0.82rem; cursor: pointer; font-weight: 600;
+    }
+
+    /* ==========================================================================
+       CENTRO DE MULTI-NOTIFICACIONES DESPLEGABLE (ESTÁNDAR TIENDITA / VIBRA)
+       ========================================================================== */
+    .notification-container {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .notification-bell-btn {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      padding: 0;
+    }
+
+    .notification-bell-btn:hover,
+    .notification-bell-btn.active {
+      background: var(--surface-active);
+      color: var(--text-primary);
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+
+    .notification-bell-btn.has-unread {
+      color: #f59e0b;
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .bell-badge-count {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      width: 18px;
+      height: 18px;
+      min-width: 18px;
+      border-radius: 50%;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--background);
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.5);
+      line-height: 1;
+      animation: notifPulse 2.5s infinite ease-in-out;
+    }
+
+    @keyframes notifPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    /* Popover Flotante de Multi-Notificaciones */
+    .notification-popover {
+      position: absolute;
+      top: calc(100% + 12px);
+      right: 0;
+      width: 380px;
+      max-width: calc(100vw - 32px);
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(16px);
+      z-index: 1050;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      animation: notifFadeSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .notification-popover.is-open {
+      display: flex;
+    }
+
+    @keyframes notifFadeSlide {
+      from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .notif-header {
+      padding: 12px 16px 10px;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .notif-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .notif-header-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .notif-counter-pill {
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+
+    /* Tabs de Selección entre Notificaciones */
+    .notif-toggle-tabs {
+      display: flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border-color);
+      border-radius: 9px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .notif-tab-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .notif-tab-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-hover);
+    }
+
+    .notif-tab-btn.active {
+      background: var(--surface-active);
+      color: var(--text-primary);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .notif-tab-badge {
+      font-size: 9px;
+      background: #ef4444;
+      color: #ffffff;
+      padding: 1px 5px;
+      border-radius: 8px;
+      font-weight: 800;
+    }
+
+    .notif-body {
+      max-height: 320px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .notif-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .notif-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-color);
+      transition: background 0.15s ease;
+    }
+
+    .notif-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .notif-item.unread {
+      background: rgba(59, 130, 246, 0.03);
+      border-left: 3px solid #3b82f6;
+    }
+
+    .notif-icon-box {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .notif-icon-box.critical { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .notif-icon-box.warning  { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .notif-icon-box.info     { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .notif-icon-box.success  { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+
+    .notif-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .notif-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    .notif-item-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .notif-time {
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .notif-detail {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin: 0;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .notif-actions {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-top: 2px;
+    }
+
+    .notif-action-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      border: 1px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .notif-action-btn:hover {
+      background: var(--surface-active);
+      color: var(--text-primary);
+    }
+
+    .notif-empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 16px;
+      text-align: center;
+    }
+
+    .notif-empty-state i {
+      color: #10b981;
+      margin-bottom: 8px;
+    }
+
+    .notif-empty-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .notif-empty-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .notif-footer {
+      padding: 8px 14px;
+      background: rgba(0, 0, 0, 0.15);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .notif-footer-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.15s ease;
+    }
+
+    .notif-footer-btn:hover {
+      color: var(--text-primary);
+    }
+
+    /* ==========================================================================
+       MENÚ DE PERFIL Y SALIDA DE SESIÓN (ESTÁNDAR VIBRA / TIENDITA)
+       ========================================================================== */
+    .user-profile-menu-container {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .user-profile-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 3px 10px 3px 4px;
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: 9999px;
+      cursor: pointer;
+      color: var(--text-primary);
+      transition: all 0.18s ease;
+      font-family: inherit;
+    }
+
+    .user-profile-badge:hover,
+    .user-profile-badge.active {
+      background: var(--surface-active);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    .user-avatar-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      font-weight: 700;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .status-indicator-dot {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 2px solid var(--surface-card);
+      background: #10b981;
+    }
+
+    .chevron-icon {
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+
+    .chevron-icon.rotate {
+      transform: rotate(180deg);
+    }
+
+    /* Dropdown Flotante de Perfil */
+    .profile-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      width: 260px;
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(16px);
+      z-index: 1050;
+      overflow: hidden;
+      display: none;
+      flex-direction: column;
+      animation: notifFadeSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .profile-dropdown-menu.is-open {
+      display: flex;
+    }
+
+    .profile-dropdown-header {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .dropdown-avatar-lg {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .dropdown-user-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .dropdown-user-name {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dropdown-user-email {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .dropdown-user-role-badge {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      padding: 1px 5px;
+      border-radius: 4px;
+      width: fit-content;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: var(--border-color);
+      margin: 0;
+    }
+
+    .profile-dropdown-items,
+    .profile-dropdown-footer {
+      padding: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 7px 10px;
+      background: transparent;
+      border: none;
+      border-radius: 7px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+
+    .dropdown-item:hover {
+      background: var(--surface-active);
+      color: var(--text-primary);
+    }
+
+    .dropdown-item.logout {
+      color: #ef4444;
+    }
+
+    .dropdown-item.logout:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+    }
+
+    /* ==========================================================================
+       COMPONENTE MAESTRO: PAGINACIÓN CORPORATIVA (SDD PAGINATION COMPONENT)
+       ========================================================================== */
+    .joli-pagination-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 10px 18px;
+      background: var(--surface-card);
+      border-top: 1px solid var(--border-color);
+      font-family: inherit;
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    .pagination-summary .highlight {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .pagination-size-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .size-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .size-select {
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--surface-elevated);
+      color: var(--text-primary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .size-select:focus {
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+
+    .pagination-buttons {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .page-nav-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--surface-elevated);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .page-nav-btn:hover:not(:disabled) {
+      background: var(--surface-active);
+      color: var(--text-primary);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    .page-nav-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .page-numbers-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .page-num-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 28px;
+      padding: 0 6px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--surface-elevated);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .page-num-btn:hover:not(.active) {
+      background: var(--surface-active);
+      color: var(--text-primary);
+    }
+
+    .page-num-btn.active {
+      background: #10b981;
+      border-color: #10b981;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+    }
+
+    .page-ellipsis {
+      padding: 0 4px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="main-wrapper">
+    
+    <!-- TOPHEADER CON TÍTULO EN LADO IZQUIERDO -->
+    <header class="top-header">
+      <div class="topheader-left">
+        <div class="topheader-brand">
+          <img src="../assets/Jolifoods.svg" alt="Jolifoods" class="topheader-logo" onerror="this.style.display='none'; document.getElementById('altBrandText').classList.remove('d-none');">
+          <span class="fw-bold fs-6 d-none" id="altBrandText" style="color: #10b981;">JOLIFOODS</span>
+        </div>
+
+        <div class="topheader-brand-divider">/</div>
+
+        <div class="topheader-title-box">
+          <h1 class="topheader-page-title" id="pageMainHeading">Módulo Operativo SDD</h1>
+          <span class="topheader-page-badge" id="pageMainBadge">PRODUCCIÓN</span>
+        </div>
+      </div>
+
+      <div class="top-header-right">
+        <!-- Toggle Tema Noche / Día -->
+        <button class="icon-btn-header" id="themeToggleBtn" title="Cambiar Tema" onclick="toggleTheme()">
+          <i data-lucide="moon" id="themeIcon"></i>
+        </button>
+
+        <!-- CENTRO DE MULTI-NOTIFICACIONES CON POPOVER INTERACTIVO (TIENDITA / VIBRA) -->
+        <div class="notification-container" id="notifContainer">
+          <button 
+            type="button" 
+            class="notification-bell-btn has-unread" 
+            id="notifBellBtn"
+            title="Centro de Alertas y Notificaciones"
+            onclick="toggleNotifications(event)"
+          >
+            <i data-lucide="bell"></i>
+            <span class="bell-badge-count" id="notifGlobalBadge">3</span>
+          </button>
+
+          <!-- Ventana Popover Desplegable -->
+          <div class="notification-popover" id="notifPopover">
+            <div class="notif-header">
+              <div class="notif-title-row">
+                <span class="notif-header-title">Centro de Notificaciones</span>
+                <span class="notif-counter-pill" id="notifUnreadPill">3 pendientes</span>
+              </div>
+              
+              <!-- Pestañas Multi-Notificaciones (Operación | Alertas Críticas) -->
+              <div class="notif-toggle-tabs">
+                <button type="button" class="notif-tab-btn active" id="tabBtn-operacion" onclick="switchNotifTab('operacion')">
+                  <span>Operación</span>
+                  <span class="notif-tab-badge" id="tabBadge-operacion">2</span>
+                </button>
+                <button type="button" class="notif-tab-btn" id="tabBtn-alertas" onclick="switchNotifTab('alertas')">
+                  <span>Alertas</span>
+                  <span class="notif-tab-badge" id="tabBadge-alertas">1</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Lista de Notificaciones -->
+            <div class="notif-body">
+              <div class="notif-list" id="notifListContainer">
+                <!-- Se inyecta dinámicamente -->
+              </div>
+            </div>
+
+            <!-- Pie de Notificaciones -->
+            <div class="notif-footer">
+              <button type="button" class="notif-footer-btn" onclick="markAllNotifsRead()">
+                Marcar leídas
+              </button>
+              <button type="button" class="notif-footer-btn" onclick="closeNotifications()">
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MENÚ DE PERFIL DEL USUARIO CON OPCIÓN DE SALIR (TIENDITA / VIBRA) -->
+        <div class="user-profile-menu-container" id="userProfileContainer">
+          <button 
+            type="button" 
+            class="user-profile-badge" 
+            id="userProfileBtn" 
+            onclick="toggleUserProfile(event)"
+            title="Opciones de Cuenta y Sesión"
+          >
+            <div class="user-avatar-circle">
+              JM
+              <span class="status-indicator-dot"></span>
+            </div>
+            <span class="d-none d-sm-inline font-sm fw-medium">Joan Montoya</span>
+            <i data-lucide="chevron-down" class="chevron-icon" id="userChevronIcon" style="width: 14px; height: 14px;"></i>
+          </button>
+
+          <!-- Dropdown Flotante de Usuario -->
+          <div class="profile-dropdown-menu" id="userProfileDropdown">
+            <div class="profile-dropdown-header">
+              <div class="dropdown-avatar-lg">JM</div>
+              <div class="dropdown-user-info">
+                <span class="dropdown-user-name">Joan Montoya</span>
+                <span class="dropdown-user-email">joan.montoya@jolifoods.com</span>
+                <span class="dropdown-user-role-badge">ADMINISTRADOR</span>
+              </div>
+            </div>
+
+            <div class="dropdown-divider"></div>
+
+            <div class="profile-dropdown-items">
+              <button type="button" class="dropdown-item" onclick="handleProfileNav('perfil')">
+                <i data-lucide="user" style="width: 15px; height: 15px;"></i>
+                <span>Mi Perfil</span>
+              </button>
+            </div>
+
+            <div class="dropdown-divider"></div>
+
+            <div class="profile-dropdown-footer">
+              <button type="button" class="dropdown-item logout" onclick="openLogoutModal()">
+                <i data-lucide="log-out" style="width: 15px; height: 15px;"></i>
+                <span>Cerrar Sesión</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CUERPO DE PÁGINA FULL-WIDTH -->
+    <div class="cartera-page-container">
+      
+      <!-- Topbar de Filtros Expandibles y Switcher -->
+      <div class="cartera-topbar">
+        <div class="cartera-view-switcher">
+          <button type="button" class="cartera-switcher-btn is-active">
+            <i data-lucide="layers" style="width: 13px; height: 13px;"></i>
+            <span>Vista Principal</span>
+          </button>
+          <button type="button" class="cartera-switcher-btn">
+            <i data-lucide="alert-circle" style="width: 13px; height: 13px;"></i>
+            <span>Novedades</span>
+          </button>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <div class="cartera-btn-group">
+            <div class="cartera-expandable-filter" id="filterZona">
+              <button type="button" class="cartera-filter-trigger" onclick="toggleExpandableFilter('filterZona')">
+                <i data-lucide="map-pin" class="trigger-icon" style="width: 14px; height: 14px;"></i>
+                <span class="trigger-text">Zona</span>
+                <span class="trigger-badge" id="badgeFilterZona" style="display:none;"></span>
+                <i data-lucide="chevron-down" class="trigger-arrow" style="width: 12px; height: 12px;"></i>
+              </button>
+              <div class="cartera-filter-expanded-content">
+                <select class="cartera-expanded-select" id="selectFilterZona" onchange="filterByField(this.value)">
+                  <option value="">Todas</option>
+                  <option value="Norte">Norte</option>
+                  <option value="Sur">Sur</option>
+                </select>
+                <button type="button" class="cartera-expanded-close" onclick="closeExpandableFilter('filterZona')" title="Cerrar filtro">
+                  <i data-lucide="x" style="width: 12px; height: 12px;"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="cartera-action-icon-btn" onclick="resetFilters()" title="Limpiar Filtros">
+            <i data-lucide="filter-x" style="width: 14px; height: 14px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Fila de Tarjetas KPI -->
+      <div class="cartera-kpi-row" id="kpiContainer"></div>
+
+      <!-- Tabla de Datos con Toolbar Compacto de Iconos -->
+      <div class="joli-datatable-wrapper">
+        <div class="cartera-table-header-toolbar">
+          <div class="d-flex align-items-center gap-2">
+            <span class="small text-muted me-1" id="recordCountText">Cargando registros...</span>
+            <div class="cartera-toolbar-search">
+              <i data-lucide="search" style="width: 13px; height: 13px; opacity: 0.6;"></i>
+              <input type="text" id="searchInput" placeholder="Buscar registros..." oninput="handleSearch(this.value)">
+            </div>
+            <!-- Botón Dinámico de Limpiar Filtros de Columna -->
+            <button type="button" class="cartera-clear-column-filters-btn d-none" id="clearColFiltersBtn" onclick="clearAllColumnFilters()" title="Limpiar todos los filtros de columna">
+              <i data-lucide="filter-x" style="width: 12px; height: 12px;"></i>
+              <span id="colFiltersCountText">Filtros (0)</span>
+            </button>
+            <!-- Selector de Visibilidad de Columnas (Columns3) -->
+            <div class="cartera-col-visibility-wrapper" id="colVisibilityWrapper">
+              <button type="button" class="cartera-col-visibility-btn" onclick="toggleColVisibilityMenu(event)" title="Configurar columnas visibles">
+                <i data-lucide="columns-3" style="width: 14px; height: 14px;"></i>
+                <span>Columnas</span>
+                <span class="col-btn-badge" id="colVisibleBadge">6/6</span>
+                <i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i>
+              </button>
+              <div class="cartera-col-visibility-popover d-none" id="colVisibilityPopover" onclick="event.stopPropagation()">
+                <div class="cartera-col-visibility-header">
+                  <span class="title">Columnas visibles</span>
+                  <div class="header-actions">
+                    <button type="button" class="link-btn" onclick="showAllColumns()">Todas</button>
+                    <span class="divider">•</span>
+                    <button type="button" class="link-btn" onclick="resetDefaultColumns()">Restablecer</button>
+                  </div>
+                </div>
+                <div class="cartera-col-visibility-list" id="colVisibilityList"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Caja Compacta de Iconos Agrupados en Toolbar -->
+          <div class="cartera-compact-action-box">
+            <button type="button" class="btn-compact-action" onclick="openDrawerForNew()" title="Nuevo Registro (+)">
+              <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+            </button>
+            <div class="compact-action-divider"></div>
+            <button type="button" class="btn-compact-action text-success" onclick="alert('Exportando a Excel oficial (.xlsx)...')" title="Exportar a Excel">
+              <i data-lucide="file-spreadsheet" style="width: 14px; height: 14px;"></i>
+            </button>
+            <div class="compact-action-divider"></div>
+            <button type="button" class="btn-compact-action" onclick="simulateLoading()" title="Recargar">
+              <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="table-responsive">
+          <table class="joli-table">
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- COMPONENTE MAESTRO: PAGINADOR CORPORATIVO (Ver .sdd/components/pagination/pagination.md) -->
+        <nav class="joli-pagination-container" aria-label="Navegación de registros">
+          <div class="pagination-summary">
+            Mostrando <span class="highlight" id="pageStart">1</span> a <span class="highlight" id="pageEnd">8</span> de <span class="highlight" id="pageTotal">25</span> registros
+          </div>
+          <div class="pagination-controls">
+            <div class="pagination-size-selector">
+              <span class="size-label">Filas por pág:</span>
+              <select class="size-select" id="pageSizeSelect" onchange="handlePageSizeChange(this.value)">
+                <option value="5">5</option>
+                <option value="8" selected>8</option>
+                <option value="12">12</option>
+                <option value="25">25</option>
+              </select>
+            </div>
+            <div class="pagination-buttons" id="paginationButtons">
+              <!-- Botones generados dinámicamente: << < 1 2 3 > >> -->
+            </div>
+          </div>
+        </nav>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- RIGHT DRAWER (Panel Lateral Derecho) -->
+  <div class="cartera-sidebar-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+  <aside class="cartera-sidebar-drawer" id="rightDrawer">
+    <div class="cartera-sidebar-header">
+      <div>
+        <h3 class="drawer-title" id="drawerTitle">Nuevo Registro</h3>
+        <p class="drawer-subtitle" id="drawerSubtitle">Captura de información en el sistema</p>
+      </div>
+      <button type="button" class="cartera-sidebar-close-btn" onclick="closeDrawer()">
+        <i data-lucide="chevron-right" style="width: 18px; height: 18px;"></i>
+      </button>
+    </div>
+    <div class="cartera-sidebar-body">
+      <form id="drawerForm" onsubmit="handleDrawerSubmit(event)">
+        <div>
+          <label class="drawer-form-label">Identificador</label>
+          <input type="text" id="inputCodigo" class="drawer-input" required>
+        </div>
+        <div>
+          <label class="drawer-form-label">Descripción</label>
+          <input type="text" id="inputNombre" class="drawer-input" required>
+        </div>
+        <div>
+          <label class="drawer-form-label">Medición</label>
+          <input type="text" id="inputValor" class="drawer-input" required>
+        </div>
+        <div>
+          <label class="drawer-form-label">Estado</label>
+          <select id="inputEstado" class="drawer-input">
+            <option value="OPTIMO">OPTIMO (Verde)</option>
+            <option value="ALERTA">ALERTA (Amarillo)</option>
+            <option value="CRITICO">CRITICO (Rojo)</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="cartera-sidebar-footer">
+      <button type="button" class="btn-drawer-cancel" onclick="closeDrawer()">Cancelar</button>
+      <button type="button" class="btn-drawer-save" onclick="document.getElementById('drawerForm').requestSubmit()">Guardar</button>
+    </div>
+  </aside>
+
+  <!-- CONFIRMMODAL CANÓNICO JOLIFOODS -->
+  <div class="joli-modal-overlay" id="confirmActionModal" role="dialog" aria-modal="true">
+    <div class="joli-confirm-modal-container">
+      <button type="button" class="joli-modal-close-icon" onclick="closeConfirmModal()">
+        <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+      </button>
+      <div class="joli-modal-icon-wrapper danger">
+        <i data-lucide="alert-octagon" style="width: 32px; height: 32px;"></i>
+      </div>
+      <div class="joli-confirm-modal-content">
+        <h3 class="joli-confirm-modal-title" id="confirmModalTitle">¿Confirmar Acción?</h3>
+        <p class="joli-confirm-modal-message" id="confirmModalText">Esta acción es irreversible y será registrada en la auditoría.</p>
+        <div class="text-start mt-2 w-100">
+          <label class="drawer-form-label mb-1">Motivo técnico obligatorio:</label>
+          <textarea class="drawer-input" id="confirmJustification" rows="2" placeholder="Escribe la justificación (mínimo 10 caracteres)..."></textarea>
+          <div class="text-danger small mt-1 d-none" id="justificationError">Debes ingresar al menos 10 caracteres justificando la acción.</div>
+        </div>
+      </div>
+      <div class="joli-confirm-modal-actions">
+        <button type="button" class="joli-btn-modal-secondary" onclick="closeConfirmModal()">Cancelar</button>
+        <button type="button" class="joli-btn-modal-primary danger" onclick="executeDestructiveAction()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CANÓNICO DE CONFIRMACIÓN DE CIERRE DE SESIÓN (ESTÁNDAR TIENDITA / VIBRA) -->
+  <div class="joli-modal-overlay" id="logoutConfirmModal">
+    <div class="joli-confirm-modal-container">
+      <div class="joli-modal-icon-wrapper danger">
+        <i data-lucide="log-out" style="width: 26px; height: 26px;"></i>
+      </div>
+      <div>
+        <h3 class="joli-confirm-modal-title">Cerrar Sesión</h3>
+        <p class="joli-confirm-modal-message">
+          ¿Estás seguro de que deseas salir del ecosistema Jolifoods? Deberás iniciar sesión nuevamente para acceder a los módulos operativos.
+        </p>
+      </div>
+      <div class="joli-confirm-modal-actions">
+        <button type="button" class="joli-btn-modal-secondary" onclick="closeLogoutModal()">Permanecer Conectado</button>
+        <button type="button" class="joli-btn-modal-primary danger" onclick="confirmLogoutAction()">Confirmar Salida</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT CON ARREGLOS JSON AUTÓNOMOS -->
+  <script>
+    const INITIAL_RECORDS = [
+      { id: 1, codigo: "REG-001", fecha: "Hoy, 10:30 AM", nombre: "Operación Principal Lote 1", valor: "24.5 Unid", estado: "OPTIMO" },
+      { id: 2, codigo: "REG-002", fecha: "Hoy, 10:15 AM", nombre: "Planta de Empaque Central", valor: "18.2 Unid", estado: "ALERTA" },
+      { id: 3, codigo: "REG-003", fecha: "Hoy, 09:45 AM", nombre: "Línea de Maduración y Frío", valor: "22.0 Unid", estado: "OPTIMO" },
+      { id: 4, codigo: "REG-004", fecha: "Hoy, 08:30 AM", nombre: "Almacén de Insumos Agro", valor: "31.4 Unid", estado: "CRITICO" },
+      { id: 5, codigo: "REG-005", fecha: "Ayer, 05:20 PM", nombre: "Despacho Contenedores Puerto", valor: "14.8 Unid", estado: "OPTIMO" },
+      { id: 6, codigo: "REG-006", fecha: "Ayer, 04:10 PM", nombre: "Cámara Térmica Zona Norte", valor: "29.1 Unid", estado: "OPTIMO" },
+      { id: 7, codigo: "REG-007", fecha: "Ayer, 02:40 PM", nombre: "Recepción de Fruta Finca La Aurora", valor: "42.0 Unid", estado: "ALERTA" },
+      { id: 8, codigo: "REG-008", fecha: "Ayer, 11:15 AM", nombre: "Control Calidad Lote Selección", valor: "16.5 Unid", estado: "OPTIMO" },
+      { id: 9, codigo: "REG-009", fecha: "28 Sep, 03:50 PM", nombre: "Lavado y Clasificación Mecánica", valor: "27.3 Unid", estado: "OPTIMO" },
+      { id: 10, codigo: "REG-010", fecha: "28 Sep, 01:25 PM", nombre: "Bodega de Envasado Al Vacío", valor: "19.8 Unid", estado: "CRITICO" },
+      { id: 11, codigo: "REG-011", fecha: "28 Sep, 10:05 AM", nombre: "Monitoreo Atmosférico Invernadero", valor: "21.6 Unid", estado: "OPTIMO" },
+      { id: 12, codigo: "REG-012", fecha: "27 Sep, 04:30 PM", nombre: "Sistema Riego Tecnificado Sector B", valor: "35.0 Unid", estado: "OPTIMO" },
+      { id: 13, codigo: "REG-013", fecha: "27 Sep, 02:15 PM", nombre: "Mantenimiento Preventivo Calderas", valor: "12.4 Unid", estado: "ALERTA" },
+      { id: 14, codigo: "REG-014", fecha: "27 Sep, 09:40 AM", nombre: "Carga de Pallets Despacho Urgente", valor: "28.9 Unid", estado: "OPTIMO" },
+      { id: 15, codigo: "REG-015", fecha: "26 Sep, 06:10 PM", nombre: "Auditoría Sanitaria ICA Lote 3", valor: "23.1 Unid", estado: "OPTIMO" },
+      { id: 16, codigo: "REG-016", fecha: "26 Sep, 03:20 PM", nombre: "Silos de Grano y Concentrado", valor: "44.2 Unid", estado: "CRITICO" },
+      { id: 17, codigo: "REG-017", fecha: "26 Sep, 11:00 AM", nombre: "Transporte Refrigerado TermoKing", valor: "17.7 Unid", estado: "OPTIMO" },
+      { id: 18, codigo: "REG-018", fecha: "25 Sep, 04:45 PM", nombre: "Tratamiento de Aguas Residuales", valor: "30.5 Unid", estado: "ALERTA" },
+      { id: 19, codigo: "REG-019", fecha: "25 Sep, 01:30 PM", nombre: "Inspección de Semillas Certificadas", valor: "26.0 Unid", estado: "OPTIMO" },
+      { id: 20, codigo: "REG-020", fecha: "25 Sep, 08:50 AM", nombre: "Línea de Congelación Rápida IQF", valor: "15.3 Unid", estado: "OPTIMO" },
+      { id: 21, codigo: "REG-021", fecha: "24 Sep, 05:15 PM", nombre: "Punto de Pesaje Báscula Camionera", valor: "38.6 Unid", estado: "OPTIMO" },
+      { id: 22, codigo: "REG-022", fecha: "24 Sep, 02:00 PM", nombre: "Túnel de Pre-Enfriamiento Fruta", valor: "20.4 Unid", estado: "ALERTA" },
+      { id: 23, codigo: "REG-023", fecha: "24 Sep, 10:20 AM", nombre: "Filtro Biológico Área Procesamiento", valor: "13.9 Unid", estado: "OPTIMO" },
+      { id: 24, codigo: "REG-024", fecha: "23 Sep, 03:40 PM", nombre: "Empaque Secundario Corrugado", valor: "33.8 Unid", estado: "OPTIMO" },
+      { id: 25, codigo: "REG-025", fecha: "23 Sep, 09:10 AM", nombre: "Despacho Exportación Buenaventura", valor: "48.1 Unid", estado: "OPTIMO" }
+    ];
+
+    let currentRecords = [...INITIAL_RECORDS];
+    let currentFilteredRecords = [...INITIAL_RECORDS];
+    let selectedItemForAction = null;
+    let currentPage = 1;
+    let pageSize = 8;
+
+    const KPIS = [
+      { id: "k1", label: "Rendimiento Operativo", value: "94.2 %", sub: "+3.1% vs anterior", icon: "trending-up", cls: "cartera-icon-emerald" },
+      { id: "k2", label: "Medición Promedio", value: "24.8 Unid", sub: "25 registros activos", icon: "activity", cls: "cartera-icon-blue" },
+      { id: "k3", label: "Alertas Activas", value: "5 avisos", sub: "Atención técnica", icon: "alert-triangle", cls: "cartera-icon-amber" },
+      { id: "k4", label: "Incidentes Críticos", value: "3 casos", sub: "Stock / silos", icon: "shield-alert", cls: "cartera-icon-pink" }
+    ];
+
+    function renderKPIs() {
+      const el = document.getElementById("kpiContainer");
+      el.innerHTML = KPIS.map(k => `
+        <div class="cartera-kpi-card">
+          <div>
+            <div class="cartera-kpi-label">${k.label}</div>
+            <div class="cartera-kpi-value">${k.value}</div>
+            <div class="cartera-kpi-subtext">${k.sub}</div>
+          </div>
+          <div class="cartera-kpi-icon-box ${k.cls}">
+            <i data-lucide="${k.icon}"></i>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    const TABLE_COLUMNS = [
+      { key: 'codigo', label: 'Identificador', width: 140, filterable: true, align: 'left' },
+      { key: 'fecha', label: 'Fecha', width: 120, filterable: true, align: 'left' },
+      { key: 'nombre', label: 'Descripción / Entidad', width: 240, filterable: true, align: 'left' },
+      { key: 'valor', label: 'Medición', width: 160, filterable: true, align: 'right' },
+      { key: 'estado', label: 'Estado', width: 130, filterable: true, align: 'left' },
+      { key: 'acciones', label: 'Acciones', width: 110, filterable: false, align: 'center' }
+    ];
+
+    let visibleColumns = ['codigo', 'fecha', 'nombre', 'valor', 'estado', 'acciones'];
+    let colWidths = { codigo: 140, fecha: 120, nombre: 240, valor: 160, estado: 130, acciones: 110 };
+    const DEFAULT_COL_WIDTHS = { ...colWidths };
+
+    let columnFilters = {}; // { [colKey]: string[] }
+    let activeFilterCol = null;
+    let currentSortField = null;
+    let currentSortOrder = 'ASC';
+    let globalSearchTerm = '';
+
+    /* ==========================================================================
+       COLUMNAS REDIMENSIONABLES (ESTÁNDAR BI CARTERA: useResizable)
+       ========================================================================== */
+    let isResizing = false;
+    let currentResizingCol = null;
+    let startX = 0;
+    let startWidth = 0;
+
+    function handleStartColResize(colKey, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      isResizing = true;
+      currentResizingCol = colKey;
+      startX = event.clientX;
+      startWidth = colWidths[colKey] || 120;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      function onMouseMove(e) {
+        if (!isResizing) return;
+        const diff = e.clientX - startX;
+        const newWidth = Math.max(60, Math.round(startWidth + diff));
+        colWidths[currentResizingCol] = newWidth;
+        applyColWidth(currentResizingCol, newWidth);
+      }
+
+      function onMouseUp() {
+        isResizing = false;
+        currentResizingCol = null;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      }
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    }
+
+    function handleResetColWidth(colKey, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const defW = DEFAULT_COL_WIDTHS[colKey] || 120;
+      colWidths[colKey] = defW;
+      applyColWidth(colKey, defW);
+    }
+
+    function applyColWidth(colKey, width) {
+      const ths = document.querySelectorAll(`th[data-col="${colKey}"]`);
+      const tds = document.querySelectorAll(`td[data-col="${colKey}"]`);
+      ths.forEach(el => {
+        el.style.width = width + 'px';
+        el.style.minWidth = width + 'px';
+        el.style.maxWidth = width + 'px';
+      });
+      tds.forEach(el => {
+        el.style.width = width + 'px';
+        el.style.minWidth = width + 'px';
+        el.style.maxWidth = width + 'px';
+      });
+    }
+
+    /* ==========================================================================
+       FILTROS TIPO EXCEL POR COLUMNA (ESTÁNDAR BI CARTERA: ChecklistPopover)
+       ========================================================================== */
+    function toggleColumnFilterPopover(colKey, event) {
+      event.stopPropagation();
+      const existing = document.getElementById("excelFilterPopover");
+      if (activeFilterCol === colKey && existing) {
+        closeExcelFilterPopover();
+        return;
+      }
+      openExcelFilterPopover(colKey);
+    }
+
+    function closeExcelFilterPopover() {
+      const popover = document.getElementById("excelFilterPopover");
+      if (popover) popover.remove();
+      activeFilterCol = null;
+      document.querySelectorAll(".filter-toggle-btn").forEach(b => b.classList.remove("is-open"));
+    }
+
+    function openExcelFilterPopover(colKey) {
+      closeExcelFilterPopover();
+      activeFilterCol = colKey;
+
+      const th = document.querySelector(`th[data-col="${colKey}"]`);
+      if (!th) return;
+      const filterBtn = document.getElementById(`filter-btn-${colKey}`);
+      if (filterBtn) filterBtn.classList.add("is-open");
+
+      // Frecuencias de valores únicos en la columna
+      const valMap = new Map();
+      currentRecords.forEach(r => {
+        const raw = r[colKey] !== undefined ? String(r[colKey]) : '(Vacío)';
+        valMap.set(raw, (valMap.get(raw) || 0) + 1);
+      });
+
+      const sortedVals = Array.from(valMap.entries()).sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }));
+      const currentlyActive = columnFilters[colKey] || sortedVals.map(e => e[0]);
+
+      const popover = document.createElement("div");
+      popover.id = "excelFilterPopover";
+      popover.className = `cartera-excel-popover ${colKey === 'valor' || colKey === 'estado' ? 'align-right' : ''}`;
+      popover.onclick = (e) => e.stopPropagation();
+
+      popover.innerHTML = `
+        <div class="popover-sort-section">
+          <button type="button" class="btn-popover-sort" onclick="applySort('${colKey}', 'ASC')">
+            <i data-lucide="arrow-up" style="width: 12px; height: 12px;"></i> Ascendente
+          </button>
+          <button type="button" class="btn-popover-sort" onclick="applySort('${colKey}', 'DESC')">
+            <i data-lucide="arrow-down" style="width: 12px; height: 12px;"></i> Descendente
+          </button>
+        </div>
+        <div>
+          <input type="text" class="popover-search-input" id="popoverSearchInput" placeholder="Buscar valores..." oninput="handlePopoverSearch(this.value)">
+        </div>
+        <div class="popover-check-item" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.3rem;">
+          <label style="display: flex; align-items: center; width: 100%; cursor: pointer;">
+            <input type="checkbox" id="popoverSelectAll" onchange="toggleSelectAllPopover(this.checked)" ${currentlyActive.length === sortedVals.length ? 'checked' : ''}>
+            <span class="popover-check-label" style="font-weight: 600;">(Seleccionar todo)</span>
+          </label>
+        </div>
+        <div class="popover-items-list" id="popoverItemsList">
+          ${sortedVals.map(([val, count]) => {
+            const isChecked = currentlyActive.includes(val);
+            return `
+              <div class="popover-check-item">
+                <label style="display: flex; align-items: center; flex: 1; cursor: pointer; overflow: hidden;">
+                  <input type="checkbox" class="popover-item-checkbox" value="${encodeURIComponent(val)}" ${isChecked ? 'checked' : ''} onchange="updateSelectAllState()">
+                  <span class="popover-check-label" title="${val}">${val}</span>
+                </label>
+                <span class="popover-check-count">(${count})</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <div class="popover-footer-actions">
+          <button type="button" class="btn-popover-clear" onclick="clearColumnFilter('${colKey}')">Limpiar</button>
+          <button type="button" class="btn-popover-apply" onclick="applyColumnFilter('${colKey}')">Aplicar</button>
+        </div>
+      `;
+
+      th.appendChild(popover);
+      lucide.createIcons();
+    }
+
+    function handlePopoverSearch(q) {
+      const query = q.toLowerCase().trim();
+      const items = document.querySelectorAll("#popoverItemsList .popover-check-item");
+      items.forEach(it => {
+        const label = it.querySelector(".popover-check-label").innerText.toLowerCase();
+        it.style.display = label.includes(query) ? "flex" : "none";
+      });
+    }
+
+    function toggleSelectAllPopover(checked) {
+      const checkboxes = document.querySelectorAll("#popoverItemsList .popover-item-checkbox");
+      checkboxes.forEach(cb => {
+        if (cb.closest(".popover-check-item").style.display !== "none") {
+          cb.checked = checked;
+        }
+      });
+    }
+
+    function updateSelectAllState() {
+      const checkboxes = Array.from(document.querySelectorAll("#popoverItemsList .popover-item-checkbox"));
+      const allChecked = checkboxes.length > 0 && checkboxes.every(cb => cb.checked);
+      const selectAll = document.getElementById("popoverSelectAll");
+      if (selectAll) selectAll.checked = allChecked;
+    }
+
+    function applySort(colKey, order) {
+      currentSortField = colKey;
+      currentSortOrder = order;
+      closeExcelFilterPopover();
+      applyFiltersAndRender();
+    }
+
+    function clearColumnFilter(colKey) {
+      delete columnFilters[colKey];
+      closeExcelFilterPopover();
+      applyFiltersAndRender();
+    }
+
+    function clearAllColumnFilters() {
+      columnFilters = {};
+      closeExcelFilterPopover();
+      applyFiltersAndRender();
+    }
+
+    function applyColumnFilter(colKey) {
+      const checkboxes = Array.from(document.querySelectorAll("#popoverItemsList .popover-item-checkbox"));
+      const checkedVals = checkboxes.filter(cb => cb.checked).map(cb => decodeURIComponent(cb.value));
+      const allVals = checkboxes.map(cb => decodeURIComponent(cb.value));
+
+      if (checkedVals.length === allVals.length) {
+        delete columnFilters[colKey];
+      } else {
+        columnFilters[colKey] = checkedVals;
+      }
+
+      closeExcelFilterPopover();
+      applyFiltersAndRender();
+    }
+
+    /* ==========================================================================
+       SELECTOR DE VISIBILIDAD DE COLUMNAS (Columns3)
+       ========================================================================== */
+    function toggleColVisibilityMenu(e) {
+      if (e) e.stopPropagation();
+      const popover = document.getElementById("colVisibilityPopover");
+      if (popover) {
+        popover.classList.toggle("d-none");
+      }
+    }
+
+    function closeColVisibilityMenu() {
+      const popover = document.getElementById("colVisibilityPopover");
+      if (popover) popover.classList.add("d-none");
+    }
+
+    function renderColVisibilityMenu() {
+      const list = document.getElementById("colVisibilityList");
+      if (!list) return;
+
+      list.innerHTML = TABLE_COLUMNS.map(col => {
+        const isChecked = visibleColumns.includes(col.key);
+        const isOnlyOne = isChecked && visibleColumns.length <= 1;
+        return `
+          <label class="cartera-col-visibility-item">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} ${isOnlyOne ? 'disabled' : ''} onchange="toggleColumnVisibility('${col.key}')">
+            <span>${col.label}</span>
+          </label>
+        `;
+      }).join('');
+
+      const badge = document.getElementById("colVisibleBadge");
+      if (badge) badge.innerText = `${visibleColumns.length}/${TABLE_COLUMNS.length}`;
+    }
+
+    function toggleColumnVisibility(colKey) {
+      if (visibleColumns.includes(colKey)) {
+        if (visibleColumns.length <= 1) return;
+        visibleColumns = visibleColumns.filter(k => k !== colKey);
+      } else {
+        visibleColumns.push(colKey);
+      }
+      renderColVisibilityMenu();
+      renderTableHead();
+      renderTable();
+    }
+
+    function showAllColumns() {
+      visibleColumns = TABLE_COLUMNS.map(c => c.key);
+      renderColVisibilityMenu();
+      renderTableHead();
+      renderTable();
+    }
+
+    function resetDefaultColumns() {
+      visibleColumns = TABLE_COLUMNS.map(c => c.key);
+      colWidths = { ...DEFAULT_COL_WIDTHS };
+      renderColVisibilityMenu();
+      renderTableHead();
+      renderTable();
+    }
+
+    /* ==========================================================================
+       PIPELINE DE FILTRADO, ORDENAMIENTO Y RENDERIZADO
+       ========================================================================== */
+    function applyFiltersAndRender() {
+      let result = [...currentRecords];
+
+      // 1. Buscador global
+      if (globalSearchTerm) {
+        const q = globalSearchTerm.toLowerCase();
+        result = result.filter(r => 
+          (r.codigo && r.codigo.toLowerCase().includes(q)) || 
+          (r.nombre && r.nombre.toLowerCase().includes(q)) || 
+          (r.estado && r.estado.toLowerCase().includes(q)) ||
+          (r.valor && r.valor.toLowerCase().includes(q)) ||
+          (r.fecha && r.fecha.toLowerCase().includes(q))
+        );
+      }
+
+      // 2. Filtros de columna tipo Excel
+      Object.keys(columnFilters).forEach(colKey => {
+        const allowed = columnFilters[colKey];
+        if (allowed && allowed.length > 0) {
+          result = result.filter(r => {
+            const val = r[colKey] !== undefined ? String(r[colKey]) : '(Vacío)';
+            return allowed.includes(val);
+          });
+        }
+      });
+
+      // 3. Ordenamiento
+      if (currentSortField) {
+        result.sort((a, b) => {
+          let valA = a[currentSortField] !== undefined ? a[currentSortField] : '';
+          let valB = b[currentSortField] !== undefined ? b[currentSortField] : '';
+          let cmp = 0;
+          if (typeof valA === 'number' && typeof valB === 'number') {
+            cmp = valA - valB;
+          } else {
+            cmp = String(valA).localeCompare(String(valB), undefined, { numeric: true });
+          }
+          return currentSortOrder === 'ASC' ? cmp : -cmp;
+        });
+      }
+
+      currentFilteredRecords = result;
+      currentPage = 1;
+      renderTableHead();
+      renderTable();
+      updateToolbarFilterBadges();
+    }
+
+    function updateToolbarFilterBadges() {
+      const activeColCount = Object.keys(columnFilters).length;
+      const clearBtn = document.getElementById("clearColFiltersBtn");
+      const countSpan = document.getElementById("colFiltersCountText");
+      if (clearBtn && countSpan) {
+        if (activeColCount > 0) {
+          clearBtn.classList.remove("d-none");
+          countSpan.innerText = `Filtros (${activeColCount})`;
+        } else {
+          clearBtn.classList.add("d-none");
+        }
+      }
+    }
+
+    function renderTableHead() {
+      const thead = document.getElementById("tableHead");
+      if (!thead) return;
+
+      thead.innerHTML = `
+        <tr>
+          ${TABLE_COLUMNS.filter(col => visibleColumns.includes(col.key)).map(col => {
+            const width = colWidths[col.key] || 120;
+            const hasFilter = Boolean(columnFilters[col.key] && columnFilters[col.key].length > 0);
+            const isOpen = activeFilterCol === col.key;
+            return `
+              <th data-col="${col.key}" style="width: ${width}px; min-width: ${width}px; max-width: ${width}px; position: relative;">
+                <div class="th-content-wrapper">
+                  <span class="th-label ${col.align === 'right' ? 'w-100 text-end' : col.align === 'center' ? 'w-100 text-center' : ''}">${col.label}</span>
+                  ${col.filterable !== false ? `
+                    <button type="button" class="filter-toggle-btn ${hasFilter ? 'has-filter' : ''} ${isOpen ? 'is-open' : ''}" id="filter-btn-${col.key}" onclick="toggleColumnFilterPopover('${col.key}', event)" title="Filtrar por ${col.label}">
+                      <i data-lucide="filter" style="width: 11px; height: 11px;"></i>
+                      ${hasFilter ? `<span class="filter-active-dot"></span>` : ''}
+                    </button>
+                  ` : ''}
+                </div>
+                <div class="cartera-th-resizer" onmousedown="handleStartColResize('${col.key}', event)" ondblclick="handleResetColWidth('${col.key}', event)" title="Arrastra para redimensionar (Doble clic restablece)"></div>
+              </th>
+            `;
+          }).join('')}
+        </tr>
+      `;
+      lucide.createIcons();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("tableBody");
+      const totalItems = currentFilteredRecords.length;
+      const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+      
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, totalItems);
+      const pageData = currentFilteredRecords.slice(startIndex, endIndex);
+
+      const countEl = document.getElementById("recordCountText");
+      if (countEl) countEl.innerText = `${totalItems} de ${currentRecords.length} registros`;
+
+      if (pageData.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="${visibleColumns.length}" class="text-center py-4 text-muted">
+              <i data-lucide="inbox" style="width: 24px; height: 24px; margin-bottom: 6px;"></i>
+              <div>No se encontraron registros con los filtros aplicados.</div>
+            </td>
+          </tr>
+        `;
+        lucide.createIcons();
+        renderPagination(0, 0, 0, 1, 1);
+        return;
+      }
+
+      tbody.innerHTML = pageData.map(r => `
+        <tr>
+          ${visibleColumns.includes('codigo') ? `
+            <td data-col="codigo" class="fw-semibold font-mono text-primary" style="width: ${colWidths.codigo}px;">${r.codigo}</td>
+          ` : ''}
+          ${visibleColumns.includes('fecha') ? `
+            <td data-col="fecha" class="text-muted" style="width: ${colWidths.fecha}px;">${r.fecha}</td>
+          ` : ''}
+          ${visibleColumns.includes('nombre') ? `
+            <td data-col="nombre" class="fw-medium" style="width: ${colWidths.nombre}px;">${r.nombre}</td>
+          ` : ''}
+          ${visibleColumns.includes('valor') ? `
+            <td data-col="valor" style="text-align: right; width: ${colWidths.valor}px;" class="fw-bold font-mono">${r.valor}</td>
+          ` : ''}
+          ${visibleColumns.includes('estado') ? `
+            <td data-col="estado" style="width: ${colWidths.estado}px;">
+              <span class="badge-pill-joli ${r.estado === 'OPTIMO' ? 'badge-joli-success' : r.estado === 'ALERTA' ? 'badge-joli-warning' : 'badge-joli-danger'}">${r.estado}</span>
+            </td>
+          ` : ''}
+          ${visibleColumns.includes('acciones') ? `
+            <td data-col="acciones" style="text-align: center; width: ${colWidths.acciones}px;">
+              <div class="cartera-row-actions-group">
+                <button type="button" class="btn-row-action btn-row-view" onclick="openDrawerForDetail(${r.id})" title="Ver detalle en panel lateral">
+                  <i data-lucide="eye" style="width: 13px; height: 13px;"></i>
+                </button>
+                <span class="row-action-divider"></span>
+                <button type="button" class="btn-row-action btn-row-delete" onclick="openConfirmAction('${r.codigo}')" title="Desactivar registro">
+                  <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+                </button>
+              </div>
+            </td>
+          ` : ''}
+        </tr>
+      `).join("");
+      lucide.createIcons();
+
+      renderPagination(totalItems, startIndex + 1, endIndex, totalPages, currentPage);
+    }
+
+    function renderPagination(totalItems, startItem, endItem, totalPages, curPage) {
+      document.getElementById("pageStart").innerText = totalItems === 0 ? 0 : startItem;
+      document.getElementById("pageEnd").innerText = endItem;
+      document.getElementById("pageTotal").innerText = totalItems;
+
+      const buttonsContainer = document.getElementById("paginationButtons");
+      if (!buttonsContainer) return;
+
+      // Cálculo de botones de página visibles con elipsis (.sdd/components/pagination/pagination.md)
+      let pages = [];
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        if (curPage > 3) pages.push('ellipsis');
+
+        const start = Math.max(2, curPage - 1);
+        const end = Math.min(totalPages - 1, curPage + 1);
+        for (let i = start; i <= end; i++) {
+          if (i > 1 && i < totalPages) pages.push(i);
+        }
+
+        if (curPage < totalPages - 2) pages.push('ellipsis');
+        pages.push(totalPages);
+      }
+
+      buttonsContainer.innerHTML = `
+        <button type="button" class="page-nav-btn" onclick="goToPage(1)" ${curPage === 1 ? 'disabled' : ''} title="Primera página">
+          <i data-lucide="chevrons-left" style="width: 14px; height: 14px;"></i>
+        </button>
+        <button type="button" class="page-nav-btn" onclick="goToPage(${curPage - 1})" ${curPage === 1 ? 'disabled' : ''} title="Página anterior">
+          <i data-lucide="chevron-left" style="width: 14px; height: 14px;"></i>
+        </button>
+        <div class="page-numbers-group">
+          ${pages.map(p => p === 'ellipsis' 
+            ? `<span class="page-ellipsis">…</span>` 
+            : `<button type="button" class="page-num-btn ${p === curPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`
+          ).join('')}
+        </div>
+        <button type="button" class="page-nav-btn" onclick="goToPage(${curPage + 1})" ${curPage >= totalPages ? 'disabled' : ''} title="Página siguiente">
+          <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+        </button>
+        <button type="button" class="page-nav-btn" onclick="goToPage(${totalPages})" ${curPage >= totalPages ? 'disabled' : ''} title="Última página">
+          <i data-lucide="chevrons-right" style="width: 14px; height: 14px;"></i>
+        </button>
+      `;
+      lucide.createIcons();
+    }
+
+    function goToPage(page) {
+      currentPage = page;
+      renderTable();
+    }
+
+    function handlePageSizeChange(newSize) {
+      pageSize = parseInt(newSize, 10);
+      currentPage = 1;
+      renderTable();
+    }
+
+    function handleSearch(term) {
+      globalSearchTerm = term.trim();
+      applyFiltersAndRender();
+    }
+
+
+    function openDrawerForNew() {
+      document.getElementById("drawerTitle").innerText = "Nuevo Registro";
+      document.getElementById("inputCodigo").value = `REG-${String(currentRecords.length + 1).padStart(3, '0')}`;
+      document.getElementById("inputNombre").value = "";
+      document.getElementById("inputValor").value = "";
+      showDrawer();
+    }
+
+    function openDrawerForDetail(id) {
+      const r = currentRecords.find(item => item.id === id);
+      if (!r) return;
+      document.getElementById("drawerTitle").innerText = `Detalle: ${r.codigo}`;
+      document.getElementById("inputCodigo").value = r.codigo;
+      document.getElementById("inputNombre").value = r.nombre;
+      document.getElementById("inputValor").value = r.valor;
+      document.getElementById("inputEstado").value = r.estado;
+      showDrawer();
+    }
+
+    function showDrawer() {
+      document.getElementById("rightDrawer").classList.add("is-open");
+      document.getElementById("drawerBackdrop").classList.add("is-open");
+    }
+
+    function closeDrawer() {
+      document.getElementById("rightDrawer").classList.remove("is-open");
+      document.getElementById("drawerBackdrop").classList.remove("is-open");
+    }
+
+    function handleDrawerSubmit(e) {
+      e.preventDefault();
+      const codigo = document.getElementById("inputCodigo").value.trim();
+      const nombre = document.getElementById("inputNombre").value.trim();
+      const valor = document.getElementById("inputValor").value.trim();
+      const estado = document.getElementById("inputEstado").value;
+      currentRecords.unshift({ id: Date.now(), codigo, fecha: "Hoy, ahora", nombre, valor, estado });
+      applyFiltersAndRender();
+      closeDrawer();
+    }
+
+    function openConfirmAction(codigo) {
+      selectedItemForAction = codigo;
+      document.getElementById("confirmModalText").innerText = `¿Está seguro de desactivar el registro ${codigo}? Esta acción será auditada.`;
+      document.getElementById("confirmJustification").value = "";
+      document.getElementById("justificationError").classList.add("d-none");
+      document.getElementById("confirmActionModal").classList.add("is-open");
+    }
+
+    function closeConfirmModal() {
+      document.getElementById("confirmActionModal").classList.remove("is-open");
+    }
+
+    function executeDestructiveAction() {
+      const just = document.getElementById("confirmJustification").value.trim();
+      if (just.length < 10) {
+        document.getElementById("justificationError").classList.remove("d-none");
+        return;
+      }
+      currentRecords = currentRecords.filter(r => r.codigo !== selectedItemForAction);
+      applyFiltersAndRender();
+      closeConfirmModal();
+      alert(`Registro ${selectedItemForAction} desactivado con justificación: "${just}"`);
+    }
+
+    function toggleExpandableFilter(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const isOpen = el.classList.contains("is-open");
+      document.querySelectorAll(".cartera-expandable-filter").forEach(f => {
+        f.classList.remove("is-open");
+        const badge = f.querySelector(".trigger-badge");
+        if (badge && f.classList.contains("has-active-val")) badge.style.display = "inline-flex";
+      });
+      if (!isOpen) {
+        el.classList.add("is-open");
+        const badge = el.querySelector(".trigger-badge");
+        if (badge) badge.style.display = "none";
+      }
+    }
+
+    function closeExpandableFilter(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove("is-open");
+      const badge = el.querySelector(".trigger-badge");
+      if (badge && el.classList.contains("has-active-val")) badge.style.display = "inline-flex";
+    }
+
+    function resetFilters() {
+      currentRecords = [...INITIAL_RECORDS];
+      columnFilters = {};
+      globalSearchTerm = '';
+      const searchInput = document.getElementById("searchInput");
+      if (searchInput) searchInput.value = '';
+      applyFiltersAndRender();
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute("data-theme") || html.getAttribute("data-bs-theme") || "dark";
+      const next = current === "dark" ? "light" : "dark";
+      html.setAttribute("data-theme", next);
+      html.setAttribute("data-bs-theme", next);
+      html.style.colorScheme = next;
+      document.getElementById("themeIcon").setAttribute("data-lucide", next === "dark" ? "moon" : "sun");
+      lucide.createIcons();
+    }
+
+    /* ==========================================================================
+       GESTIÓN DEL CENTRO DE MULTI-NOTIFICACIONES (TIENDITA / VIBRA)
+       ========================================================================== */
+    const MOCK_NOTIFICATIONS = [
+      {
+        id: 1,
+        category: "operacion",
+        title: "Nueva Solicitud de Pedido",
+        detail: "El usuario Carlos Duque solicitó despacho de 50 cajas para Sucursal Norte.",
+        timeAgo: "Hace 12 min",
+        severity: "info",
+        isRead: false
+      },
+      {
+        id: 2,
+        category: "operacion",
+        title: "Recepción de Lote Conforme",
+        detail: "Materia prima completada con 120 unidades ingresadas al inventario.",
+        timeAgo: "Hace 45 min",
+        severity: "success",
+        isRead: false
+      },
+      {
+        id: 3,
+        category: "alertas",
+        title: "Stock Crítico en Bodega",
+        detail: "El insumo Empaque Primario cuenta con menos de 5 unidades disponibles.",
+        timeAgo: "Hace 2 horas",
+        severity: "critical",
+        isRead: false
+      }
+    ];
+
+    let currentNotifs = [...MOCK_NOTIFICATIONS];
+    let activeNotifTab = "operacion";
+
+    function toggleNotifications(e) {
+      if (e) e.stopPropagation();
+      const popover = document.getElementById("notifPopover");
+      const btn = document.getElementById("notifBellBtn");
+      const isOpen = popover.classList.contains("is-open");
+      if (isOpen) {
+        closeNotifications();
+      } else {
+        popover.classList.add("is-open");
+        btn.classList.add("active");
+        renderNotifications();
+      }
+    }
+
+    function closeNotifications() {
+      const popover = document.getElementById("notifPopover");
+      const btn = document.getElementById("notifBellBtn");
+      if (popover) popover.classList.remove("is-open");
+      if (btn) btn.classList.remove("active");
+    }
+
+    function switchNotifTab(category) {
+      activeNotifTab = category;
+      document.getElementById("tabBtn-operacion").classList.toggle("active", category === "operacion");
+      document.getElementById("tabBtn-alertas").classList.toggle("active", category === "alertas");
+      renderNotifications();
+    }
+
+    function renderNotifications() {
+      const listContainer = document.getElementById("notifListContainer");
+      if (!listContainer) return;
+
+      const filtered = currentNotifs.filter(n => n.category === activeNotifTab);
+      const unreadTotal = currentNotifs.filter(n => !n.isRead).length;
+      const unreadOperacion = currentNotifs.filter(n => n.category === "operacion" && !n.isRead).length;
+      const unreadAlertas = currentNotifs.filter(n => n.category === "alertas" && !n.isRead).length;
+
+      // Actualizar Badges
+      const globalBadge = document.getElementById("notifGlobalBadge");
+      const unreadPill = document.getElementById("notifUnreadPill");
+      const bellBtn = document.getElementById("notifBellBtn");
+
+      if (globalBadge) {
+        if (unreadTotal > 0) {
+          globalBadge.innerText = unreadTotal;
+          globalBadge.classList.remove("d-none");
+          bellBtn.classList.add("has-unread");
+        } else {
+          globalBadge.classList.add("d-none");
+          bellBtn.classList.remove("has-unread");
+        }
+      }
+
+      if (unreadPill) {
+        unreadPill.innerText = `${unreadTotal} pendientes`;
+      }
+
+      const badgeOp = document.getElementById("tabBadge-operacion");
+      if (badgeOp) {
+        badgeOp.innerText = unreadOperacion;
+        badgeOp.style.display = unreadOperacion > 0 ? "inline-block" : "none";
+      }
+
+      const badgeAl = document.getElementById("tabBadge-alertas");
+      if (badgeAl) {
+        badgeAl.innerText = unreadAlertas;
+        badgeAl.style.display = unreadAlertas > 0 ? "inline-block" : "none";
+      }
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `
+          <div class="notif-empty-state">
+            <i data-lucide="check-circle" style="width: 28px; height: 28px;"></i>
+            <div class="notif-empty-title">Todo está al día</div>
+            <div class="notif-empty-desc">No hay alertas pendientes en la categoría ${activeNotifTab}.</div>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      listContainer.innerHTML = filtered.map(item => `
+        <div class="notif-item ${item.isRead ? '' : 'unread'}">
+          <div class="notif-icon-box ${item.severity}">
+            <i data-lucide="${item.severity === 'critical' ? 'alert-octagon' : item.severity === 'warning' ? 'alert-triangle' : item.severity === 'success' ? 'check-circle' : 'info'}" style="width: 15px; height: 15px;"></i>
+          </div>
+          <div class="notif-content">
+            <div class="notif-topline">
+              <span class="notif-item-title">${item.title}</span>
+              <span class="notif-time">${item.timeAgo}</span>
+            </div>
+            <p class="notif-detail">${item.detail}</p>
+          </div>
+          <div class="notif-actions">
+            <button type="button" class="notif-action-btn" onclick="markOneNotifRead(${item.id})" title="Marcar como leída">
+              <i data-lucide="check" style="width: 13px; height: 13px;"></i>
+            </button>
+          </div>
+        </div>
+      `).join("");
+      lucide.createIcons();
+    }
+
+    function markOneNotifRead(id) {
+      currentNotifs = currentNotifs.map(n => n.id === id ? { ...n, isRead: true } : n);
+      renderNotifications();
+    }
+
+    function markAllNotifsRead() {
+      currentNotifs = currentNotifs.map(n => ({ ...n, isRead: true }));
+      renderNotifications();
+    }
+
+    /* ==========================================================================
+       GESTIÓN DEL PERFIL DE USUARIO Y SALIDA SEGURA (TIENDITA / VIBRA)
+       ========================================================================== */
+    function toggleUserProfile(e) {
+      if (e) e.stopPropagation();
+      const dropdown = document.getElementById("userProfileDropdown");
+      const btn = document.getElementById("userProfileBtn");
+      const chevron = document.getElementById("userChevronIcon");
+      const isOpen = dropdown.classList.contains("is-open");
+
+      // Cerrar notificaciones si están abiertas
+      closeNotifications();
+
+      if (isOpen) {
+        closeUserProfile();
+      } else {
+        dropdown.classList.add("is-open");
+        btn.classList.add("active");
+        if (chevron) chevron.classList.add("rotate");
+      }
+    }
+
+    function closeUserProfile() {
+      const dropdown = document.getElementById("userProfileDropdown");
+      const btn = document.getElementById("userProfileBtn");
+      const chevron = document.getElementById("userChevronIcon");
+      if (dropdown) dropdown.classList.remove("is-open");
+      if (btn) btn.classList.remove("active");
+      if (chevron) chevron.classList.remove("rotate");
+    }
+
+    function handleProfileNav(target) {
+      closeUserProfile();
+      alert(`Navegando a la sección ${target.toUpperCase()} del colaborador.`);
+    }
+
+    function openLogoutModal() {
+      closeUserProfile();
+      document.getElementById("logoutConfirmModal").classList.add("is-open");
+    }
+
+    function closeLogoutModal() {
+      document.getElementById("logoutConfirmModal").classList.remove("is-open");
+    }
+
+    function confirmLogoutAction() {
+      closeLogoutModal();
+      alert("Sesión finalizada exitosamente. Redirigiendo a pantalla de Login...");
+    }
+
+    // Cerrar popovers al hacer clic afuera
+    document.addEventListener("click", (e) => {
+      const notifContainer = document.getElementById("notifContainer");
+      if (notifContainer && !notifContainer.contains(e.target)) {
+        closeNotifications();
+      }
+      const userProfileContainer = document.getElementById("userProfileContainer");
+      if (userProfileContainer && !userProfileContainer.contains(e.target)) {
+        closeUserProfile();
+      }
+      if (!e.target.closest("#excelFilterPopover") && !e.target.closest(".filter-toggle-btn")) {
+        closeExcelFilterPopover();
+      }
+      if (!e.target.closest("#colVisibilityWrapper")) {
+        closeColVisibilityMenu();
+      }
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+      renderKPIs();
+      renderColVisibilityMenu();
+      renderTableHead();
+      applyFiltersAndRender();
+      renderNotifications();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
