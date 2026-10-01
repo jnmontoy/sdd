@@ -1,4 +1,4 @@
-﻿# Especificación de Componente: Notificaciones Flotantes (Toast Notification)
+# Especificación de Componente: Notificaciones Flotantes (Toast Notification)
 ## Ecosistema Jolifoods — Guía de Implementación SDD
 
 El componente `ToastNotification` proporciona retroalimentación instantánea, no intrusiva y accesible tras acciones asíncronas (creación, edición, eliminación, sincronización y errores de red). Está alineado con la paleta de tokens Jolifoods y diseñado para integrarse con `sonner` o un despachador nativo React.
@@ -272,3 +272,96 @@ export const CorporateToaster: React.FC = () => {
   color: #2563EB;
 }
 ```
+
+---
+
+### 4. Guía de Instalación y Casos de Uso
+
+#### 4.1. Instalación de Dependencias
+```bash
+npm install sonner lucide-react
+```
+
+#### 4.2. Montaje Global del Toaster
+Colocar el componente `<CorporateToaster />` en la raíz de la aplicación (`App.tsx` o `main.tsx`) o directamente en la vista que lo requiera:
+
+```tsx
+import React from 'react';
+import { CorporateToaster } from './components/ToastNotification';
+
+export const App: React.FC = () => {
+  return (
+    <>
+      <CorporateToaster />
+      {/* Rutas y Vistas */}
+    </>
+  );
+};
+```
+
+#### 4.3. Casos de Uso Comunes
+
+##### A. Flujo de Autenticación / Login
+```tsx
+import { showToast } from './components/ToastNotification';
+
+// Validación preventiva de campos
+showToast.warning('Campo requerido', {
+  description: 'Por favor ingresa tu número de documento y contraseña.',
+});
+
+// Éxito al iniciar sesión
+showToast.success('¡Inicio de sesión exitoso!', {
+  description: `Bienvenido de nuevo, ${user.nombre}.`,
+});
+
+// Error de credenciales (401)
+showToast.error('Fallo de autenticación', {
+  description: 'Número de documento o contraseña incorrectos.',
+});
+
+// Bloqueo por exceso de intentos (429 Rate Limit)
+showToast.warning('Acceso temporalmente bloqueado', {
+  description: 'Demasiados intentos fallidos. Espera 60 segundos antes de reintentar.',
+});
+```
+
+##### B. Operaciones CRUD con Acción Deshacer (Undo)
+```tsx
+import { showToast } from './components/ToastNotification';
+
+// Guardado exitoso
+showToast.success('Registro guardado', {
+  description: 'Los cambios fueron sincronizados en la base de datos.',
+});
+
+// Eliminación con botón deshacer
+showToast.info('Elemento eliminado', {
+  description: 'Se envió a la papelera de reciclaje.',
+  actionLabel: 'Deshacer',
+  onAction: () => restaurarElemento(id),
+  duration: 6000,
+});
+```
+
+##### C. Manejo Global de Errores de Red / Axios
+```tsx
+import { showToast } from './components/ToastNotification';
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 500) {
+      showToast.error('Error del servidor', {
+        description: 'Ocurrió un error inesperado. El incidente ha sido registrado.',
+      });
+    } else if (!error.response) {
+      showToast.error('Error de conectividad', {
+        description: 'Verifica tu conexión a internet o la disponibilidad del servicio.',
+      });
+    }
+    return Promise.reject(error);
+  }
+);
+```
+

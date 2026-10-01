@@ -1,4 +1,4 @@
-﻿# Stack Tecnológico Canónico y Dockerización — Jolifoods
+# Stack Tecnológico Canónico y Dockerización — Jolifoods
 ## Spec-Driven Development (SDD)
 
 Este directorio define la **infraestructura técnica base** para levantar cualquier nuevo proyecto o módulo en el ecosistema **Jolifoods** sin tener que reinstalar, buscar librerías de terceros o resolver dependencias faltantes.
@@ -45,7 +45,12 @@ El archivo [`docker-compose.yml`](./docker-compose.yml) orquesta la arquitectura
 ## 3. Catálogo de Dependencias Pre-Cargadas
 
 ### Backend: [`requirements.txt`](./requirements.txt)
+
+> 🚨 **ADVERTENCIA CRÍTICA DE AISLAMIENTO**:  
+> **NUNCA ejecutes `pip install` sobre el Python del equipo**. Debes crear y activar primero el entorno virtual `.venv` (`python -m venv .venv`) o utilizar el script automatizado [`init_project.py`](./init_project.py) / [`init_project.ps1`](./init_project.ps1), el cual crea el entorno `.venv` e instala automáticamente las dependencias sin contaminar el sistema operativo del anfitrión.
+
 Reúne exactamente lo que más se usa en los proyectos del ecosistema Jolifoods para que nunca falten librerías al inicializar:
+
 - **Frameworks & ASGI**: `Django`, `djangorestframework`, `djangorestframework_simplejwt`, `fastapi`, `uvicorn[standard]`, `gunicorn`, `asgiref`.
 - **Bases de Datos**: `psycopg2-binary`, `PyMySQL`, `sqlparse`.
 - **Caché y Tareas**: `redis`, `django-redis`, `celery`.
@@ -65,7 +70,9 @@ Reúne exactamente lo que más se usa en los proyectos del ecosistema Jolifoods 
 | **[`seed_data.py`](./seed_data.py)** | Carga de datos semilla idempotente que genera el usuario administrador de desarrollo, roles y sede principal. |
 | **[`settings_security_template.py`](./settings_security_template.py)** | Configuración Django que implementa al 100% las 6 Buenas Prácticas evaluadas en auditoría (`DEBUG`, `ALLOWED_HOSTS`, `CORS`, `Throttling`, `Deny by Default`, `Hardening Headers`). |
 | **[`healthcheck.py`](./healthcheck.py)** | Sondas de Liveness y Readiness para FastAPI que verifican latencia y conectividad con PostgreSQL y Redis. |
+| **[`celery_redis_architecture.md`](./celery_redis_architecture.md)** | Arquitectura de tareas asíncronas y llamados constantes en background con Redis y Celery (worker + beat). |
 | **[`init_project.py`](./init_project.py)** | Script de inicialización que automatiza el Paso 0, crea el entorno virtual `.venv` con `pip`, inyecta branding Jolifoods, `.dockerignore`, `.vscode/settings.json` y `.env` blindado. |
 | **[`init_project.ps1`](./init_project.ps1)** | Wrapper nativo de PowerShell para ejecutar el scaffolding en Windows con un clic. |
 | **[`00_normativa_buenas_practicas_y_auditoria.md`](../greenyard/00_normativa_buenas_practicas_y_auditoria.md)** | Normativa maestra que prescribe los criterios de conformidad para que todo nuevo proyecto obtenga 100/100 en auditorías. |
+
 

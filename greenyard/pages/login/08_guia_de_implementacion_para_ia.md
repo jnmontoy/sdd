@@ -1,4 +1,4 @@
-﻿# 08. Guía de Implementación Paso a Paso para la Inteligencia Artificial
+# 08. Guía de Implementación Paso a Paso para la Inteligencia Artificial
 ## Módulo de Login / Autenticación — SDD Greenyard (`GY-SPEC-AUTH-001`)
 
 Esta guía instruye a cualquier modelo de Inteligencia Artificial (o desarrollador de software) sobre **cómo generar, estructurar e implementar el código del Login** a partir de los complementos de esta especificación SDD, sin hacer suposiciones sobre rutas locales absolutas.
@@ -60,12 +60,13 @@ Cuando se ordene a la IA: *"Construye el login según el SDD de Greenyard / Joli
 │   │   ├── hooks/
 │   │   │   └── useLoginForm.ts       # Lógica del formulario con React Hook Form + Zod
 │   │   ├── components/
-│   │   │   └── auth/
-│   │   │       ├── LoginForm.tsx     # Formulario React + Bootstrap + variables.css
-│   │   │       ├── MicrosoftButton.tsx # Botón institucional SSO Microsoft 365
-│   │   │       └── RecoveryModal.tsx # Modal de restablecimiento de contraseña
+│   │   │   ├── auth/
+│   │   │   │   ├── LoginForm.tsx     # Formulario React + Bootstrap + variables.css
+│   │   │   │   ├── MicrosoftButton.tsx # Botón institucional SSO Microsoft 365
+│   │   │   │   └── RecoveryModal.tsx # Modal de restablecimiento de contraseña
+│   │   │   └── ToastNotification.tsx # Complemento Sonner (toasts corporativos .sdd/components/toast/toast_notification.md)
 │   │   └── pages/
-│   │       └── LoginPage.tsx         # Vista completa con tarjeta centrada y branding
+│   │       └── LoginPage.tsx         # Vista completa con tarjeta centrada, CorporateToaster y branding
 │
 └── backend/                          # Stack: Django ORM + FastAPI ASGI Engine (Ultra-rápido, Anti-N+1)
     ├── Dockerfile
@@ -102,9 +103,46 @@ Cuando se ordene a la IA: *"Construye el login según el SDD de Greenyard / Joli
 - Implementar la casilla "Recordar mi documento" leyendo y guardando en `localStorage` con la clave parametrizable `gy_remembered_doc`.
 - Asegurar que durante el estado `submitting`, el botón de envío se desactive y muestre un spinner giratorio (`Loader2 animate-spin`).
 
+### Paso F-4: Integrar Notificaciones Flotantes Sonner (`src/components/ToastNotification.tsx`)
+- Instalar `sonner` y copiar la implementación canónica desde `.sdd/components/toast/toast_notification.md`.
+- Montar `<CorporateToaster />` en la vista `LoginPage.tsx` (esquina inferior derecha).
+- Despachar alertas con `showToast`:
+  - `showToast.warning()` para campos vacíos antes de enviar o ante respuesta HTTP 429 (Rate Limit).
+  - `showToast.error()` ante credenciales inválidas (HTTP 401) o fallas de red.
+  - `showToast.success()` con mensaje de bienvenida al recibir autenticación exitosa (HTTP 200).
+- Queda terminantemente prohibido utilizar `alert()` nativo del navegador.
+
 ---
 
 ## 3. Instrucciones de Implementación Backend (Paso a Paso)
+
+### Paso B-0: Creación y Aislamiento Obligatorio del Entorno Virtual (`.venv`)
+> 🚨 **REGLA CRÍTICA DE AISLAMIENTO**:
+> Está **TERMINANTEMENTE PROHIBIDO** ejecutar `pip install` o comandos de Python utilizando el intérprete global del sistema operativo. Esto contamina el entorno del equipo anfitrión y genera fallos catastróficos en el IDE y en otros proyectos.
+> 
+> **Procedimiento Obligatorio**:
+> 1. Crear el entorno virtual en la raíz del proyecto:
+>    ```bash
+>    # Windows / Linux / macOS
+>    python -m venv .venv
+>    ```
+> 2. Configurar el intérprete para VS Code en `.vscode/settings.json`:
+>    ```json
+>    {
+>      "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+>      "python.terminal.activateEnvironment": true
+>    }
+>    ```
+> 3. Instalar las dependencias de `backend/requirements.txt` **utilizando exclusivamente el ejecutable interno de `.venv`**:
+>    ```bash
+>    # En Windows (PowerShell):
+>    .\.venv\Scripts\python.exe -m pip install --upgrade pip
+>    .\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+>
+>    # En Linux / macOS:
+>    ./.venv/bin/python -m pip install --upgrade pip
+>    ./.venv/bin/python -m pip install -r backend/requirements.txt
+>    ```
 
 ### Paso B-1: Modelo de Usuario y Auditoría en Django ORM (`backend/apps/auth_core/models.py`)
 - Modelo `Usuario` heredado de `AbstractBaseUser` con campo `numero_documento` indexado y único.
@@ -135,3 +173,5 @@ Cuando se ordene a la IA: *"Construye el login según el SDD de Greenyard / Joli
 2. **PROHIBIDO guardar contraseñas o tokens en texto claro**: Ni en frontend (`localStorage`), ni en logs de backend, ni en la base de datos.
 3. **PROHIBIDO usar rutas absolutas de disco local**: Toda referencia en el código debe ser relativa al proyecto o parametrizada vía variables de entorno (`import.meta.env` en Vite o `settings.py` / `os.getenv` en Django).
 4. **TODOS los mensajes al usuario deben ser en español neutro**, comprensible y respetuoso.
+5. **PROHIBIDO TERMINANTEMENTE ejecutar pip install o python en el entorno global del equipo**: Todo comando de backend, instalación de dependencias, aplicación de migraciones o tests debe ejecutarse forzosamente dentro del entorno virtual `.venv` local del proyecto (`.\.venv\Scripts\python.exe`). Omitir el `.venv` es un fallo crítico no negociable.
+

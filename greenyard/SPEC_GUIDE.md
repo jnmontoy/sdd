@@ -67,7 +67,7 @@ La IA activa el flujo de prototipado rápido en la carpeta **`mock/<nombre_modul
 
    **Directrices Clave de la Interfaz**:
    - **Identidad Corporativa y Assets Locales Portables**: La Top Navbar debe incluir el logo Jolifoods enlazado relativamente desde `./assets/Jolifoods.svg` (con fallback a `./assets/logoJoli.png`) y favicon corporativo. Prohibido enlaces absolutos a rutas locales de usuario o imágenes rotas. (Ver [logo.md](../components/login/logo.md)).
-   - **Layout Full-Width por Defecto (Cero Sidebar a menos que se pida)**: (Ver [sidebar.md](../components/layout/sidebar.md)).
+   - **Layout 100% Horizontal a lo Largo de la Pantalla (PROHIBIDO CENTRAR EL FRONTEND)**: Queda estrictamente prohibido generar interfaces encogidas o centradas en el medio de la pantalla (prohibido `max-w-xl mx-auto`). Todo desarrollo debe extenderse horizontalmente ocupando el 100% del ancho del viewport de borde a borde para maximizar la productividad y visibilidad de datos. (Ver [layout_rules.md](../components/layout/layout_rules.md) y [sidebar.md](../components/layout/sidebar.md)).
    - **Título Directo de la Página en Lado Izquierdo (Cero Breadcrumbs de Navegación)**: (Ver [navbar.md](../components/layout/navbar.md)).
    - **Paginador Superior Integrado en Toolbar (Estándar bi/cartera)**: El paginador se coloca **ARRIBA DE LA TABLA**, dentro de la toolbar superior (`.cartera-table-header-toolbar.pagination-container`), unificando selector de filas ("Mostrar [10 v] por página"), buscador, filtros activos, visibilidad de columnas, info de registros y botonera de páginas (`<<`, `<`, 1, 2, `>`, `>>`).
    - **Card Contenedora hasta Abajo del Viewport (`.cartera-main-card`)**: La card principal tiene `flex: 1; min-height: 420px; display: flex; flex-direction: column; overflow: hidden;` extendiéndose hasta el borde inferior de la pantalla sin dejar espacios vacíos desaprovechados. La tabla interna tiene `flex: 1; overflow: auto; min-height: 250px;`.
@@ -75,7 +75,7 @@ La IA activa el flujo de prototipado rápido en la carpeta **`mock/<nombre_modul
    - **Acciones Agrupadas**: Toolbar compacta de 28px (`.cartera-compact-action-box`) y acciones por fila en contenedor de 26px (`.cartera-row-actions-group`) con divisores de 1px.
    - **Cero Textos Verdes o Azules Innecesarios**: Los códigos de registro y datos usan tipografía monospace neutra (`var(--text-primary)` o `var(--text-secondary)`). Colores reservados exclusivamente para badges de estado (`OPTIMO`, `PAGADA`).
    - **ConfirmModal Canónico con Justificación de Auditoría**: Diálogo con halo cromático, textarea a ancho 100% (`.joli-modal-textarea`), contador dinámico (`0 / 10 mín.`) y botón confirmar condicionado a mínimo 10 caracteres para acciones críticas ([confirm_modal.md](../components/modal/confirm_modal.md)).
-   - **Right Drawer Lateral Obligatorio (`.cartera-sidebar-drawer`)**: Los formularios para `+ Agregar Registro` o ver detalle se deslizan desde la derecha en panel de 560px con pie contextual ([drawer.md](../components/drawer/drawer.md)).
+   - **Right Drawer Lateral Obligatorio para Creación y Edición CRUD (`.cartera-sidebar-drawer`) (PROHIBIDO MODALES O PÁGINAS SEPARADAS)**: La creación (`+ Nuevo Registro`) y edición (`Editar`) de cualquier CRUD debe realizarse obligatoriamente desde el panel lateral derecho deslizante de 560px con pie contextual fijo ([drawer.md](../components/drawer/drawer.md)). Queda terminantemente prohibido abrir formularios de CRUD en modales flotantes centrados o navegar a páginas separadas a menos que el usuario lo solicite expresamente.
    - **Centro de Multi-Notificaciones Desplegable**: Popover interactivo con pestañas segmentadas y badges ([notification_popover.md](../components/notification/notification_popover.md)).
    - **Menú Desplegable de Perfil con Salida Segura**: Avatar y nombre con menú flotante respaldado por `ConfirmModal` ([user_profile_dropdown.md](../components/layout/user_profile_dropdown.md)).
    - **Conmutador de Tema**: Alternancia instantánea y sincrónica (`data-theme`, `data-bs-theme`, `style.colorScheme`).
@@ -87,6 +87,20 @@ La IA activa el flujo de prototipado rápido en la carpeta **`mock/<nombre_modul
 
 ### Si el Usuario responde: [2] SÍ, SOY DESARROLLADOR
 La IA procede con las gestiones técnicas de arquitectura y desarrollo:
+
+#### ⚠️ REGLA CRÍTICA DE REUTILIZACIÓN FRONTEND: PROHIBIDO INVENTAR CSS DESDE CERO
+> [!CAUTION]
+> **OBLIGACIÓN DE CONSUMO DE COMPONENTES YA AUDITADOS**:  
+> En el desarrollo de nuevos módulos, vistas o pantallas, queda **TERMINANTEMENTE PROHIBIDO CREAR ARCHIVOS `.css` AISLADOS O IMPROVISADOS** (ej. inventar `users.css`, `productos.css` con reglas CSS ad-hoc no auditadas).  
+> **TODO DESARROLLO DEBE ENSAMBLARSE REUTILIZANDO LAS CLASES Y COMPONENTES PROBADOS DE `.sdd/components/`**:  
+> - **Tablas**: `.sdd/components/data_table/data_table.md` (`.joli-table`, `.cartera-table-wrapper-full`, `ChecklistPopover`, `ColumnResizer`, `ColumnVisibility`).  
+> - **Toolbars y Acciones**: `.sdd/components/button/icon_action_group.md` (`.cartera-compact-action-box` 28px y acciones por fila 26px).  
+> - **Filtros**: `.sdd/components/dropdown/expandable_filter_group.md` (`.cartera-topbar`, `.cartera-btn-group`).  
+> - **Detalle y Edición**: `.sdd/components/drawer/drawer.md` (`.cartera-sidebar-drawer`).  
+> - **Modales**: `.sdd/components/modal/confirm_modal.md` y `modal_dialog.md`.  
+> - **Selectores**: `.sdd/components/dropdown/select_filter.md`.  
+> - **Tokens**: `variables.css` (Día/Noche).  
+> *Inventar CSS nuevo evade la auditoría corporativa y fragmenta el ecosistema.*
 
 #### Escenario A: Creación de un Nuevo Proyecto desde Cero
 La IA pregunta interactivamente:
@@ -465,12 +479,14 @@ Cualquier proyecto nuevo que implemente el módulo de login a partir de este `.s
 ## 4. Instrucciones de Ejecución para la IA
 
 Cuando se le pida a la IA: *"Crea el login a partir del SDD"*:
-1. Leer los complementos `01` a `08` de `.sdd/greenyard/login/`.
+1. Leer los complementos `01` a `08` de `.sdd/greenyard/pages/login/`.
 2. Tomar el **Blueprint canónico** anterior para crear los directorios en el espacio de trabajo objetivo.
-3. Implementar los contratos de `03_contrato_api_y_modelos_datos.md` sin alterar los nombres de campos ni códigos de error.
-4. Aplicar las normas de seguridad de `05_seguridad_auditoria_y_hardening.md` (Cookies HttpOnly, Rate Limiting, sanitización).
-5. Seguir el diseño y tokens de `06_ui_ux_diseno_y_accesibilidad.md`.
-6. Generar las pruebas prescritas en `07_plan_de_pruebas_y_matriz_qa.md` para garantizar cobertura total.
+3. **AISLAMIENTO OBLIGATORIO DE PYTHON (`.venv`)**: Crear inmediatamente el entorno virtual en la raíz del proyecto (`python -m venv .venv`), configurar `.vscode/settings.json` vinculando el intérprete (`${workspaceFolder}/.venv/Scripts/python.exe`), e instalar las librerías exclusivamente usando el ejecutable de dicho entorno (`.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt`). **PROHIBIDO TERMINANTEMENTE ejecutar `pip install` o comandos de Python en el entorno global del equipo anfitrión.**
+4. Implementar los contratos de `03_contrato_api_y_modelos_datos.md` sin alterar los nombres de campos ni códigos de error.
+5. Aplicar las normas de seguridad de `05_seguridad_auditoria_y_hardening.md` (Cookies HttpOnly, Rate Limiting, sanitización).
+6. Seguir el diseño y tokens de `06_ui_ux_diseno_y_accesibilidad.md`.
+7. Generar las pruebas prescritas en `07_plan_de_pruebas_y_matriz_qa.md` para garantizar cobertura total.
+
 
 ---
 

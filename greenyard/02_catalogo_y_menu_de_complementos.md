@@ -1,4 +1,4 @@
-﻿# Catálogo Maestro y Menú Interactivo de Complementos SDD
+# Catálogo Maestro y Menú Interactivo de Complementos SDD
 ## Ecosistema Jolifoods — Metodología Spec-Driven Development (SDD)
 
 Este documento sirve como la guía interactiva oficial que la **Inteligencia Artificial** o el **desarrollador de software** debe consultar al crear o extender un módulo en cualquier proyecto de la organización.
@@ -72,6 +72,53 @@ Cuando un usuario o desarrollador solicite: *"Quiero crear un complemento"*, *"A
      -> Ideal para: Optimizar consultas masivas y endpoints de alta concurrencia en Django.
      -> Incluye: Servidor ASGI híbrido bajo un solo proceso, sub-ruta /fast, serialización
         directa con Pydantic, consultas select_related / .values() y refresco de sockets DB.
+
+[13] Suite Visual de Gráficas y Analítica (AnalyticsCharts)
+     -> Ideal para: Dashboards directivos, comparativas de ventas, distribución por categorías y series temporales.
+     -> Incluye: Área suave con gradiente corporativo, barras verticales redondeadas, donut/anillo con valor central,
+        mini-sparklines y tooltips flotantes accesibles gobernados por variables.css.
+
+[14] Escáner Biométrico Facial (Facial Biometric Scanner)
+     -> Ideal para: Control de acceso, registro en porterías, verificación de conductores y kioscos de inspección.
+     -> Incluye: Visor de cámara WebRTC en vivo, máscara/cortinilla con guía oval de encuadre,
+        indicadores de estado (posicionamiento, iluminación, detección), zoom dinámico y captura fotográfica.
+
+[15] Captura de Firma Digital en Canvas (SignatureModal)
+     -> Ideal para: Aprobación de despachos, entrega de pedidos, actas de entrega, consentimientos y contratos.
+     -> Incluye: Canvas táctil y ratón, recorte inteligente cropToSignature, exportación Base64 PNG transparente.
+
+[16] Lector de Código de Barras y QR por Cámara (ScannerModal)
+     -> Ideal para: Búsqueda rápida de inventario, check-in de conductores, validación de remisiones y tickets.
+     -> Incluye: Integración html5-qrcode, auto-detección, visor centrado y retorno instantáneo de código escaneado.
+
+[17] Visor de Documentos PDF en Canvas (PdfPreviewFrame)
+     -> Ideal para: Visualización de facturas electrónicas, fichas técnicas y certificados sin salir de la vista.
+     -> Incluye: Renderizado reactivo pdfjs-dist, paginación, zoom escalonado y efecto de hojas apiladas con sombras.
+
+[18] Calendario Corporativo de Turnos y Novedades (CorporateCalendar)
+     -> Ideal para: Gestión de cuadrillas, turnos de portería, vacaciones, incapacidades y programación semanal/mensual.
+     -> Incluye: Malla mensual interactiva, badges cromáticos por novedad, leyenda segmentada y detalle al clic.
+
+[19] Centro de Multi-Notificaciones en TopHeader (NotificationPopover)
+     -> Ideal para: Centro unificado de alertas operativas, avisos de sistema, tareas asignadas y menciones.
+     -> Incluye: Campana interactiva, pestañas multi-categoría, badges de estado no leído y acciones en línea.
+
+[20] Banner de Instalación y Modo Kiosco PWA (PwaInstallBanner)
+     -> Ideal para: Terminales táctiles, tablets de campo, porterías y smartphones de operarios.
+     -> Incluye: Intercepción beforeinstallprompt, auto-ocultamiento si ya está instalado y botón de acción directa.
+
+[21] Cargadores y Skeletons de Transición (PageLoader & TableSkeleton)
+     -> Ideal para: Estados de carga, transiciones de pantalla y feedback visual de peticiones asíncronas.
+     -> Incluye: Isotipo SVG Jolifoods animado, spinner con halo esmeralda y shimmers en tabla sin layout shift.
+
+[22] Arquitectura de Actualización Reactiva en Tiempo Real (JS Smart Polling & Celery/Redis)
+     -> Ideal para: Monitoreo en vivo de porterías, estado de pedidos, balance de inventario y jobs pesados.
+     -> Incluye: Hook useSmartPolling con visibilityState y AbortController, más orquestación Celery en segundo plano.
+
+[23] Conmutador de Estado Inmediato (ToggleSwitch / Activar Usuario)
+     -> Ideal para: Habilitar/suspender usuarios en un clic, alternar directivas y switches de configuración.
+     -> Incluye: Interruptor esmeralda animado, soporte de accesibilidad ARIA, variante miniatura para DataTable
+        y flujo con ConfirmModal de justificación ante suspensiones de cuentas.
 ====================================================================================================
 ```
 
@@ -195,3 +242,122 @@ Cuando un usuario o desarrollador solicite: *"Quiero crear un complemento"*, *"A
 - **Preguntas que debe hacer la IA**:
   1. *¿Cuáles endpoints de lectura masiva o reportes deben migrarse al prefijo `/fast`?*
   2. *¿Qué relaciones de modelos Django requieren `select_related()` o proyecciones directas `.values()`?*
+
+---
+
+### Complemento [13]: Suite de Gráficas y Analítica Visual (`AnalyticsCharts`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [analytics_charts.md](../components/charts/analytics_charts.md)
+  - Página de referencia: [dashboard/01_dashboard_especificacion.md](pages/dashboard/01_dashboard_especificacion.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Cuál es el tipo de métrica a representar?* (Serie temporal / tendencia -> `AreaGradientChart`, Comparativa por mes/sede -> `RoundedBarChart`, Distribución porcentual -> `DonutDistributionChart`, Micro-tendencia en tarjeta -> `MiniSparkline`).
+  2. *¿Los datos provienen de un endpoint en vivo o de una agregación periódica de base de datos?*
+  3. *¿Qué prefijo o sufijo monetario/numérico requiere el tooltip?* (ej. `$`, `kg`, `uds`, `%`).
+
+---
+
+### Complemento [14]: Escáner Biométrico Facial (`FacialScanner`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [facial_scanner.md](../components/biometrics/facial_scanner.md)
+  - Cargadores y Skeletons: [page_loader.md](../components/loader/page_loader.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Cuál es el propósito de la captura facial?* (ej. Verificación 1:1 de identidad, registro de visitantes/conductores, enrolamiento de personal en portería o planta).
+  2. *¿En qué dispositivo se utilizará principalmente?* (Cámara web de PC de escritorio, tablet/kiosco táctil con cámara frontal, o smartphone de operario con alternancia de cámara).
+  3. *¿Se requiere envío directo de imagen Base64 / Blob hacia el backend o confirmación previa en un modal de revisión?*
+
+---
+
+### Complemento [15]: Captura de Firma Digital en Canvas (`SignatureModal`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [signature_modal.md](../components/signature/signature_modal.md)
+  - Diálogo base: [modal_dialog.md](../components/modal/modal_dialog.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿En qué proceso se requiere la firma?* (ej. Entrega de pedido, recepción de mercancía, acta de entrega de dotación, consentimiento).
+  2. *¿Se requiere obligatoriedad de trazo mínimo antes de habilitar el botón Guardar?*
+  3. *¿El formato de almacenamiento requerido es PNG transparente recortado (`cropToSignature`) o lienzo completo?*
+
+---
+
+### Complemento [16]: Lector de Código de Barras y QR por Cámara (`ScannerModal`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [scanner_modal.md](../components/scanner/scanner_modal.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Qué simbología o formato se leerá principalmente?* (Códigos QR, Code 128, EAN-13, DataMatrix).
+  2. *¿El escáner debe cerrar inmediatamente tras la primera lectura exitosa o permitir escaneo continuo por lotes?*
+  3. *¿Sobre qué campo de la vista o formulario se cargará el valor decodificado?*
+
+---
+
+### Complemento [17]: Visor de Documentos PDF en Canvas (`PdfPreviewFrame`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [pdf_preview_frame.md](../components/pdf/pdf_preview_frame.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿El documento PDF se cargará desde una URL remota de API (Blob) o desde un archivo local subido por el usuario?*
+  2. *¿Se requiere vista de hojas sueltas apiladas con efecto físico de sombra o vista continua de scroll?*
+  3. *¿Qué controles de zoom y navegación deben habilitarse en la barra de herramientas del visor?*
+
+---
+
+### Complemento [18]: Calendario Corporativo de Turnos y Novedades (`CorporateCalendar`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [corporate_calendar.md](../components/calendar/corporate_calendar.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Qué tipos de novedades o eventos se registrarán en la cuadrícula mensual?* (ej. Turnos diurnos/nocturnos, vacaciones, incapacidades, permisos).
+  2. *¿Al hacer clic en un día o evento, qué acción debe dispararse?* (Apertura de Right Drawer de detalle, formulario de asignación o modal).
+  3. *¿Se requiere filtro de vista por colaborador, sede o cuadrilla?*
+
+---
+
+### Complemento [19]: Centro de Multi-Notificaciones en TopHeader (`NotificationPopover`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [notification_popover.md](../components/notification/notification_popover.md)
+  - Cabecera: [navbar.md](../components/layout/navbar.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Cuáles pestañas de categorización requiere el popover?* (ej. "Todas", "Operativas", "Seguridad", "Menciones").
+  2. *¿Las notificaciones se sincronizan mediante Smart Polling en tiempo real o carga bajo demanda al abrir la campana?*
+  3. *¿Qué acción ejecuta el clic en cada notificación?* (Marcar como leída, redirigir a la URL del recurso, abrir modal).
+
+---
+
+### Complemento [20]: Banner de Instalación y Modo Kiosco PWA (`PwaInstallBanner`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [pwa_install_banner.md](../components/pwa/pwa_install_banner.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿La aplicación operará en tablets o smartphones en campo/bodega?*
+  2. *¿Se debe mostrar el banner flotante en el pie de pantalla o solo un acceso directo en el menú de perfil?*
+  3. *¿Se requiere soporte offline con Service Worker para almacenamiento local temporal?*
+
+---
+
+### Complemento [21]: Cargadores y Skeletons de Transición (`PageLoader` & `TableSkeleton`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [page_loader.md](../components/loader/page_loader.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿En qué secciones se requiere feedback de carga?* (Pantalla completa en arranque, shimmer en filas de tabla o spinner compacto en botones).
+  2. *¿Cuántas filas y columnas de simulación debe tener el skeleton de tabla mientras responde la API?*
+
+---
+
+### Complemento [22]: Arquitectura de Actualización Reactiva en Tiempo Real (`SmartPolling` & `Celery/Redis`)
+- **Archivos a reutilizar**:
+  - Frontend Hook: [js_polling_architecture.md](../components/realtime/js_polling_architecture.md)
+  - Backend Broker & Worker: [celery_redis_architecture.md](../stack/celery_redis_architecture.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Con qué intervalo debe ejecutarse el Smart Polling en primer plano?* (ej. 5s, 10s, 30s) y *¿a cuánto debe degradarse cuando la pestaña pasa a segundo plano?*
+  2. *¿Qué endpoints o tareas en segundo plano procesa Celery Worker?* (ej. Procesamiento de archivos masivos, sincronización de base de datos externa, reportes pesados).
+
+---
+
+### Complemento [23]: Conmutador de Estado Inmediato (`ToggleSwitch` / Activar Usuario)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [toggle_switch.md](../components/toggle/toggle_switch.md)
+  - Modal de confirmación: [confirm_modal.md](../components/modal/confirm_modal.md)
+  - Página de usuarios: [usuarios/01_usuarios_crud_especificacion.md](pages/usuarios/01_usuarios_crud_especificacion.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Qué entidad o estado se conmutará?* (ej. `is_active` en usuarios, habilitación de notificaciones push, modo de mantenimiento).
+  2. *¿La acción de desactivación es crítica y requiere ConfirmModal con justificación de 10+ caracteres para evitar desconexiones accidentales?*
+  3. *¿En qué vista se ubicará el conmutador?* (Columna compacta en DataTable con tamaño `sm`, o control en formulario/Right Drawer con tamaño `md` y textos explicativos).
+
+
+
+

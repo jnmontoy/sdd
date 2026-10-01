@@ -1,4 +1,4 @@
-﻿# 01. Especificación del Módulo de Gestión de Usuarios y Roles (CRUD)
+# 01. Especificación del Módulo de Gestión de Usuarios y Roles (CRUD)
 ## Ecosistema Jolifoods — Spec-Driven Development (SDD)
 
 Esta especificación formaliza la pantalla administrativa de **Gestión de Usuarios**, donde los administradores del sistema pueden listar, crear, editar, asignar roles corporativos y suspender accesos.
@@ -32,6 +32,14 @@ Cumple rigurosamente con la **Normativa de Auditoría (Anti-N+1 en backend, pagi
       return paginator.get_page(page)
   ```
 
+### 1.2. Endpoint de Activación / Desactivación Inmediata (Toggle Active)
+- **Ruta**: `PATCH /api/v1/usuarios/{id}/toggle-active/`
+- **Permisos**: Requiere rol `ADMIN`.
+- **Comportamiento**:
+  - Si `is_active` pasa a `False` (desactivación): Invalida de inmediato todos los tokens JWT emitidos y purga las sesiones activas en Redis (`auth:session:<id>`).
+  - Si `is_active` pasa a `True` (activación): Habilita nuevamente las credenciales para inicio de sesión inmediato.
+  - Registra el evento en la bitácora inmutable de auditoría con la cédula del administrador que ejecutó el cambio.
+
 ---
 
 ## 2. Implementación de la Vista en React 19 + TypeScript (`UsuariosPage.tsx`)
@@ -39,11 +47,12 @@ Cumple rigurosamente con la **Normativa de Auditoría (Anti-N+1 en backend, pagi
 ```tsx
 import React, { useState } from 'react';
 import { DataTable, ColumnDef } from '../../components/data_table/DataTable';
-import { Modal } from '../../components/modal/Modal';
+import { Drawer } from '../../components/drawer/Drawer';
 import { ConfirmModal } from '../../components/modal/ConfirmModal';
 import { Badge } from '../../components/badge/Badge';
+import { ToggleSwitch } from '../../components/toggle/ToggleSwitch';
 import { SelectFilter } from '../../components/dropdown/SelectFilter';
-import { UserPlus, Edit2, UserX, UserCheck, KeyRound, Download } from 'lucide-react';
+import { UserPlus, Edit2, KeyRound } from 'lucide-react';
 import '../../styles/variables.css';
 
 interface UsuarioRow {
@@ -57,7 +66,7 @@ interface UsuarioRow {
 }
 
 export const UsuariosPage: React.FC = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UsuarioRow | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -144,14 +153,27 @@ export const UsuariosPage: React.FC = () => {
     },
     {
       key: 'is_active',
-      header: 'Estado',
+      header: 'Estado / Activar',
       render: (row) => (
-        <Badge variant={row.is_active ? 'success' : 'danger'} dot>
-          {row.is_active ? 'Activo' : 'Suspendido'}
-        </Badge>
+        <ToggleSwitch
+          size="sm"
+          checked={row.is_active}
+          onChange={() => {
+            if (row.is_active) {
+              // Suspender cuenta: disparar ConfirmModal de seguridad
+              setConfirmDialog({ isOpen: true, user: row, action: 'toggle_status' });
+            } else {
+              // Reactivar cuenta inmediatamente
+              handleDirectReactivate(row);
+            }
+          }}
+          labelActive="Activo"
+          labelInactive="Inactivo"
+        />
       )
     }
   ];
+
 
   const handleExecuteConfirm = async () => {
     if (!confirmDialog.user) return;
@@ -170,7 +192,7 @@ export const UsuariosPage: React.FC = () => {
         <button 
           type="button" 
           className="btn btn-primary d-inline-flex align-items-center gap-2"
-          onClick={() => { setSelectedUser(null); setSelectedRol('OPERADOR'); setIsModalOpen(true); }}
+          onClick={() => { setSelectedUser(null); setSelectedRol('OPERADOR'); setIsDrawerOpen(true); }}
         >
           <UserPlus size={16} />
           <span>Nuevo Usuario</span>
@@ -189,55 +211,47 @@ export const UsuariosPage: React.FC = () => {
         onExportExcel={() => console.log('Exportar Excel')}
         onExportPdf={() => console.log('Exportar PDF')}
         actions={(row) => (
-          <div className="d-flex align-items-center gap-1 justify-content-end">
+          <div className="btn-group btn-group-sm cartera-row-actions-group" role="group" aria-label="Acciones de usuario">
             <button 
               type="button" 
-              className="btn btn-sm btn-outline-secondary p-1"
-              title="Editar usuario"
+              className="btn btn-outline-secondary btn-action-view"
+              title="Editar usuario en Sidebar Derecho"
               onClick={() => { 
                 setSelectedUser(row); 
                 setSelectedRol(row.rol);
-                setIsModalOpen(true); 
+                setIsDrawerOpen(true); 
               }}
             >
               <Edit2 size={14} />
             </button>
             <button 
               type="button" 
-              className="btn btn-sm btn-outline-warning p-1"
+              className="btn btn-outline-warning btn-action-key"
               title="Restablecer contraseña"
               onClick={() => setConfirmDialog({ isOpen: true, user: row, action: 'reset_password' })}
             >
               <KeyRound size={14} />
             </button>
-            <button 
-              type="button" 
-              className={`btn btn-sm ${row.is_active ? 'btn-outline-danger' : 'btn-outline-success'} p-1`}
-              title={row.is_active ? 'Suspender usuario' : 'Habilitar usuario'}
-              onClick={() => setConfirmDialog({ isOpen: true, user: row, action: 'toggle_status' })}
-            >
-              {row.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
-            </button>
           </div>
         )}
       />
 
-      {/* MODAL DE CREACIÓN / EDICIÓN (CON SELECTOR DE BÚSQUEDA) */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+      {/* PANEL LATERAL DERECHO (RIGHT DRAWER) OBLIGATORIO PARA CREACIÓN Y EDICIÓN CRUD */}
+      <Drawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
         title={selectedUser ? "Editar Usuario" : "Registrar Nuevo Colaborador"}
         subtitle="Especifique los datos de identidad y permisos correspondientes"
         size="md"
         footer={
-          <>
-            <button type="button" className="btn btn-outline-secondary" onClick={() => setIsModalOpen(false)}>
+          <div className="d-flex align-items-center justify-content-end gap-2 w-100">
+            <button type="button" className="btn btn-outline-secondary" onClick={() => setIsDrawerOpen(false)}>
               Cancelar
             </button>
             <button type="button" className="btn btn-primary">
               {selectedUser ? "Guardar Cambios" : "Crear Usuario"}
             </button>
-          </>
+          </div>
         }
       >
         <form className="row g-3">
@@ -280,8 +294,25 @@ export const UsuariosPage: React.FC = () => {
               placeholder="Buscar rol..."
             />
           </div>
+
+          {/* INTERRUPTOR TOGGLE SWITCH PARA ACTIVAR / SUSPENDER CUENTA */}
+          <div className="col-12 d-flex align-items-center justify-content-between p-3 rounded border" style={{ backgroundColor: 'var(--bg-base)' }}>
+            <div>
+              <label className="form-label small fw-semibold mb-0 d-block">Estado de Acceso al Sistema</label>
+              <span className="text-muted small">Permite o suspende inmediatamente el inicio de sesión del colaborador</span>
+            </div>
+            <ToggleSwitch
+              size="md"
+              checked={formIsActive}
+              onChange={(next) => setFormIsActive(next)}
+              labelActive="Habilitado"
+              labelInactive="Suspendido"
+            />
+          </div>
         </form>
-      </Modal>
+      </Drawer>
+
+
 
       {/* CONFIRM MODAL CORPORATIVO (EN LUGAR DE WINDOW.CONFIRM) */}
       <ConfirmModal

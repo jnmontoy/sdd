@@ -154,15 +154,32 @@ export const IconActionGroup: React.FC<IconActionGroupProps> = ({
 
 ---
 
-### 4. Variante 2: Acciones por Fila Agrupadas en Tabla (`.cartera-row-actions-group`)
+### 4. Variante 2: Acciones por Fila Agrupadas en Tabla (`.cartera-row-actions-group` / Bootstrap `btn-group`)
 
-> **REGLA DE CONSISTENCIA VISUAL**:
-> En las celdas de acciones de cada fila (`<td class="text-center">`), los botones **NUNCA DEBEN ESTAR SUELTOS O SEPARADOS**.
-> **DEBEN ESTAR AGRUPADOS EN UN CONTENEDOR SEGMENTADO COMPACTO DE 26px**, con bordes redondeados y divisor vertical de 1px entre cada botón.
+> [!IMPORTANT]
+> **REGLA MANDATORIA DE TABLAS — MÚLTIPLES BOTONES SIEMPRE AGRUPADOS**:
+> Si una fila contiene **2 o más botones de acción** en su columna de opciones (ej. Ver/Editar en Right Drawer, Clave, Imprimir, Eliminar con ConfirmModal):
+> **DEBEN AGRUPARSE OBLIGATORIAMENTE UTILIZANDO EL COMPONENTE `btn-group btn-group-sm` DE BOOTSTRAP** o la clase canónica `.cartera-row-actions-group`.
+> Queda terminantemente prohibido dejar botones sueltos, aislados o separados por márgenes (`btn me-1`, `btn me-2`).
 
-#### Estructura HTML para Filas de Tabla:
+#### Estructura Canónica con Bootstrap 5 (`btn-group btn-group-sm`):
 ```html
-<div class="cartera-row-actions-group">
+<div class="btn-group btn-group-sm cartera-row-actions-group" role="group" aria-label="Acciones de fila">
+  <button type="button" class="btn btn-outline-secondary btn-row-view" title="Editar en Sidebar Derecho" onclick="openDrawerForDetail(id)">
+    <i data-lucide="eye" style="width: 13px; height: 13px;"></i>
+  </button>
+  <button type="button" class="btn btn-outline-warning btn-row-key" title="Restablecer contraseña" onclick="openResetPassword(id)">
+    <i data-lucide="key-round" style="width: 13px; height: 13px;"></i>
+  </button>
+  <button type="button" class="btn btn-outline-danger btn-row-delete" title="Desactivar registro" onclick="openConfirmAction(codigo)">
+    <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+  </button>
+</div>
+```
+
+#### Estructura Canónica Alternativa (CSS Puro con Divisores):
+```html
+<div class="cartera-row-actions-group" role="group" aria-label="Acciones de fila">
   <button type="button" class="btn-row-action btn-row-view" title="Ver detalle en panel lateral" onclick="openDrawerForDetail(id)">
     <i data-lucide="eye" style="width: 13px; height: 13px;"></i>
   </button>

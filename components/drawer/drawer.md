@@ -1,9 +1,11 @@
 # Especificación de Componente: Panel Deslizable Lateral Derecho (Right Drawer / Slide-Over)
 ## Ecosistema Jolifoods — Guía de Implementación SDD (Estándar Cartera)
 
-> **REGLA DE ORO DE EXPERIENCIA DE USUARIO (UX)**:
-> En las aplicaciones del ecosistema Jolifoods (BI, Cartera, etc.), **los formularios de creación, edición y visualización de detalles NO deben abrirse en modales flotantes centrados**. 
-> **DEBEN ABRIRSE SIEMPRE EN UN DRAWER O PANEL LATERAL DERECHO** (`.cartera-sidebar-drawer`), garantizando que el usuario mantenga el contexto visual de la tabla principal mientras gestiona la información.
+> [!CAUTION]
+> **REGLA DE ORO DE EXPERIENCIA DE USUARIO (UX) — JOLIFOODS**:
+> **TODO FORMULARIO DE CREACIÓN O EDICIÓN CRUD DEBE ABRIRSE EN EL SIDEBAR DERECHO (RIGHT DRAWER)**.
+> Queda **TERMINANTEMENTE PROHIBIDO** abrir formularios de captura o edición en modales flotantes centrados o redirigir a páginas separadas (`/crear`, `/editar`), a menos que la persona o el requerimiento lo pida específicamente.
+> El Right Drawer (`.cartera-sidebar-drawer`) garantiza que el usuario nunca pierda el contexto visual de la tabla principal mientras crea o edita información.
 
 ---
 

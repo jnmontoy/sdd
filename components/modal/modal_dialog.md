@@ -1,9 +1,14 @@
-﻿# Componente UI: Diálogo Modal Accesible (Modal Dialog)
+# Componente UI: Diálogo Modal Accesible (Modal Dialog)
 ## Ecosistema Jolifoods — Spec-Driven Development (SDD)
 
 El **Modal Dialog** es el componente estándar para confirmaciones de acción crítica (eliminaciones, aprobación de cambios), formularios emergentes (creación y edición rápida) y alertas del sistema.
 
 Diseñado con accesibilidad **WCAG 2.1 AA** (atrapamiento de foco, cierre con tecla `Escape`, bloqueo de scroll de fondo) y estética *Glassmorphism* sincronizada con [`variables.css`](../variables.css).
+
+> [!IMPORTANT]
+> **RESTRICCIÓN DE USO — PROHIBIDO GENERAR FORMULARIOS CRUD EN MODALES**:
+> Por directriz obligatoria de UX en Jolifoods, **la creación (`+ Nuevo`) y edición (`Editar`) de cualquier CRUD se realiza exclusivamente desde el Right Drawer lateral ([`drawer.md`](../drawer/drawer.md))**.
+> Los modales quedan reservados para confirmaciones críticas ([`confirm_modal.md`](./confirm_modal.md)), firmas digitales ([`signature_modal.md`](../signature/signature_modal.md)), lectores biométricos o alertas de sesión, **y NUNCA para formularios de CRUD a menos que el usuario lo solicite específicamente**.
 
 ---
 

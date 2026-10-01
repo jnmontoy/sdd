@@ -1,4 +1,4 @@
-﻿# Normativa Maestra de Buenas Prácticas y Auditoría de Seguridad
+# Normativa Maestra de Buenas Prácticas y Auditoría de Seguridad
 ## Ecosistema Corporativo Jolifoods — Spec-Driven Development (SDD)
 ### Estándar de Conformidad Pre-Auditoría (Score Objetivo: 100 / 100)
 
@@ -76,6 +76,31 @@ Cualquier proyecto o módulo creado a partir de `.sdd` **debe nacer blindado baj
 ### 3.3. Estilizado Puro con `variables.css`
 - Prohibido el uso de valores hexadecimales o RGB fijos quemados dentro de los estilos locales. Todo color, espaciado, radio de borde y fuente debe consumir las variables CSS corporativas (`var(--color-primary)`, `var(--color-bg-base)`, etc.) garantizando la conmutación instantánea entre **Modo Noche** y **Modo Día**.
 
+### 3.4. Regla Inflexible de Maquetación: Layout 100% Horizontal (Prohibido Centrar la Pantalla)
+- **PROHIBICIÓN TERMINANTE**: Queda estrictamente prohibido centrar vistas, tablas, módulos o dashboards en el frontend mediante contenedores estrechos (`max-w-xl mx-auto`, `max-w-4xl`, `items-center justify-center` en el contenedor raíz).
+- **MAQUETACIÓN A LO LARGO DE LA PANTALLA**: Todo desarrollo frontend debe extenderse **a lo largo de la pantalla en horizontal (`width: 100%`, `w-full`, layout fluido)**, aprovechando de extremo a extremo el ancho del monitor para visualizar tablas masivas, toolbars y KPIs sin scroll horizontal forzado ni espacios vacíos a los costados.
+- **Únicas excepciones de centrado**: Solo los diálogos emergentes (`ModalDialog`, `ConfirmModal`) y la tarjeta previa de autenticación (`LoginCard`).
+
+### 3.5. Reutilización Estricta de Componentes y Prohibición de CSS Inventado
+- **PROHIBICIÓN TERMINANTE**: Queda estrictamente prohibido crear archivos `.css` aislados o estilos improvisados desde cero para nuevos módulos (ej. inventar `users.css`, `pedidos.css` con selectores arbitrarios).
+- **OBLIGACIÓN DE CONSUMO DE COMPONENTES `.sdd/components/`**: Todo desarrollo debe utilizar las clases, estructuras y contratos ya probados y auditados:
+  - Tablas: `.joli-table`, `.cartera-table-wrapper-full` de `data_table.md`.
+  - Toolbars: `.cartera-compact-action-box` (28px) y `.cartera-row-actions-group` (26px) de `icon_action_group.md`.
+  - Filtros: `.cartera-topbar` de `expandable_filter_group.md` y `checklist_popover.md`.
+  - Modales: `ConfirmModal` con justificación obligatoria.
+  - Paneles: Right Drawer de `drawer.md`.
+  - Colores: `variables.css`.
+- **Sanción en Auditoría**: Cualquier archivo CSS huérfano que duplique o ignore los componentes auditados de `.sdd` será penalizado como falta grave de consistencia arquitectónica.
+
+### 3.6. Creación y Edición CRUD Exclusiva en Right Sidebar Drawer (Prohibido Modales)
+- **PROHIBICIÓN TERMINANTE**: Queda terminantemente prohibido generar formularios de creación (`+ Nuevo`) o edición (`Editar`) de cualquier CRUD en modales flotantes centrados (`ModalDialog`) o navegando a páginas separadas (`/crear`, `/editar`), a menos que la persona lo pida expresamente.
+- **OBLIGATORIEDAD DE RIGHT DRAWER**: Todo formulario de captura, edición y detalle debe operar **exclusivamente desde el panel lateral derecho deslizante** ([`drawer.md`](../components/drawer/drawer.md), `.cartera-sidebar-drawer`). Esto preserva el contexto de la tabla en segundo plano, maximiza la ergonomía horizontal y evita la proliferación de modales intrusivos.
+- **Uso Exclusivo de Modales**: Los modales centrados quedan reservados estrictamente para confirmaciones (`ConfirmModal`), firmas digitales (`SignatureModal`), lectores biométricos o alerta de sesión expirada.
+
+### 3.7. Agrupación Obligatoria de Botones de Acción en Tablas con Bootstrap (`btn-group`)
+- **PROHIBICIÓN TERMINANTE**: Queda terminantemente prohibido dejar botones sueltos o separados por márgenes (`btn me-1`, `btn me-2`) dentro de la celda de acciones/opciones de una tabla.
+- **OBLIGATORIEDAD DE BOOTSTRAP `btn-group`**: Siempre que haya 2 o más botones de acción en una fila (ej. Ver en Drawer, Restablecer clave, Anular con ConfirmModal), deben agruparse obligatoriamente dentro de un contenedor `<div class="btn-group btn-group-sm cartera-row-actions-group" role="group">...</div>`, unificando las esquinas redondeadas en los extremos y garantizando una altura uniforme de 26px a 28px.
+
 ---
 
 ## 4. Buenas Prácticas de Contenedores Docker e Infraestructura
@@ -104,4 +129,14 @@ Antes de dar por finalizada la creación de cualquier nuevo módulo, verificar:
 - [ ] ¿Las cookies de sesión tienen directiva `HttpOnly=True`?
 - [ ] ¿El frontend lee los tokens de diseño desde `variables.css` con soporte noche/día?
 - [ ] ¿El script `init_project.py` inyectó el nombre y logo de Jolifoods dinámicamente?
+- [ ] ¿Se creó y aisló el entorno virtual `.venv` en la raíz del proyecto y se instaló `requirements.txt` exclusivamente dentro de él? (Cero paquetes instalados en el Python global del equipo).
+- [ ] ¿El layout es 100% horizontal a lo largo de la pantalla (full-width) y libre de contenedores centrados tipo blog (`max-w-xl mx-auto`)?
+- [ ] ¿Todos los módulos y vistas reutilizan directamente las clases CSS y componentes de `.sdd/components/` (cero archivos `.css` inventados o improvisados desde cero)?
+- [ ] ¿La creación y edición de registros CRUD se realiza obligatoriamente desde el Right Drawer lateral (cero modales o páginas separadas para formularios de CRUD)?
+- [ ] ¿Si una fila de tabla tiene 2 o más botones de acción, se encuentran agrupados obligatoriamente con Bootstrap `btn-group btn-group-sm` (cero botones sueltos con márgenes)?
 - [ ] ¿La sonda `/api/v1/health/` responde HTTP 200 con la latencia de Postgres y Redis?
+
+
+
+
+

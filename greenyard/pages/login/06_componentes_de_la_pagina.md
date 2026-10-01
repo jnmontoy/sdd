@@ -1,4 +1,4 @@
-﻿# Desglose de Componentes de la Página: Login (`PAGE-LOGIN-COMPONENTS`)
+# Desglose de Componentes de la Página: Login (`PAGE-LOGIN-COMPONENTS`)
 ## Ecosistema Greenyard / Jolifoods — Spec-Driven Development (SDD)
 
 Este documento detalla la **composición exacta de componentes de interfaz** que conforman la página de **Login**, especificando cómo se organizan jerárquicamente, sus props, su CSS y cómo se ensamblan en la vista final.
@@ -383,6 +383,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { IdCard, Lock, Eye, EyeOff, ShieldCheck, AlertCircle } from 'lucide-react';
 import { loginSchema, LoginFormData } from './schemas/auth.schema';
+import { showToast, CorporateToaster } from './components/ToastNotification';
 import './LoginPage.css';
 
 export const LoginPage: React.FC = () => {
@@ -417,7 +418,18 @@ export const LoginPage: React.FC = () => {
       const resData = await response.json();
 
       if (!response.ok) {
-        throw new Error(resData.message || 'Error en autenticación');
+        const errorMsg = resData.message || 'Error en autenticación';
+        setErrorMessage(errorMsg);
+        if (response.status === 429) {
+          showToast.warning('Acceso temporalmente bloqueado', {
+            description: 'Demasiados intentos fallidos. Espera 60 segundos antes de reintentar.',
+          });
+        } else {
+          showToast.error('Fallo de autenticación', {
+            description: errorMsg,
+          });
+        }
+        return;
       }
 
       if (data.rememberMe) {
@@ -426,9 +438,19 @@ export const LoginPage: React.FC = () => {
         localStorage.removeItem('gy_remembered_doc');
       }
 
-      window.location.href = '/dashboard';
+      showToast.success('¡Inicio de sesión exitoso!', {
+        description: `Bienvenido, ${resData.user?.nombre || 'Colaborador'}.`,
+      });
+
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 800);
     } catch (err: any) {
-      setErrorMessage(err.message);
+      const connError = err.message || 'No fue posible conectar con el servidor de autenticación.';
+      setErrorMessage(connError);
+      showToast.error('Error de conectividad', {
+        description: connError,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -440,6 +462,9 @@ export const LoginPage: React.FC = () => {
 
   return (
     <main className="gy-login-viewport">
+      {/* Contenedor de Toasts Sonner */}
+      <CorporateToaster />
+
       <div className="gy-orb gy-orb-top" aria-hidden="true" />
       <div className="gy-orb gy-orb-bottom" aria-hidden="true" />
 
@@ -510,7 +535,7 @@ export const LoginPage: React.FC = () => {
               <a href="/recuperar-clave" className="gy-forgot-link">¿Olvidaste tu contraseña?</a>
             </div>
 
-            {/* Alerta de Error si la API falla */}
+            {/* Alerta de Error en línea si la API falla */}
             {errorMessage && (
               <div className="gy-alert-error" role="alert">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />

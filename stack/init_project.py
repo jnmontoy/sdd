@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Script de Scaffolding Automatizado — Ecosistema Jolifoods (SDD)
 Permite inicializar un nuevo proyecto o módulo corporativo a partir de las especificaciones SDD.
@@ -236,27 +236,88 @@ Thumbs.db
 """
     (vscode_dir / "settings.json").write_text(vscode_settings, encoding="utf-8")
 
-    # 6. Crear entorno virtual Python (.venv)
+    # 6. Crear entorno virtual Python (.venv) e instalar requerimientos aislados
     print("[5/5] Creando entorno virtual aislado (.venv) en el proyecto...")
     venv_dir = target_dir / ".venv"
+    import subprocess
+
+    venv_created = False
     try:
         import venv
         venv.create(venv_dir, with_pip=True)
+        venv_created = True
         print(f"   [OK] Entorno .venv creado exitosamente con pip en: {venv_dir}")
     except Exception as exc:
-        print(f"   [AVISO] No se pudo crear .venv automáticamente ({exc}). Puedes crearlo con: python -m venv .venv")
+        # Fallback a sys.executable -m venv .venv
+        try:
+            res_venv = subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=False)
+            if res_venv.returncode == 0:
+                venv_created = True
+                print(f"   [OK] Entorno .venv creado vía subproceso en: {venv_dir}")
+        except Exception:
+            pass
+
+    if sys.platform == "win32":
+        venv_python = venv_dir / "Scripts" / "python.exe"
+    else:
+        venv_python = venv_dir / "bin" / "python"
+
+    if venv_python.exists():
+        req_file = target_dir / "backend" / "requirements.txt"
+        if req_file.exists():
+            print("   [Aislamiento Seguro] Instalando backend/requirements.txt exclusivamente dentro de .venv...")
+            subprocess.run([str(venv_python), "-m", "pip", "install", "--upgrade", "pip", "-q"], check=False)
+            install_res = subprocess.run([str(venv_python), "-m", "pip", "install", "-r", str(req_file)], check=False)
+            if install_res.returncode == 0:
+                print("   [OK] Dependencias instaladas al 100% dentro del entorno virtual.")
+            else:
+                print(f"   [AVISO] Puedes completar la instalación de librerías con: {venv_python} -m pip install -r backend/requirements.txt")
+    else:
+        print(f"   [ALERTA CRÍTICA] No se pudo inicializar .venv automáticamente. DEBES crearlo antes de instalar requerimientos:")
+        print(f"   cd {target_dir} && python -m venv .venv")
+
+    # 7. Generar script seguro de inicio rápido (start_dev.ps1)
+    start_dev_content = f"""# ==============================================================================
+# Script de Inicio Rápido Seguro — {project_name} (SDD Jolifoods)
+# Garantiza aislamiento estricto en .venv (Cero contaminación del Python del sistema)
+# ==============================================================================
+
+Write-Host "======================================================================" -ForegroundColor Cyan
+Write-Host "  INICIANDO PLATAFORMA {project_name.upper()} — JOLIFOODS SDD" -ForegroundColor Green
+Write-Host "======================================================================" -ForegroundColor Cyan
+
+# 1. Validar / Crear entorno virtual .venv
+$VenvPython = ".\\.venv\\Scripts\\python.exe"
+if (-not (Test-Path $VenvPython)) {{
+    Write-Host "[1/3] Entorno virtual .venv no encontrado. Creando entorno aislado..." -ForegroundColor Yellow
+    python -m venv .venv
+    Write-Host "Instalando backend\\requirements.txt en .venv..." -ForegroundColor Yellow
+    & $VenvPython -m pip install --upgrade pip
+    & $VenvPython -m pip install -r backend\\requirements.txt
+}} else {{
+    Write-Host "[1/3] Entorno virtual .venv verificado OK." -ForegroundColor Green
+}}
+
+# 2. Instrucciones de ejecución segura
+Write-Host "`n[2/3] Comandos de ejecución (ejecutando en .venv aislado):" -ForegroundColor Cyan
+Write-Host "  -> Backend ASGI:" -ForegroundColor White
+Write-Host "     .\\.venv\\Scripts\\python.exe -m uvicorn config.asgi:application --app-dir backend --host 127.0.0.1 --port 8000 --reload`n" -ForegroundColor Gray
+Write-Host "  -> Frontend React:" -ForegroundColor White
+Write-Host "     npm --prefix frontend run dev`n" -ForegroundColor Gray
+Write-Host "  -> O mediante Docker Multi-Contenedor:" -ForegroundColor White
+Write-Host "     docker compose up --build -d`n" -ForegroundColor Gray
+"""
+    (target_dir / "start_dev.ps1").write_text(start_dev_content, encoding="utf-8")
 
     print("\n" + "=" * 70)
     print(f"  ¡PROYECTO '{project_name}' INICIALIZADO CORRECTAMENTE!")
     print("=" * 70)
-    print(f"\nUbicación: {target_dir}")
-    print(f"Entorno Virtual: {venv_dir}")
-    print(f"\nPara activar el entorno virtual local:")
-    print(f"  Windows PowerShell: .\\{project_slug}\\.venv\\Scripts\\Activate.ps1")
-    print(f"  Windows CMD       : {project_slug}\\.venv\\Scripts\\activate.bat")
-    print(f"\nPara levantar el proyecto en Docker ejecuta:")
+    print(f"\nUbicación       : {target_dir}")
+    print(f"Entorno Virtual : {venv_dir}")
+    print(f"Python Aislado  : {venv_python}")
+    print(f"\nPara iniciar el desarrollo ejecuta de forma segura:")
     print(f"  cd {project_slug}")
-    print("  docker compose up --build -d")
+    print(f"  .\\start_dev.ps1")
     print("\nEndpoints listos:")
     print("  - Frontend : http://localhost:5173")
     print("  - Backend  : http://localhost:8000")
@@ -264,3 +325,4 @@ Thumbs.db
 
 if __name__ == "__main__":
     main()
+

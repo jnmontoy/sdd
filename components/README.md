@@ -25,6 +25,7 @@ Bajo la metodología **Spec-Driven Development (SDD)**, un componente no se codi
 | **Formulario Completo Login** | [`login/login_form.md`](./login/login_form.md) | Ensamblado completo | Formulario integrado con tabs, remember me y enlace recuperación |
 | **Plantilla Correo Corporativo** | [`login/email_recovery_template.md`](./login/email_recovery_template.md) | Notificación de recuperación | HTML responsivo con inline-styles compatible con Outlook y Gmail |
 | **Top Navbar** | [`layout/navbar.md`](./layout/navbar.md) | Cabecera persistente y título de módulo | Título en extremo izquierdo (`.topheader-left`) junto a marca, conmutador Noche/Día, Notificaciones, Perfil |
+| **Reglas de Layout Horizontal** | [`layout/layout_rules.md`](./layout/layout_rules.md) | Norma inflexible: Prohibido centrar vistas | 100% Horizontal a lo largo de la pantalla (full-width), CERO cajas centradas tipo blog |
 | **Menú de Perfil y Salida** | [`layout/user_profile_dropdown.md`](./layout/user_profile_dropdown.md) | Dropdown de sesión en TopHeader (`vibra`/`tiendita`) | Avatar interactivo, datos del colaborador, rol, enlace Mi Perfil y botón Salir con ConfirmModal |
 | **Sidebar Colapsable** | [`layout/sidebar.md`](./layout/sidebar.md) | Navegación de módulos (Opcional) | Opcional (Full-Width por defecto; CERO sidebar a menos que el usuario lo pida expresamente) |
 | **Tabla de Datos (Data Table)** | [`data_table/data_table.md`](./data_table/data_table.md) | Listados y CRUDs | Paginación servidor Anti-N+1, Buscador debounce, Exportar Excel/PDF |
@@ -49,6 +50,18 @@ Bajo la metodología **Spec-Driven Development (SDD)**, un componente no se codi
 | **Límite de Errores (Boundary)** | [`error_boundary/error_boundary.md`](./error_boundary/error_boundary.md) | Tolerancia a fallos y auto-recarga | Detección de ChunkLoadError (nuevas versiones) y rescate de UI |
 | **Modal de Sesión Expirada** | [`modal/session_expiration_modal.md`](./modal/session_expiration_modal.md) | Alerta no intrusiva de sesión | Desacoplado por eventos (401), advertencia de inactividad y retorno a login |
 | **Panel de Multi-Notificaciones** | [`notification/notification_popover.md`](./notification/notification_popover.md) | Centro de alertas en TopHeader (`tiendita`/`vibra`) | Campana interactiva, pestañas multi-categoría, badges numéricos y acciones en línea |
+| **Firma Digitalizada (Modal)** | [`signature/signature_modal.md`](./signature/signature_modal.md) | Captura táctil y ratón con auto-recorte | Canvas escalado, algoritmo `cropToSignature`, PNG transparente Base64 (`tiendita`/`app_tic`) |
+| **Escáner Barcode / QR** | [`scanner/scanner_modal.md`](./scanner/scanner_modal.md) | Lectura por cámara web y móvil | Integración con `html5-qrcode`, auto-cierre y visor centrado (`tiendita`/`contenedores`) |
+| **Previsualizador de PDF** | [`pdf/pdf_preview_frame.md`](./pdf/pdf_preview_frame.md) | Visor de documentos en Canvas | Hojas físicas apiladas, paginación, zoom fluido e integración con `pdfjs-dist` (`tiendita`) |
+| **Calendario Corporativo** | [`calendar/corporate_calendar.md`](./calendar/corporate_calendar.md) | Gestión mensual de turnos y novedades | Rejilla mensual inteligente, badges cromáticos por evento y filtrado (`vibra`) |
+| **Tooltip Truncado Inteligente** | [`tooltip/truncated_tooltip.md`](./tooltip/truncated_tooltip.md) | Lectura de elipsis en tablas | Despliegue sin romper layout, soporte de teclado y fijación por clic (`tiendita`/`app_tic`) |
+| **Banner de Instalación PWA** | [`pwa/pwa_install_banner.md`](./pwa/pwa_install_banner.md) | Prompt de instalación en móviles/kioscos | Detección `beforeinstallprompt`, modo standalone y descarte en sesión (`porterias`) |
+| **Cargadores y Skeletons** | [`loader/page_loader.md`](./loader/page_loader.md) | Estados de carga y transiciones de ruta | Isotipo animado Jolifoods, spinner giratorio y `TableSkeleton` shimmer (`contenedores`/`vibra`/`app_tic`) |
+| **Tiempo Real (JS Polling)** | [`realtime/js_polling_architecture.md`](./realtime/js_polling_architecture.md) | Polling reactivo y monitoreo en vivo | `useSmartPolling`, `AbortController`, `visibilityState`, sin caídas de túnel (`app_tic`/`tiendita`) |
+| **Gráficas y Analítica (Charts)** | [`charts/analytics_charts.md`](./charts/analytics_charts.md) | Dashboards y visualización de datos | Área suave con gradiente, barras redondeadas, donut porcentual y sparklines |
+| **Escáner Biométrico Facial** | [`biometrics/facial_scanner.md`](./biometrics/facial_scanner.md) | Captura y verificación biométrica facial | Guía oval con cortinilla, conmutador de cámara, zoom dinámico y validación de encuadre (`contenedores`) |
+| **Interruptor Conmutador (Toggle)** | [`toggle/toggle_switch.md`](./toggle/toggle_switch.md) | Activar/desactivar estado inmediato | Conmutador esmeralda accesible, variantes `sm`/`md`, spinner de carga (`usuarios`/`config`) |
+
 
 ---
 
@@ -57,3 +70,5 @@ Bajo la metodología **Spec-Driven Development (SDD)**, un componente no se codi
 1. **CSS Puro y Utility-Classes**: Las especificaciones proporcionan tanto el CSS Vanilla canónico (tokens de variables CSS) como las clases equivalentes de Tailwind para máxima flexibilidad.
 2. **Cero Dependencia de Entornos Locales**: Los assets SVG y estilos están autocontenidos en las especificaciones en código vectorial o CSS reproducible.
 3. **Contratos de Props**: Cada componente define una interfaz TypeScript estricta con sus propiedades obligatorias y opcionales.
+4. **Layout 100% Horizontal (Prohibido Desarrollos Centrados)**: Toda interfaz y módulo operativo se expande a lo largo de la pantalla de extremo a extremo (`width: 100%`, `w-full`). Queda terminantemente prohibido encoger o centrar vistas principales en columnas estrechas (`max-w-xl mx-auto`). Solo los diálogos emergentes modales o la tarjeta previa de login admiten centrado.
+
