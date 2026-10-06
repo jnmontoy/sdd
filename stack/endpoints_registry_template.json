@@ -1,0 +1,92 @@
+{
+  "project_name": "jolifoods_template",
+  "version": "1.0.0",
+  "base_path_django": "/api/v1",
+  "base_path_fastapi": "/fast/v1",
+  "endpoints": [
+    {
+      "name": "Health Liveness",
+      "module": "diagnostics",
+      "path": "/health/live",
+      "method": "GET",
+      "expected_status": 200,
+      "auth_required": false,
+      "max_latency_ms": 100,
+      "description": "Verifica que el proceso ASGI esté vivo y respondiendo."
+    },
+    {
+      "name": "Health Readiness",
+      "module": "diagnostics",
+      "path": "/health/ready",
+      "method": "GET",
+      "expected_status": 200,
+      "auth_required": false,
+      "max_latency_ms": 250,
+      "description": "Verifica conectividad con PostgreSQL, Redis y Celery."
+    },
+    {
+      "name": "Login Autenticación",
+      "module": "auth",
+      "path": "/api/v1/auth/login/",
+      "method": "POST",
+      "expected_status": 200,
+      "auth_required": false,
+      "description": "Inicio de sesión de usuarios y emisión de JWT / Cookies HttpOnly."
+    },
+    {
+      "name": "Refresco de Token",
+      "module": "auth",
+      "path": "/api/v1/auth/refresh/",
+      "method": "POST",
+      "expected_status": 200,
+      "auth_required": false,
+      "description": "Renovación de token de acceso mediante refresh token."
+    },
+    {
+      "name": "Listado de Usuarios",
+      "module": "usuarios",
+      "path": "/api/v1/usuarios/",
+      "method": "GET",
+      "expected_status": 200,
+      "auth_required": true,
+      "description": "CRUD de colaboradores con paginación server-side y select_related."
+    },
+    {
+      "name": "Roles y Permisos RBAC",
+      "module": "roles",
+      "path": "/api/v1/roles/",
+      "method": "GET",
+      "expected_status": 200,
+      "auth_required": true,
+      "description": "Matriz de control de acceso y permisos por módulo."
+    },
+    {
+      "name": "Bitácora de Auditoría",
+      "module": "auditoria",
+      "path": "/api/v1/auditoria/",
+      "method": "GET",
+      "expected_status": 200,
+      "auth_required": true,
+      "description": "Trazabilidad de eventos críticos del sistema."
+    },
+    {
+      "name": "FastAPI Métricas de Salud",
+      "module": "fastapi_engine",
+      "path": "/fast/v1/health",
+      "method": "GET",
+      "expected_status": 200,
+      "auth_required": false,
+      "max_latency_ms": 45,
+      "description": "Endpoint asíncrono de microsegundos en FastAPI."
+    },
+    {
+      "name": "Telemetría de Adopción y Feedback",
+      "module": "telemetria",
+      "path": "/api/v1/telemetria/feedback/",
+      "method": "POST",
+      "expected_status": 201,
+      "auth_required": true,
+      "description": "Recepción de micro-encuestas y sugerencias de mejora continua."
+    }
+  ]
+}

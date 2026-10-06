@@ -1,4 +1,4 @@
-﻿# Catálogo de Modelos de Datos — Spec-Driven Development (SDD)
+# Catálogo de Modelos de Datos — Spec-Driven Development (SDD)
 ## Ecosistema Jolifoods — Directorio: `.sdd/model/`
 
 Este directorio reúne las especificaciones formales de las entidades de persistencia y esquemas relacionales para el ecosistema corporativo **Jolifoods**.
@@ -12,6 +12,9 @@ Este directorio reúne las especificaciones formales de las entidades de persist
 | **Identidad & Autenticación** | [`login/`](./login/README.md) | `Usuario`, `SesionUsuario`, `AuditoriaAcceso`, `TokenRestablecimientoClave` | Cédula, email, credenciales con hash seguro, auditoría de login y tokens OTT de 15 min. |
 | **Bitácora de Auditoría** | [`auditoria/`](./auditoria/spec_model_bitacora.md) | `RegistroBitacoraAuditoria` | Trazabilidad inmutable de eventos, modificaciones y operaciones por módulo. |
 | **Roles & Sedes (RBAC)** | [`roles/`](./roles/spec_model_roles_permisos.md) | `Rol`, `Sede`, `RolPermiso` | Control de acceso basado en roles (`ADMIN`, `OPERADOR`, `AUDITOR`, `CONSULTA`) y permisos por módulo. |
+| **Telemetría & Adopción** | [`telemetria/`](./telemetria/spec_model_telemetria.md) | `EventoUsoPlataforma`, `RespuestaFeedback` | Tracking de módulos más usados, tiempo de sesión y micro-encuestas in-app para mejora continua (SDLC). |
+| **Archivos Adjuntos & Media** | [`archivos/`](./archivos/spec_model_archivos_media.md) | `ArchivoAdjunto` | Almacenamiento seguro en `backend/media/` con rutas relativas, hash SHA-256 para deduplicación y metadata MIME. |
+
 
 ---
 

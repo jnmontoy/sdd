@@ -12,11 +12,13 @@ Esta guía define el estándar operacional y metodológico que la **Inteligencia
 > Cualquier persona, equipo de ingeniería, pipeline de CI/CD o agente de Inteligencia Artificial que reciba la carpeta `.sdd` debe ser capaz de estructurar, inicializar y construir un proyecto desde cero sin suponer la existencia de rutas locales absolutas, rutas de red privadas o dependencias del entorno de quien lo escribió.
 
 ### Directrices de Portabilidad para la IA:
-1. **Rutas Relativas y Estructuras Canónicas**: Siempre prescribir la arquitectura en términos de la raíz del proyecto (`./frontend/`, `./backend/`, `./src/`). Jamás utilizar rutas absolutas del sistema operativo (como `C:\Users\...` o `/home/...`).
-2. **Identidad Corporativa Jolifoods**: El logo oficial (`.sdd/assets/Jolifoods.svg`, `Joli.svg`, `logoJoli.png`) debe copiarse e inyectarse en los assets del nuevo proyecto.
-3. **Definición de Blueprint de Archivos**: Cada especificación debe incluir el árbol canónico de archivos que el proyecto debe generar.
-4. **Parametrización por Variables de Entorno**: Endpoints, hosts, nombres de cookies, client IDs de OAuth y secretos deben ser documentados mediante plantillas `.env.example`.
-5. **Contratos como Especificación Declarativa**: Los esquemas de datos (OpenAPI, JSON Schema, Zod, Pydantic/Serializers) son la fuente de verdad universal.
+1. **Rutas 100% Relativas y Estructuras Canónicas**: Siempre prescribir la arquitectura en términos de la raíz del proyecto (`./frontend/`, `./backend/`, `./src/`). Jamás utilizar rutas absolutas del sistema operativo (`C:\Users\...`, `/home/...`) ni dominios fijos quemados (`http://localhost:8000/media/...`).
+2. **Directorio Canónico `backend/media/` para Cargas**: Exigir la existencia de `backend/media/` con su archivo `.gitkeep` y montada en Docker para toda subida de firmas, PDFs, fotos y evidencias corporativas.
+3. **Identidad Corporativa Jolifoods**: El logo oficial (`.sdd/assets/Jolifoods.svg`, `Joli.svg`, `logoJoli.png`) debe copiarse e inyectarse en los assets del nuevo proyecto.
+4. **Definición de Blueprint de Archivos**: Cada especificación debe incluir el árbol canónico de archivos que el proyecto debe generar.
+5. **Parametrización por Variables de Entorno**: Endpoints, hosts, nombres de cookies, client IDs de OAuth y secretos deben ser documentados mediante plantillas `.env.example`.
+6. **Contratos como Especificación Declarativa**: Los esquemas de datos (OpenAPI, JSON Schema, Zod, Pydantic/Serializers) son la fuente de verdad universal.
+
 
 ---
 
@@ -80,8 +82,9 @@ La IA activa el flujo de prototipado rápido en la carpeta **`mock/<nombre_modul
    - **Menú Desplegable de Perfil con Salida Segura**: Avatar y nombre con menú flotante respaldado por `ConfirmModal` ([user_profile_dropdown.md](../components/layout/user_profile_dropdown.md)).
    - **Conmutador de Tema**: Alternancia instantánea y sincrónica (`data-theme`, `data-bs-theme`, `style.colorScheme`).
 
-4. **Entrega y Validación**:
-   - El usuario de negocio prueba la pantalla en su navegador, agrega datos de prueba y, una vez conforme, entrega la carpeta al integrador de desarrollo para su codificación definitiva en React + FastAPI sin sorpresas ni retrabajos.
+4. **Entrega, Validación y Exención Absoluta de Testing**:
+   - El usuario de negocio prueba la pantalla en su navegador con doble clic, verifica flujos, colores y datos y, una vez conforme, entrega la subcarpeta `mock/<nombre_modulo>/` al desarrollador para su codificación definitiva en React + FastAPI.
+   - **CERO TESTING EN MODO MOCK**: En esta fase de prototipado queda **terminantemente prohibido y es totalmente innecesario exigir o ejecutar pruebas automáticas, Pytest, Playwright, suites E2E o scripts de validación de endpoints (`validate_endpoints.py`)**, dado que es solo una maqueta visual interactiva sin base de datos ni backend real. Las pruebas automáticas aplican de forma obligatoria únicamente cuando el programador traslada el prototipo al código de producción en `frontend/` y `backend/`.
 
 ---
 
@@ -226,7 +229,9 @@ Una vez confirmado el perfil y el tema, la IA presenta el tipo de pantalla:
 - **[A] Gestión de Entidad / CRUD Operativo**: Listado con tabla, filtros, buscador y creación/edición/eliminación.
 - **[B] Tablero de Control / Dashboard**: Métricas KPI en cabecera, gráficos, bitácora de actividad y alertas en vivo.
 - **[C] Consulta Tabular / Reporte Analítico**: Tabla masiva con exportación a Excel, ordenamiento avanzado y filtros de auditoría.
-- **[D] Formulario de Proceso / Asistente por Pasos (Wizard)**: Captura progresiva secuencial (Paso 1, 2, 3).
+- **[D] Formulario de Proceso / Asistente por Pasos (Wizard)**: Captura progresiva secuencial (Paso 1, 2, 3 con `StepperWizard`).
+- **[E] Dashboard de Uso, Adopción y Mejora Continua (SDLC)**: Medición de uso real por los usuarios, ranking de funciones más usadas, micro-encuestas in-app y planificación de sprints evolutivos.
+- **[F] Acta / Inspección con Firma Multi-Firmante**: Aprobaciones de despacho, control de calidad y sellado criptográfico ISO con geolocalización.
 
 
 ---

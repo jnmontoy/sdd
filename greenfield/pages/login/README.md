@@ -28,12 +28,12 @@ Define rigurosamente cómo debe diseñarse, implementarse y auditarse el inicio 
 
 El Login de Greenyard se ensambla mediante los componentes atómicos especificados en **[`.sdd/components/`](../../../components/README.md)**:
 
-1. **Logo Corporativo**: [`logo.md`](../../../components/logo.md) — Isotipo estilizado Greenyard con halo esmeralda y tipografía de marca.
-2. **Cards y Contenedores**: [`card.md`](../../../components/card.md) — 3 variantes estructurales (Centered Glass Card, Split-Screen Hero y Kiosk Minimal) con su CSS canónico `backdrop-filter: blur()`.
-3. **Botón Microsoft SSO**: [`button_microsoft.md`](../../../components/button_microsoft.md) — Cuadrícula oficial SVG de 4 colores (`#f25022`, `#00a4ef`, `#7fba00`, `#ffb900`) y estados reactivos.
-4. **Campos de Entrada (Inputs)**: [`input_field.md`](../../../components/input_field.md) — Inputs con icono prefijo, toggle interactivo de contraseña (íconos ojo) y animación shake de error.
-5. **Botón Primario y Loader**: [`button_primary.md`](../../../components/button_primary.md) — Botón submit esmeralda con spinner integrado y halo reactivo glow.
-6. **Feedback y Alertas**: [`feedback_alerts.md`](../../../components/feedback_alerts.md) — Banners de error accesibles (`role="alert"`) y modales de sesión expirada.
+1. **Logo Corporativo**: [`logo.md`](../../../components/login/logo.md) — Isotipo estilizado Greenyard con halo esmeralda y tipografía de marca.
+2. **Cards y Contenedores**: [`card.md`](../../../components/login/card.md) — 3 variantes estructurales (Centered Glass Card, Split-Screen Hero y Kiosk Minimal) con su CSS canónico `backdrop-filter: blur()`.
+3. **Botón Microsoft SSO**: [`button_microsoft.md`](../../../components/login/button_microsoft.md) — Cuadrícula oficial SVG de 4 colores (`#f25022`, `#00a4ef`, `#7fba00`, `#ffb900`) y estados reactivos.
+4. **Campos de Entrada (Inputs)**: [`input_field.md`](../../../components/login/input_field.md) — Inputs con icono prefijo, toggle interactivo de contraseña (íconos ojo) y animación shake de error.
+5. **Botón Primario y Loader**: [`button_primary.md`](../../../components/login/button_primary.md) — Botón submit esmeralda con spinner integrado y halo reactivo glow.
+6. **Feedback y Alertas**: [`feedback_alerts.md`](../../../components/login/feedback_alerts.md) — Banners de error accesibles (`role="alert"`) y modales de sesión expirada.
 
 ---
 

@@ -186,5 +186,7 @@ Para asegurar que no quede ningún cabo suelto antes de iniciar el desarrollo en
 14. **[ ] Textos de Botones Contextuales**: El botón principal del footer en formularios debe decir exactamente qué guarda (ej. *"Guardar Partido"*, *"Guardar Registro"*), prohibido textos fijos desfasados como *"Guardar Notas"*.
 15. **[ ] Paquete Modular de 4 Archivos**: El mock debe entregarse estrictamente en 4 archivos independientes (`.html`, `.css`, `.js`, `datos_*.md`), con cero código monolítico.
 16. **[ ] Identidad de Marca y Carpeta assets/ Local**: La subcarpeta `assets/` debe acompañar al mock conteniendo los logos oficiales (`Jolifoods.svg`, `Joli.svg`, `logoJoli.png`) tomados desde `.sdd/assets/`, y el TopHeader debe referenciar relativamente `<img src="./assets/Jolifoods.svg">` con favicon, garantizando portabilidad offline 100% libre de imágenes rotas.
+17. **[ ] Cero Testing y Cero Pruebas Automáticas**: En el **Modo Mock**, queda terminantemente **prohibido e innecesario ejecutar o requerir pruebas automáticas, Pytest, Playwright, suites E2E o validaciones con `validate_endpoints.py`**. Por su naturaleza, un mock es exclusivamente una simulación visual e interactiva sin backend real ni base de datos conectada. El testing se reserva para cuando el integrador construya el código en `frontend/` y `backend/`.
+
 
 

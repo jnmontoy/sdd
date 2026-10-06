@@ -6,7 +6,7 @@ Este directorio contiene las especificaciones atómicas de los componentes de in
 Bajo la metodología **Spec-Driven Development (SDD)**, un componente no se codifica de manera aislada ni con estilos arbitrarios: cada componente tiene una especificación formal con su **estructura HTML/JSX, clases CSS exactas, variantes admitidas, estados interactivos y normas de accesibilidad**.
 
 > **SELECCIÓN RÁPIDA DE VARIANTES**:  
-> Si deseas ver las opciones y variantes disponibles para un componente específico (KPI, Tabla, Modal, Drawer, Select, etc.), consulta [`../greenyard/04_menus_de_seleccion_por_componente.md`](../greenyard/04_menus_de_seleccion_por_componente.md).
+> Si deseas ver las opciones y variantes disponibles para un componente específico (KPI, Tabla, Modal, Drawer, Select, etc.), consulta [`../greenfield/04_menus_de_seleccion_por_componente.md`](../greenfield/04_menus_de_seleccion_por_componente.md).
 
 ---
 
@@ -61,6 +61,17 @@ Bajo la metodología **Spec-Driven Development (SDD)**, un componente no se codi
 | **Gráficas y Analítica (Charts)** | [`charts/analytics_charts.md`](./charts/analytics_charts.md) | Dashboards y visualización de datos | Área suave con gradiente, barras redondeadas, donut porcentual y sparklines |
 | **Escáner Biométrico Facial** | [`biometrics/facial_scanner.md`](./biometrics/facial_scanner.md) | Captura y verificación biométrica facial | Guía oval con cortinilla, conmutador de cámara, zoom dinámico y validación de encuadre (`contenedores`) |
 | **Interruptor Conmutador (Toggle)** | [`toggle/toggle_switch.md`](./toggle/toggle_switch.md) | Activar/desactivar estado inmediato | Conmutador esmeralda accesible, variantes `sm`/`md`, spinner de carga (`usuarios`/`config`) |
+| **Tarjeta Pro (Header/Body/Footer)** | [`card/corporate_card.md`](./card/corporate_card.md) | Contenedor de contenido estructurado | Estructura 3 secciones, halo cromático, metadata en footer y acciones agrupadas |
+| **Suite de Modales Avanzados** | [`modal/advanced_pro_modal.md`](./modal/advanced_pro_modal.md) | Diálogos de alta seguridad y flujos guiados | Doble factor/contraseña, Wizard multi-paso, Split-Screen Master-Detail |
+| **Firma Digital Multi-Firmante** | [`signature/multi_party_signature.md`](./signature/multi_party_signature.md) | Actas y acuerdos con valor probatorio | Sellado ISO, hash SHA-256 de documento, geolocalización, IP y marcas de agua |
+| **Gráficas Analíticas Pro** | [`charts/advanced_analytics_charts.md`](./charts/advanced_analytics_charts.md) | Análisis multidimensional y proyectos | Gantt interactivo, Radar/Spider 360°, Gauge de metas/SLAs, Sankey y Heatmap |
+| **Cargador Masivo de Archivos** | [`upload/file_uploader_pro.md`](./upload/file_uploader_pro.md) | Carga de evidencias y adjuntos | Drag & Drop, hash SHA-256 en cliente, progreso individual y magic bytes |
+| **Línea de Tiempo (Timeline)** | [`timeline/activity_timeline.md`](./timeline/activity_timeline.md) | Trazabilidad y bitácora cronológica | Nodos visuales, tracking de estados, metadata JSON formateada y avatares |
+| **Asistente por Etapas (Stepper)** | [`stepper/stepper_wizard.md`](./stepper/stepper_wizard.md) | Flujos secuenciales de registro | Indicador numerado interactivo, navegación protegida con esquemas Zod |
+| **Dashboard de Uso y Adopción** | [`dashboard/platform_usage_dashboard.md`](./dashboard/platform_usage_dashboard.md) | Telemetría de uso y mejora continua | DAU/MAU, ranking de módulos más usados, encuestas in-app y planificación de sprints |
+| **Tutorial Dividido (Walkthrough)** | [`tutorial/split_tutorial_walkthrough.md`](./tutorial/split_tutorial_walkthrough.md) | Onboarding paso a paso con capturas | Modal dividido, datos fijos a la izquierda, carrusel de pasos con zoom y dots |
+| **Catálogo Central de Endpoints** | [`services/endpoints_registry.md`](./services/endpoints_registry.md) | Centralización de rutas de servicio | `endpoints.ts` en frontend y `endpoints_registry.json` en backend (Cero URLs quemadas) |
+
 
 
 ---

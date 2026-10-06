@@ -68,11 +68,13 @@ Reúne exactamente lo que más se usa en los proyectos del ecosistema Jolifoods 
 
 | **[`entrypoint.sh`](./entrypoint.sh)** | Orquestador de arranque del backend: espera PostgreSQL con `pg_isready`, ejecuta migraciones y levanta Uvicorn. |
 | **[`seed_data.py`](./seed_data.py)** | Carga de datos semilla idempotente que genera el usuario administrador de desarrollo, roles y sede principal. |
-| **[`settings_security_template.py`](./settings_security_template.py)** | Configuración Django que implementa al 100% las 6 Buenas Prácticas evaluadas en auditoría (`DEBUG`, `ALLOWED_HOSTS`, `CORS`, `Throttling`, `Deny by Default`, `Hardening Headers`). |
+| **[`settings_security_template.py`](./settings_security_template.py)** | Configuración Django que implementa al 100% las 10 Buenas Prácticas evaluadas en auditoría (aislamiento, hosts, CORS, throttling, Deny by Default, cabeceras HTTP, rutas 100% relativas con `BASE_DIR`, carpeta `backend/media/`, centralización de endpoints y exención mock). |
 | **[`healthcheck.py`](./healthcheck.py)** | Sondas de Liveness y Readiness para FastAPI que verifican latencia y conectividad con PostgreSQL y Redis. |
 | **[`celery_redis_architecture.md`](./celery_redis_architecture.md)** | Arquitectura de tareas asíncronas y llamados constantes en background con Redis y Celery (worker + beat). |
-| **[`init_project.py`](./init_project.py)** | Script de inicialización que automatiza el Paso 0, crea el entorno virtual `.venv` con `pip`, inyecta branding Jolifoods, `.dockerignore`, `.vscode/settings.json` y `.env` blindado. |
+| **[`init_project.py`](./init_project.py)** | Script de inicialización que automatiza el Paso 0, crea el entorno virtual `.venv` con `pip`, la carpeta `backend/media/` con `.gitkeep`, inyecta branding Jolifoods, `.dockerignore`, `.vscode/settings.json`, `endpoints_registry.json` y copia `validate_endpoints.py`. |
 | **[`init_project.ps1`](./init_project.ps1)** | Wrapper nativo de PowerShell para ejecutar el scaffolding en Windows con un clic. |
+| **[`endpoints_registry_template.json`](./endpoints_registry_template.json)** | Registro centralizado de rutas del sistema (contratos, métodos y roles) para eliminar URLs quemadas en vistas. |
+| **[`validate_endpoints.py`](./validate_endpoints.py)** | Validador universal de endpoints autónomo en Python puro, compatible con Windows UTF-8/cp1252, exporta cURLs y genera Quality Gate CI/CD. |
 | **[`00_normativa_buenas_practicas_y_auditoria.md`](../greenfield/00_normativa_buenas_practicas_y_auditoria.md)** | Normativa maestra que prescribe los criterios de conformidad para que todo nuevo proyecto obtenga 100/100 en auditorías. |
 
 

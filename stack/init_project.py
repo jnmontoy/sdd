@@ -25,9 +25,14 @@ def main():
     print("=" * 70)
 
     # 1. Obtener el nombre del proyecto (Paso 0 Mandatorio de la especificación)
-    if len(sys.argv) > 1 and sys.argv[1].strip():
-        project_name = sys.argv[1].strip()
-    else:
+    project_name = None
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ("--name", "-n") and len(sys.argv) > 2:
+            project_name = sys.argv[2].strip()
+        elif not sys.argv[1].startswith("-"):
+            project_name = sys.argv[1].strip()
+
+    if not project_name:
         project_name = input("\n[Paso 0] Ingrese el nombre del nuevo proyecto o módulo: ").strip()
 
     while not project_name:
@@ -53,6 +58,7 @@ def main():
     dirs_to_create = [
         target_dir / "backend" / "config",
         target_dir / "backend" / "apps" / "auth_core",
+        target_dir / "backend" / "media",  # Carpeta canónica para almacenamiento de subidas (firmas, PDFs, fotos)
         target_dir / "frontend" / "src" / "assets",
         target_dir / "frontend" / "src" / "components" / "auth",
         target_dir / "frontend" / "src" / "context",
@@ -65,6 +71,9 @@ def main():
     ]
     for d in dirs_to_create:
         d.mkdir(parents=True, exist_ok=True)
+
+    # Iniciar archivo .gitkeep dentro de backend/media
+    (target_dir / "backend" / "media" / ".gitkeep").touch(exist_ok=True)
 
     # 3. Copiar assets corporativos oficiales
     print("[2/5] Inyectando assets oficiales de Jolifoods...")
@@ -115,6 +124,44 @@ def main():
     # asgi_template.py (Enrutador híbrido ASGI Django + FastAPI)
     if (stack_dir / "asgi_template.py").exists():
         shutil.copy2(stack_dir / "asgi_template.py", target_dir / "backend" / "config" / "asgi.py")
+
+    # validate_endpoints.py (Validador universal de endpoints y generador de cURLs)
+    if (stack_dir / "validate_endpoints.py").exists():
+        shutil.copy2(stack_dir / "validate_endpoints.py", target_dir / "backend" / "validate_endpoints.py")
+
+    # endpoints_registry.json (Catálogo centralizado de rutas para auditoría)
+    if (stack_dir / "endpoints_registry_template.json").exists():
+        shutil.copy2(stack_dir / "endpoints_registry_template.json", target_dir / "backend" / "config" / "endpoints_registry.json")
+
+    # endpoints.ts (Constantes centralizadas para frontend - Cero URLs quemadas en vistas)
+    endpoints_ts_content = """/**
+ * Catálogo Centralizado de Endpoints — Jolifoods / SDD
+ * Regla Inflexible BP-09: Toda vista debe importar sus rutas desde aquí.
+ */
+export const ENDPOINTS = {
+  HEALTH: {
+    LIVE: '/health/live',
+    READY: '/health/ready',
+  },
+  AUTH: {
+    LOGIN: '/api/v1/auth/login/',
+    REFRESH: '/api/v1/auth/refresh/',
+    LOGOUT: '/api/v1/auth/logout/',
+    ME: '/api/v1/auth/me/',
+  },
+  USUARIOS: {
+    LISTA: '/api/v1/usuarios/',
+    DETALLE: (id: string | number) => `/api/v1/usuarios/${id}/`,
+  },
+  FAST: {
+    HEALTH: '/fast/v1/health',
+  },
+  TELEMETRIA: {
+    FEEDBACK: '/api/v1/telemetria/feedback/',
+  },
+} as const;
+"""
+    (target_dir / "frontend" / "src" / "services" / "endpoints.ts").write_text(endpoints_ts_content, encoding="utf-8")
 
     # .dockerignore para Backend y Frontend
     backend_dockerignore = """__pycache__/

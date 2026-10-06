@@ -76,3 +76,13 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_SSL_REDIRECT = True
+
+# --- 7. RUTAS 100% RELATIVAS Y ALMACENAMIENTO DE ARCHIVOS MEDIA ---
+# Prohibición terminante de rutas absolutas quemadas en código ('C:\...', '/home/...').
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

@@ -119,6 +119,44 @@ Cuando un usuario o desarrollador solicite: *"Quiero crear un complemento"*, *"A
      -> Ideal para: Habilitar/suspender usuarios en un clic, alternar directivas y switches de configuración.
      -> Incluye: Interruptor esmeralda animado, soporte de accesibilidad ARIA, variante miniatura para DataTable
         y flujo con ConfirmModal de justificación ante suspensiones de cuentas.
+
+[24] Tarjeta Corporativa con Header, Body y Footer (CorporateCard)
+     -> Ideal para: Paneles de configuración, tarjetas de entidad y resúmenes de estado modular.
+     -> Incluye: Cabecera con iconos y badges, cuerpo adaptable, pie con metadatos de sincronización y botones de acción.
+
+[25] Suite de Modales Profesionales Avanzados (ProModal)
+     -> Ideal para: Operaciones críticas, asistentes guiados y comparativa de registros.
+     -> Incluye: Confirmación de alta seguridad con contraseña/OTP, modales Wizard multi-paso y Split-Screen Master-Detail.
+
+[26] Firma Digital Avanzada Multi-Firmante (MultiPartySignature)
+     -> Ideal para: Actas de entrega, inspecciones de contenedores y aprobaciones jerárquicas multi-rol.
+     -> Incluye: Múltiples firmantes, sellado ISO, hash SHA-256 de integridad, geolocalización, IP y marcas de agua.
+
+[27] Suite Completa de Gráficas Analíticas Avanzadas (AdvancedAnalyticsCharts)
+     -> Ideal para: Cronogramas de proyectos, matrices de auditoría, balances y cumplimiento de SLAs.
+     -> Incluye: Gantt interactivo, Radar/Spider 360°, Tacómetros Gauge de metas, diagramas Sankey y Heatmaps.
+
+[28] Cargador Masivo de Archivos con Drag & Drop (FileUploaderPro)
+     -> Ideal para: Subida de comprobantes contables, fotos de auditoría, evidencias y documentos masivos.
+     -> Incluye: Zona Drag & Drop, hash SHA-256 local para deduplicación, barras de progreso individual y magic bytes.
+
+[29] Línea de Tiempo de Auditoría y Trazabilidad (ActivityTimeline)
+     -> Ideal para: Tracking de pedidos, historial de estados de contenedores y bitácoras de auditoría forense.
+     -> Incluye: Nodos verticales cronológicos, badges semánticos, metadatos JSON formateados y avatares de operadores.
+
+[30] Asistente Guiado por Pasos (StepperWizard)
+     -> Ideal para: Formularios extensos, matrículas de colaboradores y flujos de configuración inicial.
+     -> Incluye: Barra de progreso numerada, validación Zod por etapa y control de avance condicional.
+
+[31] Dashboard de Uso de Plataforma y Mejora Continua (PlatformUsageDashboard)
+     -> Ideal para: Medir adopción de la aplicación, identificar qué módulos se usan más y recolectar feedback.
+     -> Incluye: KPIs (DAU/MAU/tiempo de sesión), ranking de módulos, widget de micro-encuestas in-app
+        y panel para que el equipo técnico/senior programe los sprints de mejoras según el ciclo de vida (SDLC).
+
+[32] Tutorial Interactivo Dividido y Onboarding Visual (SplitTutorialWalkthrough)
+     -> Ideal para: Guiar a usuarios en conexiones (Power BI/Excel), primer ingreso o procesos complejos con fotos.
+     -> Incluye: Selector previo ChooserModal, layout dividido SplitModal (panel izquierdo con credenciales/código
+        y panel derecho con carrusel de pasos, zoom Lightbox, dots y resaltado automático de botones entre comillas).
 ====================================================================================================
 ```
 
@@ -357,6 +395,100 @@ Cuando un usuario o desarrollador solicite: *"Quiero crear un complemento"*, *"A
   1. *¿Qué entidad o estado se conmutará?* (ej. `is_active` en usuarios, habilitación de notificaciones push, modo de mantenimiento).
   2. *¿La acción de desactivación es crítica y requiere ConfirmModal con justificación de 10+ caracteres para evitar desconexiones accidentales?*
   3. *¿En qué vista se ubicará el conmutador?* (Columna compacta en DataTable con tamaño `sm`, o control en formulario/Right Drawer con tamaño `md` y textos explicativos).
+
+---
+
+### Complemento [24]: Tarjeta Corporativa Pro (`CorporateCard` Header, Body, Footer)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [corporate_card.md](../components/card/corporate_card.md)
+  - Tokens globales: [variables.css](../components/variables.css)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Qué información mostrará el Header?* (Icono temático, título principal, badge de estado y menú de tres puntos).
+  2. *¿Qué contenido llevará el Body?* (Formulario de configuración, listado o métricas integradas).
+  3. *¿Qué metadatos y botones de acción requiere el Footer?* (Timestamps de sincronización, botones Cancelar/Guardar agrupados).
+
+---
+
+### Complemento [25]: Suite de Modales Profesionales Avanzados (`ProModal`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [advanced_pro_modal.md](../components/modal/advanced_pro_modal.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Qué modalidad se requiere?* (Doble verificación por contraseña/OTP, asistente Wizard multi-paso o Split-Screen Master-Detail).
+  2. *¿Para qué operación se usará?* (Eliminación crítica de registros, onboarding guiado o comparación de auditoría).
+
+---
+
+### Complemento [26]: Firma Digital Avanzada Multi-Firmante (`MultiPartySignature`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [multi_party_signature.md](../components/signature/multi_party_signature.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Quiénes son los firmantes obligatorios y sus roles?* (ej. Operador, Transportista, Jefe de Calidad).
+  2. *¿Se requiere sellado con coordenadas GPS, IP pública y hash SHA-256 del documento adjunto?*
+  3. *¿El trazo se exporta recortado con fondo transparente e incrustación de sello institucional?*
+
+---
+
+### Complemento [27]: Suite de Gráficas Analíticas Avanzadas (`AdvancedAnalyticsCharts`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [advanced_analytics_charts.md](../components/charts/advanced_analytics_charts.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Qué tipología visual requiere el módulo?* (Gantt interactivo, Radar/Spider 360°, Tacómetro Gauge de SLA, Diagrama Sankey o Heatmap de turnos).
+  2. *¿Cuál es el contrato de datos JSON que alimentará la gráfica?*
+
+---
+
+### Complemento [28]: Cargador Masivo de Archivos con Drag & Drop (`FileUploaderPro`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [file_uploader_pro.md](../components/upload/file_uploader_pro.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Cuáles son los tipos de archivo admitidos y el límite de peso por archivo?* (ej. PDF, PNG, JPG hasta 25 MB).
+  2. *¿Se debe calcular el hash SHA-256 en el navegador antes de la subida para deduplicación instantánea?*
+  3. *¿El backend persistirá los archivos en `backend/media/` bajo volumen Docker?*
+
+---
+
+### Complemento [29]: Línea de Tiempo de Auditoría y Trazabilidad (`ActivityTimeline`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [activity_timeline.md](../components/timeline/activity_timeline.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Qué eventos cronológicos se registrarán?* (Cambios de estado, accesos, actualizaciones de pedidos).
+  2. *¿Se requiere visualización de diferencias (diff antes/después) y anexos en los nodos?*
+
+---
+
+### Complemento [30]: Asistente Guiado por Pasos (`StepperWizard`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [stepper_wizard.md](../components/stepper/stepper_wizard.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Cuáles son las etapas del proceso?* (Etiquetas y descripciones).
+  2. *¿Se valida cada paso mediante esquemas Zod antes de habilitar el botón de siguiente?*
+  3. *¿Se permite navegación libre entre pasos completados?*
+
+---
+
+### Complemento [31]: Dashboard de Uso de Plataforma y Mejora Continua (`PlatformUsageDashboard`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [platform_usage_dashboard.md](../components/dashboard/platform_usage_dashboard.md)
+  - Protocolo SDLC de mejoras: [12_protocolo_ciclo_de_vida_sdlc_y_mejora_continua.md](12_protocolo_ciclo_de_vida_sdlc_y_mejora_continua.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿Qué métricas de adopción requiere visualizar la gerencia o el Tech Lead?* (DAU/MAU, tiempo medio de sesión, exportaciones a Excel).
+  2. *¿Se debe activar el botón flotante `InAppFeedbackWidget` para que los usuarios envíen sugerencias directamente desde la interfaz?*
+  3. *¿Cómo se clasificarán las solicitudes de mejora para el siguiente sprint?* (Priorización RICE, impacto vs. esfuerzo, asignación a perfil técnico vs. senior).
+
+---
+
+### Complemento [32]: Tutorial Interactivo Dividido y Onboarding Visual (`SplitTutorialWalkthrough`)
+- **Archivos a reutilizar**:
+  - Componente y estilos: [split_tutorial_walkthrough.md](../components/tutorial/split_tutorial_walkthrough.md)
+  - Catálogo de innovaciones: [13_catalogo_innovaciones_y_mejores_practicas_proyectos.md](13_catalogo_innovaciones_y_mejores_practicas_proyectos.md)
+- **Preguntas que debe hacer la IA**:
+  1. *¿El tutorial requiere selección previa entre múltiples opciones?* (ej. "¿Cómo conectar Power BI?" vs. "¿Cómo conectar Excel?" usando `TutorialChooserModal`).
+  2. *¿Qué parámetros o datos de referencia deben mostrarse fijos en el panel izquierdo?* (Servidor, base de datos, credenciales temporales o código con botón de copiado).
+  3. *¿Cuáles son los pasos, imágenes y textos explicativos con botones marcados entre comillas para resaltar en verde esmeralda?*
+  4. *¿Se requiere soporte de ampliación de imagen en pantalla completa (ImageLightbox)?*
+
+
+
 
 
 

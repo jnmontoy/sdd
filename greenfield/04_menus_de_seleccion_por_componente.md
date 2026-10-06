@@ -513,6 +513,203 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
 ====================================================================================================
 ```
 
+---
+
+## 21. Menú si el usuario dice: *"Quiero una Tarjeta Corporativa con Header, Body y Footer"*
+
+> *"¿Qué estructura y nivel de elevación debe tener la tarjeta?"*
+
+```text
+====================================================================================================
+               OPCIONES DE TARJETA CORPORATIVA PRO (CORPORATE CARD)
+====================================================================================================
+ [1] Tarjeta Corporativa Estándar (Header + Body + Footer)
+     -> Estructura: Encabezado con icono contextual y badge semántico, cuerpo flexible
+        y pie con timestamps de auditoría y botones agrupados de acción.
+     -> Código y CSS listos en: .sdd/components/card/corporate_card.md (Variante Flat / Raised)
+
+ [2] Tarjeta Colapsable con Halo Esmeralda (.corp-card--glow)
+     -> Estructura: Botón toggle de colapso en cabecera, borde interactivo con halo cromático
+        al hover y preservación de scroll interno en el cuerpo.
+     -> Código y CSS listos en: .sdd/components/card/corporate_card.md (Variante Glow)
+====================================================================================================
+```
+
+---
+
+## 22. Menú si el usuario dice: *"Quiero un Modal Profesional / Avanzado"*
+
+> *"¿Qué nivel de seguridad o interacción requiere el modal?"*
+
+```text
+====================================================================================================
+                OPCIONES DE MODALES AVANZADOS PRO (PRO MODAL)
+====================================================================================================
+ [1] Modal de Doble Verificación de Seguridad (SecurityConfirmModal)
+     -> Ideal para: Eliminación irreversible, borrado de lotes o cambio de privilegios de superadmin.
+     -> Incluye: Entrada forzada de contraseña actual, código OTP o frase de confirmación explícita.
+     -> Código y CSS listos en: .sdd/components/modal/advanced_pro_modal.md (Sección 1)
+
+ [2] Modal Multi-Paso / Asistente (WizardModal)
+     -> Ideal para: Procesos de onboarding, alta de usuarios con roles o configuración paso a paso.
+     -> Incluye: Indicador superior de etapas, validación por paso y navegación contextual.
+     -> Código y CSS listos en: .sdd/components/modal/advanced_pro_modal.md (Sección 2)
+
+ [3] Modal de Vista Dividida / Master-Detail (SplitScreenModal)
+     -> Ideal para: Auditoría comparativa, inspección lateral de documentos y edición simultánea.
+     -> Incluye: Panel izquierdo de navegación/resumen y panel derecho de detalle amplio con scroll.
+     -> Código y CSS listos en: .sdd/components/modal/advanced_pro_modal.md (Sección 3)
+====================================================================================================
+```
+
+---
+
+## 23. Menú si el usuario dice: *"Quiero Firma Digital / Multi-Firmante / Consentimiento"*
+
+> *"¿Cómo debe configurarse el proceso de firma y certificación?"*
+
+```text
+====================================================================================================
+            OPCIONES DE FIRMA DIGITAL MULTI-FIRMANTE (MULTI-PARTY SIGNATURE)
+====================================================================================================
+ [1] Firma Única con Sello Criptográfico Inmediato
+     -> Estructura: Canvas con auto-recorte (cropToSignature), sellado de fecha ISO, cédula e IP pública.
+     -> Código y CSS listos en: .sdd/components/signature/multi_party_signature.md (Firma Simple)
+
+ [2] Flujo Multi-Firmante Jerárquico (Entrega, Transportista, Auditor)
+     -> Estructura: Chips de avance de firmantes requeridos, cálculo de SHA-256 sobre el documento
+        original, geolocalización GPS y generación de paquete de auditoría SignatureProof[].
+     -> Código y CSS listos en: .sdd/components/signature/multi_party_signature.md (Flujo Completo)
+====================================================================================================
+```
+
+---
+
+## 24. Menú si el usuario dice: *"Quiero Gráficas Analíticas Avanzadas"*
+
+> *"¿Qué tipología analítica deseas integrar en tu módulo?"*
+
+```text
+====================================================================================================
+              OPCIONES DE GRÁFICAS ANALÍTICAS AVANZADAS (CHARTS SUITE)
+====================================================================================================
+ [1] Cronograma Gantt Interactivo
+     -> Ideal para: Hitos de proyectos TIC, fases de cosecha/despacho o paradas de planta.
+     -> Código y CSS listos en: .sdd/components/charts/advanced_analytics_charts.md (Sección Gantt)
+
+ [2] Gráfica de Radar / Spider 360°
+     -> Ideal para: Evaluaciones de competencias, matrices de madurez de seguridad y auditoría.
+     -> Código y CSS listos en: .sdd/components/charts/advanced_analytics_charts.md (Sección Radar)
+
+ [3] Tacómetro / Gauge de Cumplimiento de Metas y SLA
+     -> Ideal para: Porcentaje de avance mensual, disponibilidad de servidores o salud operativa.
+     -> Código y CSS listos en: .sdd/components/charts/advanced_analytics_charts.md (Sección Gauge)
+
+ [4] Diagrama de Flujo Sankey & Mapa de Calor (Heatmap)
+     -> Ideal para: Dispersión presupuestal, flujo de materias primas y ocupación por turnos/horas.
+     -> Código y CSS listos en: .sdd/components/charts/advanced_analytics_charts.md (Sección Flujos)
+====================================================================================================
+```
+
+---
+
+## 25. Menú si el usuario dice: *"Quiero Cargador Masivo de Archivos / Drag & Drop"*
+
+> *"¿Qué restricciones y validaciones debe aplicar el cargador?"*
+
+```text
+====================================================================================================
+            OPCIONES DE CARGADOR MASIVO DE ARCHIVOS (FILE UPLOADER PRO)
+====================================================================================================
+ [1] Zona Drag & Drop con Hash SHA-256 Previo
+     -> Incluye: Cálculo de hash en el navegador para deduplicación instantánea, filtrado por
+        magic bytes contra malware, barras individuales de progreso y aborto con AbortController.
+     -> Destino canónico: backend/media/ con volumen persistente Docker.
+     -> Código y CSS listos en: .sdd/components/upload/file_uploader_pro.md
+====================================================================================================
+```
+
+---
+
+## 26. Menú si el usuario dice: *"Quiero Línea de Tiempo / Timeline de Auditoría"*
+
+> *"¿Cómo debe visualizarse la cronología de eventos?"*
+
+```text
+====================================================================================================
+             OPCIONES DE LÍNEA DE TIEMPO Y AUDITORÍA (ACTIVITY TIMELINE)
+====================================================================================================
+ [1] Timeline Vertical de Eventos y Novedades
+     -> Incluye: Nodos circulares con halos de estado, avatares de operadores, fecha relativa y
+        visores de cambios (diff oldValue vs newValue) con anexos descargables.
+     -> Código y CSS listos en: .sdd/components/timeline/activity_timeline.md
+====================================================================================================
+```
+
+---
+
+## 27. Menú si el usuario dice: *"Quiero Asistente por Pasos / Stepper Wizard"*
+
+> *"¿Cómo debe estructurarse la navegación por etapas?"*
+
+```text
+====================================================================================================
+                 OPCIONES DE ASISTENTE POR ETAPAS (STEPPER WIZARD)
+====================================================================================================
+ [1] Stepper Horizontal Corporativo
+     -> Incluye: Círculos numerados reactivos con brillo esmeralda, líneas conectoras animadas,
+        validación Zod antes de desbloquear el siguiente paso y soporte de pasos opcionales.
+     -> Código y CSS listos en: .sdd/components/stepper/stepper_wizard.md
+====================================================================================================
+```
+
+---
+
+## 28. Menú si el usuario dice: *"Quiero Dashboard de Uso / Telemetría de Adopción / Encuestas de Mejora"*
+
+> *"¿Qué nivel de analítica de producto y escucha al usuario requieres?"*
+
+```text
+====================================================================================================
+          OPCIONES DE DASHBOARD DE USO Y MEJORA CONTINUA (PLATFORM USAGE)
+====================================================================================================
+ [1] Dashboard Completo de Uso y Adopción (Para Directores y Tech Leads)
+     -> Incluye: KPIs DAU/MAU, tiempo medio de sesión, volumen de exportaciones Excel,
+        ranking de módulos más usados vs módulos abandonados y panel de asignación de sprints.
+     -> Código y CSS listos en: .sdd/components/dashboard/platform_usage_dashboard.md
+
+ [2] Widget Flotante de Micro-Encuesta In-App (InAppFeedbackWidget)
+     -> Incluye: Botón flotante '¿Qué podemos mejorar?', popover no invasivo con preguntas sobre
+        funcionalidad más usada, dolores de proceso y sugerencias para el siguiente sprint.
+     -> Código y CSS listos en: .sdd/components/dashboard/platform_usage_dashboard.md (Sección 3)
+====================================================================================================
+```
+
+---
+
+## 29. Menú si el usuario dice: *"Quiero un Tutorial Interactivo / Onboarding con Fotos / Guía Paso a Paso"*
+
+> *"¿Cómo debe presentarse la guía o tutorial paso a paso?"*
+
+```text
+====================================================================================================
+             OPCIONES DE TUTORIAL INTERACTIVO PASO A PASO (WALKTHROUGH)
+====================================================================================================
+ [1] Tutorial Dividido con Parámetros Contextuales (SplitTutorialModal)
+     -> Incluye: Panel izquierdo con credenciales o código copiable con un clic, panel derecho
+        con capturas de pantalla, zoom Lightbox, dots interactivos y resaltado esmeralda de botones.
+     -> Código y CSS listos en: .sdd/components/tutorial/split_tutorial_walkthrough.md
+
+ [2] Selector Previo de Opciones de Tutorial (TutorialChooserModal)
+     -> Incluye: Menú visual para elegir entre diferentes guías (ej. Power BI vs Excel),
+        iconos distintivos y bloqueo de opciones no disponibles según el contexto.
+     -> Código y CSS listos en: .sdd/components/tutorial/split_tutorial_walkthrough.md (Sección 2)
+====================================================================================================
+```
+
+
+
+
 
 
 

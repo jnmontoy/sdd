@@ -12,6 +12,8 @@ Cuando una persona indica **"No soy desarrollador"**, el sistema SDD activa auto
 2. **Visualización Inmediata con Doble Clic**: Los archivos `.html` se abren en cualquier navegador moderno (Chrome, Edge, Firefox).
 3. **Estructura Basada en Datos Reales (JSON Arrays)**: Dado que el backend siempre entrega datos en formato JSON, los mocks en HTML cargan los datos desde un arreglo JavaScript (`const MOCK_DATA = [...]`) y los iteran dinámicamente (`forEach` / `map`). Esto garantiza que cuando el programador construya la aplicación real, la estructura de datos sea 100% idéntica.
 4. **Documento Acompañante de Datos (`.md`)**: Cada prototipo HTML va acompañado de un archivo Markdown (ejemplo: `datos_dashboard_ventas.md`) que enumera los campos que el backend debe proveer en su JSON.
+5. **CERO Pruebas Automáticas ni Testing**: En el **Modo Mock**, queda terminantemente **prohibido e innecesario ejecutar o requerir pruebas automáticas, Pytest, Playwright, suites E2E o validaciones con `validate_endpoints.py`**. Por su naturaleza, un mock es exclusivamente una simulación visual e interactiva sin backend real ni base de datos conectada.
+
 
 ---
 
