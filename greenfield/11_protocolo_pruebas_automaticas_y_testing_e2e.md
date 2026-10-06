@@ -23,6 +23,27 @@ Este protocolo establece los lineamientos mandatorios de aseguramiento de calida
 
 ---
 
+### 1.1. Ubicación Obligatoria de Archivos de Prueba (Carpeta `pruebas/` en la Raíz)
+
+> [!CAUTION]
+> **PROHIBICIÓN TERMINANTE DE PRUEBAS DENTRO DE `backend/`**:  
+> Si la Inteligencia Artificial o el equipo de ingeniería necesita crear, redactar o ejecutar pruebas automatizadas en **Modo Greenfield**, **QUEDA ESTRICTAMENTE PROHIBIDO CREAR ARCHIVOS O CARPETAS DE PRUEBA DENTRO DEL DIRECTORIO `backend/`** (prohibido `backend/tests/`, `backend/test_*.py` o scripts de prueba sueltos en las aplicaciones del backend).  
+> 
+> **ESTÁNDAR OBLIGATORIO**: Se debe crear una carpeta dedicada en la **raíz del proyecto** llamada **`pruebas/`** (`<project-root>/pruebas/`), manteniendo el código productivo de `backend/` completamente desacoplado y limpio:
+> 
+> ```text
+> <project-root>/
+> ├── pruebas/                          # <-- CARPETA OBLIGATORIA DE PRUEBAS EN LA RAÍZ
+> │   ├── conftest.py                   # Configuración global y fixtures de Pytest
+> │   ├── unitarias/                    # Pruebas unitarias de helpers, schemas Pydantic y lógica aislada
+> │   ├── integracion/                  # Pruebas de endpoints FastAPI (TestClient) y Django (APIClient)
+> │   └── e2e/                          # Pruebas de humo y Playwright
+> ├── backend/                          # Código fuente de producción limpio de archivos de test
+> └── frontend/
+> ```
+
+---
+
 ## 2. Validación Automatizada de Endpoints (Backend Django + FastAPI)
 
 Todo endpoint desarrollado en el ecosistema debe contar con una suite de pruebas de integración usando **Pytest** y los clientes oficiales de prueba.

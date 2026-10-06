@@ -28,6 +28,7 @@ Cualquier proyecto o módulo creado a partir de `.sdd` **debe nacer blindado baj
 | **BP-14** | **Integridad Absoluta de Código (Cero Código Truncado)** | Prohibido truncar código o dejar placeholders tipo `// ... resto del código ...`. | Toda modificación o creación asistida por IA debe entregar el archivo 100% completo, operativo y respetando la lógica previa del módulo. |
 | **BP-15** | **Aislamiento Estricto de Entorno (Cero Python Global)** | Prohibido terminantemente ejecutar `pip install` o comandos de Python en el intérprete global del sistema. | Operar exclusivamente dentro del entorno virtual `.venv` (`.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt`). |
 | **BP-16** | **Documentación Holística de Capacidades (Cero Changelogs de Micro-Cambios)** | Prohibido redactar bitácoras de cambios puntuales o micro-ediciones. | La carpeta de documentación (`docs/`) y el `README.md` deben documentar a nivel macro cada componente/página realizada, detallando todo lo que realiza la aplicación, su alcance funcional y el destino y visión global de la plataforma. |
+| **BP-17** | **Directorio Canónico `pruebas/` en la Raíz (Cero Tests en `backend/`)** | Prohibido terminantemente crear archivos o carpetas de pruebas dentro de `backend/`. | En modo Greenfield, toda suite de pruebas automatizadas (unitarias, integración, endpoints, E2E) debe residir exclusivamente en la carpeta raíz `pruebas/` (`<project-root>/pruebas/`), manteniendo `backend/` completamente limpio. |
 
 ---
 
@@ -240,6 +241,7 @@ Antes de dar por finalizada la creación de cualquier nuevo módulo, verificar:
 - [ ] ¿Las inserciones o actualizaciones masivas usan `bulk_create` o `bulk_update` en vez de `.save()` en bucles (BP-13)?
 - [ ] ¿El código entregado está 100% completo, sin truncamientos ni comentarios tipo `// ... resto del código ...` (BP-14)?
 - [ ] ¿La documentación en `docs/` y el `README.md` describe todo lo que realiza el módulo/aplicación de forma holística, omitiendo micro-cambios y dando contexto del destino de la plataforma (BP-16)?
+- [ ] ¿Los archivos y suites de pruebas se ubicaron exclusivamente en la carpeta raíz `pruebas/` y el directorio `backend/` quedó libre de archivos de test (BP-17)?
 - [ ] ¿La sonda `/api/v1/health/` responde HTTP 200 con la latencia de Postgres y Redis?
 
 ---
@@ -270,6 +272,8 @@ Para evitar que una Inteligencia Artificial introduzca deuda técnica, rompa có
     - Usar exclusivamente las dependencias aprobadas en `requirements.txt` y `package.json`. No asumir métodos inexistentes de frameworks; verificar siempre contra la sintaxis oficial y documentada.
 11. **Documentación Viva de Capacidades y Destino de la Plataforma (`BP-16`)**:
     - Prohibido redactar bitácoras de cambios puntuales ("se agregó campo x"). Documentar todo lo que realiza la aplicación por módulo en `docs/` y mantener actualizado el `README.md` con el alcance global y visión destino del software.
+12. **Ubicación Exclusiva de Pruebas en `pruebas/` (`BP-17`)**:
+    - NUNCA crear archivos o carpetas de pruebas dentro de `backend/`. En modo Greenfield, toda suite de pruebas debe crearse y ejecutarse estrictamente en la carpeta `pruebas/` en la raíz del proyecto (`<project-root>/pruebas/`), manteniendo limpio el código de producción.
 
 
 

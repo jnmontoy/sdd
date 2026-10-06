@@ -101,9 +101,9 @@ Permite a las organizaciones:
 
 ---
 
-## 🛡️ 3. Las 16 Buenas Prácticas Inflexibles de Ingeniería (Normativa 00)
+## 🛡️ 3. Las 17 Buenas Prácticas Inflexibles de Ingeniería (Normativa 00)
 
-Todo proyecto o módulo del ecosistema debe cumplir estrictamente estas 16 normas para obtener conformidad técnica (100/100):
+Todo proyecto o módulo del ecosistema debe cumplir estrictamente estas 17 normas para obtener conformidad técnica (100/100):
 
 | Código | Dimensión | Regla Inflexible | Implementación Técnica Obligatoria |
 |:---|:---|:---|:---|
@@ -123,6 +123,7 @@ Todo proyecto o módulo del ecosistema debe cumplir estrictamente estas 16 norma
 | **BP-14** | **Integridad de Código** | Prohibido truncar código o dejar placeholders tipo `// ... resto ...`. | Entregar siempre archivos 100% íntegros y respetando la lógica previa del módulo. |
 | **BP-15** | **Aislamiento en `.venv`** | Prohibido ejecutar `pip` o `python` en el entorno global del equipo. | Operar exclusivamente dentro del entorno virtual `.venv` (`.\.venv\Scripts\python.exe`). |
 | **BP-16** | **Documentación de Capacidades y Destino** | Prohibido redactar bitácoras de micro-cambios puntuales. | Documentar todo lo que realiza la aplicación en `docs/` y el destino global de la plataforma en `README.md`. |
+| **BP-17** | **Carpeta Raíz `pruebas/`** | Prohibido crear archivos o carpetas de pruebas dentro de `backend/`. | En Greenfield, toda suite de pruebas debe ubicarse en la carpeta raíz `pruebas/` (`<project-root>/pruebas/`), manteniendo limpio `backend/`. |
 
 ---
 

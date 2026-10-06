@@ -494,6 +494,12 @@ Cualquier proyecto nuevo que implemente el módulo de login a partir de este `.s
             ├── urls.py       # Enrutamiento de endpoints
             ├── security.py   # Rate limiting, hashing y auditoría
             └── middleware.py # Inyección de sesión y cookies seguras
+│
+└── pruebas/                  # <-- UBICACIÓN OBLIGATORIA DE PRUEBAS EN LA RAÍZ (MODO GREENFIELD)
+    ├── conftest.py           # Configuración y fixtures globales de Pytest
+    ├── unitarias/            # Pruebas unitarias de servicios, schemas y helpers
+    ├── integracion/          # Pruebas de endpoints FastAPI (TestClient) y Django (APIClient)
+    └── e2e/                  # Pruebas de humo y Playwright
 ```
 
 ---
@@ -508,6 +514,7 @@ Cuando se le pida a la IA: *"Crea el login a partir del SDD"*:
 5. Aplicar las normas de seguridad de `05_seguridad_auditoria_y_hardening.md` (Cookies HttpOnly, Rate Limiting, sanitización).
 6. Seguir el diseño y tokens de `06_ui_ux_diseno_y_accesibilidad.md`.
 7. Generar las pruebas prescritas en `07_plan_de_pruebas_y_matriz_qa.md` para garantizar cobertura total.
+8. **UBICACIÓN OBLIGATORIA DE PRUEBAS EN LA RAÍZ (`pruebas/`)**: Si la IA necesita crear, redactar o ejecutar pruebas automatizadas, pruebas de integración o scripts de validación, **QUEDA TERMINANTEMENTE PROHIBIDO crear archivos o carpetas de pruebas dentro de `backend/`**. Debe crear obligatoriamente una carpeta en la raíz del proyecto llamada `pruebas/` (`<project-root>/pruebas/`), manteniendo el código productivo de `backend/` completamente limpio de archivos de test.
 
 
 ---
