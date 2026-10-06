@@ -54,8 +54,8 @@ Reúne exactamente lo que más se usa en los proyectos del ecosistema Jolifoods 
 - **Frameworks & ASGI**: `Django`, `djangorestframework`, `djangorestframework_simplejwt`, `fastapi`, `uvicorn[standard]`, `gunicorn`, `asgiref`.
 - **Bases de Datos**: `psycopg2-binary`, `PyMySQL`, `sqlparse`.
 - **Caché y Tareas**: `redis`, `django-redis`, `celery`.
-- **Seguridad e Identidad**: `cryptography`, `bcrypt`, `PyJWT`, `msal` (Microsoft 365 / Azure AD), `django-cors-headers`.
-- **Validación y JSON**: `pydantic`, `pydantic-settings`, `msgpack`.
+- **Seguridad e Identidad (Django Core)**: `cryptography`, `bcrypt`, `PyJWT`, `msal` (Microsoft 365 / Azure AD), `django-cors-headers`.
+- **Validación y Entrega Ultra Rápida JSON (FastAPI Engine)**: `pydantic>=2.8.0`, `pydantic-settings`, `orjson>=3.10.0` (serialización nativa en C), `msgpack`.
 - **Herramientas de Negocio**: `openpyxl` (Excel), `fpdf2` & `weasyprint` (PDFs corporativos), `Pillow` (imágenes y avatares), `httpx` & `requests` (HTTP clients).
 
 ### Frontend: [`package.json`](./package.json)

@@ -1,17 +1,27 @@
 # Especificación de Arquitectura Híbrida ASGI: Django + FastAPI
 ## Ecosistema Jolifoods — Alto Rendimiento y Cero Problemas N+1
 
-Esta especificación detalla el estándar arquitectónico que une **Django** (ORM, Administrador, Autenticación, RBAC y Migraciones) con **FastAPI** (APIs JSON de ultra-alta velocidad, validación declarativa Pydantic y serialización sin sobrecarga de middleware) bajo un único servidor ASGI (Uvicorn / Gunicorn).
+Esta especificación detalla el estándar arquitectónico que desacopla responsabilidades:
+- **FastAPI (Capa de Entrega de Datos en JSON)**: Diseñado para ser **siempre ultra rápido** en la entrega de datos, utilizando `ORJSONResponse` para serialización nativa en C, validación declarativa Pydantic v2 y respuestas asíncronas de bajísima latencia sin sobrecarga de middleware.
+- **Django (Capa Exclusiva de Seguridad y Gobierno)**: Actúa como el bastión de **seguridad**, centralizando la autenticación (JWT / SimpleJWT / Azure AD SSO), control de acceso basado en roles y permisos (RBAC), modelo unificado de usuarios, migraciones y panel de administración.
 
 ---
 
 ### 1. Principios de la Arquitectura Híbrida
-1. **Un solo puerto, un solo servidor ASGI**: El contenedor backend ejecuta `uvicorn config.asgi:application --host 0.0.0.0 --port 8000`. No se requieren proxies intermedios ni dos puertos diferentes.
-2. **Enrutamiento por Prefijo de Ruta `/fast`**:
+1. **Separación de Responsabilidades**:
+   - **FastAPI**: Capa exclusiva de entrega y serialización de datos JSON a máxima velocidad (`default_response_class=ORJSONResponse`).
+   - **Django**: Capa exclusiva de seguridad, autenticación, control de accesos RBAC y gobierno del modelo de datos.
+2. **Dependencias Esenciales del Stack ASGI de Alto Rendimiento**:
+   - `fastapi>=0.115.0`
+   - `uvicorn[standard]>=0.30.0`
+   - `pydantic>=2.8.0`
+   - `orjson>=3.10.0`
+3. **Un solo puerto, un solo servidor ASGI**: El contenedor backend ejecuta `uvicorn config.asgi:application --host 0.0.0.0 --port 8000`. No se requieren proxies intermedios ni dos puertos diferentes.
+4. **Enrutamiento por Prefijo de Ruta `/fast`**:
    - Peticiones que contengan `/fast` son dirigidas a la aplicación **FastAPI** (`core.fastapi_app`).
-   - Todas las demás peticiones (`/admin/`, `/api/auth/`, vistas clásicas Django) son procesadas por la aplicación **Django ASGI** (`get_asgi_application()`).
-3. **Manejo de Conexiones de Base de Datos**: Para evitar fugas de conexiones o `InterfaceError: connection already closed`, se ejecuta `close_old_connections()` de forma asíncrona al inicio de cada petición HTTP.
-4. **Cero N+1 en FastAPI**: Los endpoints FastAPI utilizan `select_related()` y `prefetch_related()` en Django ORM con `sync_to_async`, o consultas raw `values()` proyectadas directamente en esquemas Pydantic.
+   - Todas las demás peticiones (`/admin/`, `/api/auth/`, vistas de seguridad Django) son procesadas por la aplicación **Django ASGI** (`get_asgi_application()`).
+5. **Manejo de Conexiones de Base de Datos**: Para evitar fugas de conexiones o `InterfaceError: connection already closed`, se ejecuta `close_old_connections()` de forma asíncrona al inicio de cada petición HTTP.
+6. **Cero N+1 y Ultra Velocidad en FastAPI**: Los endpoints FastAPI utilizan `select_related()` y `prefetch_related()` en Django ORM con `sync_to_async`, o proyecciones raw `.values()` serializadas directamente con `orjson`.
 
 ---
 
@@ -70,7 +80,7 @@ async def application(scope, receive, send):
             # En caso de excepción no controlada, intentar resolver vía Django
             await django_application(scope, receive, send)
     else:
-        # Enrutamiento hacia Django Core
+        # Enrutamiento hacia Django Core (Seguridad y Admin)
         await django_application(scope, receive, send)
 ```
 
@@ -80,9 +90,11 @@ async def application(scope, receive, send):
 
 ```python
 """
-Aplicación FastAPI Integrada para Consultas Masivas y JSON de Alto Rendimiento.
+Aplicación FastAPI Integrada para Consultas Masivas y Entrega Ultra Rápida de Datos JSON.
+Utiliza ORJSONResponse para serialización nativa en C a microsegundos.
 """
 from fastapi import FastAPI, Depends, HTTPException, Query, status
+from fastapi.responses import ORJSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -91,10 +103,11 @@ from asgiref.sync import sync_to_async
 
 app = FastAPI(
     title="Jolifoods Fast API Layer",
-    description="Capa de alto rendimiento para serialización JSON optimizada y cero N+1",
+    description="Capa ultra rápida de entrega de datos JSON optimizada con orjson y cero N+1",
     version="1.0.0",
     docs_url="/docs",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
+    default_response_class=ORJSONResponse  # Serialización ultra rápida en C por defecto
 )
 
 # Configuración CORS permisiva interna
@@ -117,7 +130,7 @@ async def health_check():
     return {
         "status": "ok",
         "timestamp": datetime.now(),
-        "service": "Jolifoods Fast Layer"
+        "service": "Jolifoods Fast Layer (orjson ultra-fast engine)"
     }
 ```
 

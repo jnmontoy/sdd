@@ -46,8 +46,10 @@ Cualquier proyecto o módulo creado a partir de `.sdd` **debe nacer blindado baj
 3. **Proyección Estricta de Columnas (`.only()` y `.values()`)**:
    - Si solo se requieren atributos de identidad (cédula, nombre), proyectar únicamente esos campos para no consumir ancho de banda de red ni memoria en el pool de conexiones.
 
-### 2.2. Entrega JSON de Alto Rendimiento en FastAPI
-- Utilizar serialización con **Pydantic v2** (`TypeAdapter` y modelos validados) para entregar respuestas JSON en microsegundos, evitando serializadores pesados en endpoints de lectura intensiva.
+### 2.2. Entrega JSON Ultra Rápida en FastAPI y Django como Capa de Seguridad
+- **FastAPI como capa exclusiva de entrega de datos**: Debe ser **siempre ultra rápido** en la serialización y entrega de respuestas JSON. Para garantizar microsegundos de latencia, se configura `default_response_class=ORJSONResponse` (`orjson>=3.10.0`) junto con **Pydantic v2** (`pydantic>=2.8.0`), omitiendo cualquier overhead de middleware innecesario.
+- **Django como capa de seguridad**: Django asume el rol exclusivo de seguridad (autenticación JWT, sesiones seguras, RBAC, permisos de usuario y gobierno del ORM). Los endpoints de datos de FastAPI consumen las validaciones de identidad y permisos garantizadas por Django.
+- **Versiones estandarizadas obligatorias**: `fastapi>=0.115.0`, `uvicorn[standard]>=0.30.0`, `pydantic>=2.8.0` y `orjson>=3.10.0`.
 - Implementar pooling de conexiones persistentes con PostgreSQL (`CONN_MAX_AGE = 600` en Django y pools asíncronos en async engines).
 
 ### 2.3. Manejo Seguro de Errores y Fugas de Información
