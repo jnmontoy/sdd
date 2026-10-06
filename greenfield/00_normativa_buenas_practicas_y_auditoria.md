@@ -23,6 +23,11 @@ Cualquier proyecto o módulo creado a partir de `.sdd` **debe nacer blindado baj
 | **BP-09** | **Centralización de Endpoints (Cero URLs en Vistas)** | Prohibido terminantemente escribir rutas HTTP quemadas en componentes React o vistas. | Centralizar en `frontend/src/services/endpoints.ts` y registrar en `backend/config/endpoints_registry.json` para validación automatizada en un solo comando. |
 | **BP-10** | **Exención de Testing en Modo Mock No-Code** | Prohibido e innecesario exigir pruebas automáticas, Pytest o validadores sobre prototipos de `mock/`. | Los mocks son simulaciones visuales estáticas (HTML/CSS/JS) sin servidor real ni base de datos conectada. El testing aplica exclusivamente a la fase de implementación real en `frontend/` y `backend/`. |
 | **BP-11** | **Prohibición de Ciclos `for` Anidados ($O(N^2)$ / $O(N \times M)$)** | Prohibido terminantemente anidar ciclos `for` para cruzar o relacionar colecciones, y ejecutar queries o llamadas API dentro de bucles. | Reemplazar por indexación en memoria con tablas Hash / diccionarios (`dict` / `defaultdict`) con lookup en tiempo constante $O(1)$ (reduciendo complejidad a $O(N + M)$), o resolver el cruce directamente en base de datos (`JOIN`, `prefetch_related`, `annotate`). |
+| **BP-12** | **Transaccionalidad Atómica Obligatoria (`transaction.atomic`)** | Prohibido ejecutar mutaciones múltiples dependientes sin control transaccional. | Toda operación de negocio con 2 o más escrituras en base de datos debe envolverse en `with transaction.atomic():` para evitar estados inconsistentes o registros huérfanos. |
+| **BP-13** | **Persistencia en Bloque (`bulk_create` / `bulk_update`)** | Prohibido invocar `.save()` o `.create()` individual dentro de bucles para colecciones. | Utilizar operaciones masivas en bloque (`bulk_create(batch_size=500)` y `bulk_update()`) en un único viaje de red SQL. |
+| **BP-14** | **Integridad Absoluta de Código (Cero Código Truncado)** | Prohibido truncar código o dejar placeholders tipo `// ... resto del código ...`. | Toda modificación o creación asistida por IA debe entregar el archivo 100% completo, operativo y respetando la lógica previa del módulo. |
+| **BP-15** | **Aislamiento Estricto de Entorno (Cero Python Global)** | Prohibido terminantemente ejecutar `pip install` o comandos de Python en el intérprete global del sistema. | Operar exclusivamente dentro del entorno virtual `.venv` (`.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt`). |
+| **BP-16** | **Documentación Holística de Capacidades (Cero Changelogs de Micro-Cambios)** | Prohibido redactar bitácoras de cambios puntuales o micro-ediciones. | La carpeta de documentación (`docs/`) y el `README.md` deben documentar a nivel macro cada componente/página realizada, detallando todo lo que realiza la aplicación, su alcance funcional y el destino y visión global de la plataforma. |
 
 ---
 
@@ -123,6 +128,37 @@ clientes_con_facturas = (
 )
 ```
 
+### 2.5. Transaccionalidad Atómica Obligatoria y Persistencia en Lote (BP-12 y BP-13)
+1. **Transacciones Atómicas Obligatorias (`with transaction.atomic():`)**:
+   - Toda operación de negocio que involucre dos o más escrituras dependientes en la base de datos (ej. crear factura y sus líneas de detalle, debitar saldo y asentar movimiento, o crear usuario con rol y perfil) debe ejecutarse obligatoriamente dentro de un bloque `transaction.atomic()`.
+   - Si se produce una excepción en cualquier paso, se ejecuta un `ROLLBACK` completo automático, impidiendo registros huérfanos o datos corruptos a medio guardar.
+2. **Prohibición de `.save()` dentro de Bucles**:
+   - Prohibido iterar sobre listas para ejecutar `instancia.save()` o `Model.objects.create()` individualmente. Esto dispara $N$ viajes de ida y vuelta al motor SQL, degradando la latencia y bloqueando transacciones en PostgreSQL.
+   - Es obligatorio agrupar en colecciones e invocar `bulk_create(batch_size=500)` o `bulk_update(batch_size=500)`.
+
+#### Comparativa Técnica:
+
+❌ **INCORRECTO (Penalizado en auditoría: escrituras individuales no atómicas)**:
+```python
+# PÉSIMO: Si falla el ítem 3, la orden queda incompleta y se hicieron 10 transacciones SQL separadas
+orden = Orden.objects.create(cliente=cliente, total=total)
+for item in items:
+    DetalleOrden.objects.create(orden=orden, producto=item.prod, cantidad=item.cant)  # N queries individuales
+```
+
+✅ **CORRECTO (Estándar SDD: Atómico y en 1 sola sentencia SQL masiva)**:
+```python
+from django.db import transaction
+
+with transaction.atomic():
+    orden = Orden.objects.create(cliente=cliente, total=total)
+    detalles = [
+        DetalleOrden(orden=orden, producto=item.prod, cantidad=item.cant)
+        for item in items
+    ]
+    DetalleOrden.objects.bulk_create(detalles, batch_size=500)  # 1 sola query SQL
+```
+
 ---
 
 ## 3. Buenas Prácticas de Frontend (React 19 + Vite + Bootstrap 5 + TypeScript)
@@ -200,7 +236,40 @@ Antes de dar por finalizada la creación de cualquier nuevo módulo, verificar:
 - [ ] ¿La creación y edición de registros CRUD se realiza obligatoriamente desde el Right Drawer lateral (cero modales o páginas separadas para formularios de CRUD)?
 - [ ] ¿Si una fila de tabla tiene 2 o más botones de acción, se encuentran agrupados obligatoriamente con Bootstrap `btn-group btn-group-sm` (cero botones sueltos con márgenes)?
 - [ ] ¿El código está libre de ciclos `for` anidados ($O(N^2)$ / $O(N \times M)$) y se implementó indexación con diccionarios $O(1)$ o cruces directos en BD (BP-11)?
+- [ ] ¿Toda operación compuesta de 2 o más escrituras está blindada con `with transaction.atomic():` (BP-12)?
+- [ ] ¿Las inserciones o actualizaciones masivas usan `bulk_create` o `bulk_update` en vez de `.save()` en bucles (BP-13)?
+- [ ] ¿El código entregado está 100% completo, sin truncamientos ni comentarios tipo `// ... resto del código ...` (BP-14)?
+- [ ] ¿La documentación en `docs/` y el `README.md` describe todo lo que realiza el módulo/aplicación de forma holística, omitiendo micro-cambios y dando contexto del destino de la plataforma (BP-16)?
 - [ ] ¿La sonda `/api/v1/health/` responde HTTP 200 con la latencia de Postgres y Redis?
+
+---
+
+## 6. Decálogo Anti-Caos para Asistentes y Agentes de IA
+
+Para evitar que una Inteligencia Artificial introduzca deuda técnica, rompa código en producción o degrade el rendimiento del ecosistema, **todo modelo o agente de IA que opere sobre este repositorio debe cumplir inflexiblemente el siguiente decálogo**:
+
+1. **Cero Código Truncado (`BP-14`)**:
+   - Prohibido reemplazar o generar archivos dejando comentarios del tipo `// ... resto del código ...` o `# [Mantener funciones anteriores]`. Todo archivo o bloque editado debe conservar el 100% de su funcionalidad y contexto sin omisiones destructivas.
+2. **Aislamiento Total del Entorno (`BP-15`)**:
+   - NUNCA ejecutar comandos `pip install` o `python` en el intérprete global del anfitrión. Las ejecuciones deben realizarse únicamente invocando el binario del entorno virtual local (`.\.venv\Scripts\python.exe`).
+3. **Transaccionalidad Atómica Innegociable (`BP-12`)**:
+   - Si una operación crea o modifica múltiples tablas relacionadas, debe envolverse obligatoriamente en `with transaction.atomic():`. Cero registros huérfanos ante excepciones imprevistas.
+4. **Persistencia en Bloque vs Bucles Lentos (`BP-13`)**:
+   - Prohibido llamar a `.save()` o `.create()` individual dentro de bucles `for`. Usar siempre `bulk_create` o `bulk_update` por lotes (`batch_size=500`).
+5. **Cero Ciclos `for` Anidados ($O(N^2)$) (`BP-11`)**:
+   - Prohibido iterar colecciones dentro de bucles para cruzar relaciones o buscar coincidencias. Emplear diccionarios de búsqueda rápida Hash ($O(1)$) o resolver el cruce directamente en el motor de base de datos con SQL (`JOIN` / `prefetch_related`).
+6. **Prohibición de CSS Inventado**:
+   - Prohibido inventar archivos CSS (`custom.css`, `module.css`) o selectores ad-hoc con colores hexadecimales fijos. Reutilizar estrictamente los componentes auditados de `.sdd/components/` y las variables de diseño de `variables.css`.
+7. **Diseño 100% Horizontal (Prohibido Centrar Pantallas)**:
+   - Prohibido centrar dashboards o tablas masivas con contenedores estrechos (`max-w-xl mx-auto`). Toda interfaz debe ocupar el 100% del ancho de la pantalla (`w-full`) para maximizar la legibilidad de columnas y datos.
+8. **Rutas 100% Relativas y Centralizadas (`BP-07` y `BP-09`)**:
+   - Cero URLs fijas (`http://localhost:8000`) o rutas absolutas de Windows/Linux (`C:\Users\...`). Las rutas se resuelven relativamente con `BASE_DIR` en backend y se centralizan en `endpoints.ts` en frontend.
+9. **Tipado Estricto (Prohibido `any` en TypeScript)**:
+   - No ocultar errores de tipado con `any`. Definir contratos rigurosos de interfaces en TypeScript, esquemas de validación Zod en cliente y esquemas Pydantic v2 en FastAPI.
+10. **Cero Alucinación de Librerías o Métodos**:
+    - Usar exclusivamente las dependencias aprobadas en `requirements.txt` y `package.json`. No asumir métodos inexistentes de frameworks; verificar siempre contra la sintaxis oficial y documentada.
+11. **Documentación Viva de Capacidades y Destino de la Plataforma (`BP-16`)**:
+    - Prohibido redactar bitácoras de cambios puntuales ("se agregó campo x"). Documentar todo lo que realiza la aplicación por módulo en `docs/` y mantener actualizado el `README.md` con el alcance global y visión destino del software.
 
 
 

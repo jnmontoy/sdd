@@ -101,9 +101,9 @@ Permite a las organizaciones:
 
 ---
 
-## 🛡️ 3. Las 11 Buenas Prácticas Inflexibles de Ingeniería (Normativa 00)
+## 🛡️ 3. Las 16 Buenas Prácticas Inflexibles de Ingeniería (Normativa 00)
 
-Todo proyecto o módulo del ecosistema debe cumplir estrictamente estas 11 normas para obtener conformidad técnica (100/100):
+Todo proyecto o módulo del ecosistema debe cumplir estrictamente estas 16 normas para obtener conformidad técnica (100/100):
 
 | Código | Dimensión | Regla Inflexible | Implementación Técnica Obligatoria |
 |:---|:---|:---|:---|
@@ -118,6 +118,11 @@ Todo proyecto o módulo del ecosistema debe cumplir estrictamente estas 11 norma
 | **BP-09** | **Centralización de Endpoints** | Prohibido terminantemente quemar rutas HTTP en componentes React o vistas. | Vistas consumen `src/services/endpoints.ts` y backend/pipelines consumen `backend/config/endpoints_registry.json`. |
 | **BP-10** | **Exención de Testing en Modo Mock** | Prohibido e innecesario correr testing automatizado o validadores sobre prototipos `mock/`. | Los mocks son simulaciones visuales estáticas (HTML/CSS/JS) sin servidor real ni base de datos conectada. El testing aplica exclusivamente al desarrollo en código. |
 | **BP-11** | **Prohibición de Ciclos `for` Anidados** | Prohibido anidar bucles `for` ($O(N^2)$ / $O(N \times M)$) y ejecutar queries dentro de ciclos. | Usar diccionarios Hash en memoria ($O(1)$) reduciendo a $O(N + M)$, o cruzar datos en el motor SQL (`JOIN`, `prefetch_related`, `annotate`). |
+| **BP-12** | **Transaccionalidad Atómica** | Prohibido ejecutar escrituras dependientes sin control transaccional. | Envolver 2 o más mutaciones en `with transaction.atomic():` para evitar estados corruptos o huérfanos. |
+| **BP-13** | **Persistencia en Bloque** | Prohibido invocar `.save()` o `.create()` individual en bucles. | Utilizar `bulk_create(batch_size=500)` y `bulk_update()` en un único viaje de red SQL. |
+| **BP-14** | **Integridad de Código** | Prohibido truncar código o dejar placeholders tipo `// ... resto ...`. | Entregar siempre archivos 100% íntegros y respetando la lógica previa del módulo. |
+| **BP-15** | **Aislamiento en `.venv`** | Prohibido ejecutar `pip` o `python` en el entorno global del equipo. | Operar exclusivamente dentro del entorno virtual `.venv` (`.\.venv\Scripts\python.exe`). |
+| **BP-16** | **Documentación de Capacidades y Destino** | Prohibido redactar bitácoras de micro-cambios puntuales. | Documentar todo lo que realiza la aplicación en `docs/` y el destino global de la plataforma en `README.md`. |
 
 ---
 

@@ -105,6 +105,23 @@ La IA procede con las gestiones técnicas de arquitectura y desarrollo:
 > - **Tokens**: `variables.css` (Día/Noche).  
 > *Inventar CSS nuevo evade la auditoría corporativa y fragmenta el ecosistema.*
 
+#### 📖 PROTOCOLO DE DOCUMENTACIÓN VIVA HOLÍSTICA EN MODO DESARROLLO (`docs/` Y `README.md`)
+> [!IMPORTANT]
+> **DOCUMENTACIÓN DE CAPACIDADES GLOBALES (PROHIBIDO CHANGELOGS DE MICRO-CAMBIOS)**:  
+> En el modo de desarrollo Greenfield, el sistema debe ir documentando progresivamente en la carpeta de documentación del proyecto (`docs/` o especificaciones de módulo) y en el `README.md` principal lo que se va construyendo.  
+> 
+> **Reglas Inflexibles de Documentación**:
+> 1. **Cero Micro-Cambios o Fragmentos**: Queda estrictamente prohibido redactar bitácoras de tareas técnicas puntuales, diffs o ediciones menores (ej. *"se añadió el campo teléfono al formulario"*, *"se corrigió un padding en el botón"*, *"se creó la función validate()"*).
+> 2. **Documentación Holística por Componente / Módulo**: Cuando se cree o evolucione una página o componente (ej. la página de `usuarios`), se debe documentar **TODO LO QUE REALIZA LA APLICACIÓN Y EL MÓDULO** de extremo a extremo:
+>    - **Propósito y Valor de Negocio**: Qué necesidad operativa resuelve dentro de la organización.
+>    - **Capacidades Funcionales Completas**: Listado exhaustivo de todas las operaciones disponibles (búsqueda reactiva, filtros multicriterio tipo Excel, paginación server-side, ciclo de vida de la entidad, activación/suspensión, justificaciones de auditoría).
+>    - **Arquitectura de Ejecución**: Desacoplamiento entre la capa de entrega ultra rápida de JSON en FastAPI (`ORJSONResponse`, Pydantic v2) y la capa exclusiva de seguridad en Django (RBAC, permisos y modelos).
+>    - **Experiencia de Usuario (UI)**: Uso del Right Drawer para CRUD, modales de confirmación con justificación y componentes auditados de `.sdd/components/`.
+> 3. **Contexto del Destino de la Plataforma en el `README.md`**: Con cada nuevo módulo entregado, la IA debe actualizar el `README.md` raíz para mantener vivo el **contexto del destino y visión de la plataforma**:
+>    - Visión general del producto y metas organizacionales que resuelve.
+>    - Matriz de capacidades activas (catálogo de módulos operativos disponibles).
+>    - Estado arquitectónico consolidado del stack técnico (FastAPI + Django + React + Docker).
+
 #### Escenario A: Creación de un Nuevo Proyecto desde Cero
 La IA pregunta interactivamente:
 1. **Nombre del Proyecto**: Identificador y título visible (ej. `logistica`, `empaque`, `despachos`).
