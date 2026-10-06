@@ -22,6 +22,7 @@ Cualquier proyecto o módulo creado a partir de `.sdd` **debe nacer blindado baj
 | **BP-08** | **Directorio Canónico `backend/media/` para Cargas** | Estandarizar la ubicación de subida para cualquier archivo (firmas, PDFs, evidencias, fotos). | Crear siempre `backend/media/` con `.gitkeep`, montar volumen Docker `./backend/media:/app/media` y exponer mediante `MEDIA_URL = '/media/'` y `MEDIA_ROOT = BASE_DIR / 'media'`. |
 | **BP-09** | **Centralización de Endpoints (Cero URLs en Vistas)** | Prohibido terminantemente escribir rutas HTTP quemadas en componentes React o vistas. | Centralizar en `frontend/src/services/endpoints.ts` y registrar en `backend/config/endpoints_registry.json` para validación automatizada en un solo comando. |
 | **BP-10** | **Exención de Testing en Modo Mock No-Code** | Prohibido e innecesario exigir pruebas automáticas, Pytest o validadores sobre prototipos de `mock/`. | Los mocks son simulaciones visuales estáticas (HTML/CSS/JS) sin servidor real ni base de datos conectada. El testing aplica exclusivamente a la fase de implementación real en `frontend/` y `backend/`. |
+| **BP-11** | **Prohibición de Ciclos `for` Anidados ($O(N^2)$ / $O(N \times M)$)** | Prohibido terminantemente anidar ciclos `for` para cruzar o relacionar colecciones, y ejecutar queries o llamadas API dentro de bucles. | Reemplazar por indexación en memoria con tablas Hash / diccionarios (`dict` / `defaultdict`) con lookup en tiempo constante $O(1)$ (reduciendo complejidad a $O(N + M)$), o resolver el cruce directamente en base de datos (`JOIN`, `prefetch_related`, `annotate`). |
 
 ---
 
@@ -63,6 +64,64 @@ Cualquier proyecto o módulo creado a partir de `.sdd` **debe nacer blindado baj
     "correlation_id": "c8b417ef-5769-42b8-935a-4933a30c5e7b"
   }
   ```
+
+### 2.4. Prohibición Terminante de Ciclos `for` Anidados (Antipatrón O(N²) y O(N × M))
+1. **El Problema**:
+   - Anidar bucles `for` (recorrer una colección dentro de otra para cruzar relaciones o buscar coincidencias) degrada drásticamente el rendimiento al disparar una complejidad algorítmica cuadrática o polinomial ($O(N^2)$ o $O(N \times M)$).
+   - **Antipatrón Fatal**: Ejecutar consultas SQL/ORM o llamadas HTTP dentro de un ciclo `for` (o ciclos anidados). Esto multiplica de forma inaceptable la latencia y satura el pool de conexiones a la base de datos.
+2. **Buenas Prácticas Obligatorias para Evitar Relaciones en Bucles**:
+   - **Indexación mediante Diccionarios / Tablas Hash ($O(1)$)**: Convertir la colección secundaria en un mapa hash (`dict` por clave primaria o `defaultdict(list)` por clave foránea). Esto reduce la complejidad global de $O(N \times M)$ a tiempo lineal **$O(N + M)$**, transformando cada búsqueda interna en un acceso instantáneo en tiempo constante $O(1)$.
+   - **Uso de Conjuntos (`set`) para Validación de Existencia**: Utilizar `set` para comprobar pertenencia (`if item_id in ids_set`) en tiempo constante $O(1)$ en lugar de buscar dentro de una lista lineal en $O(K)$.
+   - **Delegación Directa al Motor de Base de Datos**: Resolver los cruces y agregaciones en la capa de datos (`select_related()`, `prefetch_related()`, `annotate()`, `aggregate()` o `.values()`), aprovechando los índices y optimizaciones de PostgreSQL antes de transferir datos a la memoria de Python.
+   - **Comprensiones Directas de Listas y Diccionarios**: Evitar bucles anidados manuales con acumuladores mutables `.append()`; priorizar comprensiones declarativas y limpias.
+
+#### Comparativa Técnica de Código:
+
+❌ **INCORRECTO (Penalizado en auditoría — Ciclo anidado O(N × M) o consultas dentro de bucles)**:
+```python
+# PÉSIMO RENDIMIENTO: O(N * M) en CPU o saturación si hay consultas internas
+resultado = []
+for cliente in clientes:
+    # Antipatrón fatal si además se hace: Factura.objects.filter(cliente_id=cliente.id)
+    for factura in facturas:  # Ciclo dentro de ciclo
+        if factura.cliente_id == cliente.id:
+            resultado.append({
+                "cliente": cliente.nombre,
+                "factura": factura.numero,
+                "monto": factura.monto
+            })
+```
+
+✅ **CORRECTO (Estándar SDD — Indexación Hash O(N + M) con Lookup O(1))**:
+```python
+# ÓPTIMO: Pre-agrupación en diccionario O(M) y búsqueda instantánea O(1)
+from collections import defaultdict
+
+facturas_por_cliente = defaultdict(list)
+for factura in facturas:
+    facturas_por_cliente[factura.cliente_id].append({
+        "numero": factura.numero,
+        "monto": factura.monto
+    })
+
+# Un solo recorrido lineal O(N) sin ciclos anidados
+resultado = [
+    {
+        "cliente": cliente.nombre,
+        "facturas": facturas_por_cliente.get(cliente.id, [])
+    }
+    for cliente in clientes
+]
+```
+
+✅ **AÚN MEJOR (Delegado en Base de Datos / ORM — 1 Sola Sentencia SQL)**:
+```python
+# La base de datos resuelve las relaciones de forma nativa e indexada
+clientes_con_facturas = (
+    Cliente.objects.prefetch_related('facturas')
+    .filter(activo=True)
+)
+```
 
 ---
 
@@ -140,6 +199,7 @@ Antes de dar por finalizada la creación de cualquier nuevo módulo, verificar:
 - [ ] ¿Todos los módulos y vistas reutilizan directamente las clases CSS y componentes de `.sdd/components/` (cero archivos `.css` inventados o improvisados desde cero)?
 - [ ] ¿La creación y edición de registros CRUD se realiza obligatoriamente desde el Right Drawer lateral (cero modales o páginas separadas para formularios de CRUD)?
 - [ ] ¿Si una fila de tabla tiene 2 o más botones de acción, se encuentran agrupados obligatoriamente con Bootstrap `btn-group btn-group-sm` (cero botones sueltos con márgenes)?
+- [ ] ¿El código está libre de ciclos `for` anidados ($O(N^2)$ / $O(N \times M)$) y se implementó indexación con diccionarios $O(1)$ o cruces directos en BD (BP-11)?
 - [ ] ¿La sonda `/api/v1/health/` responde HTTP 200 con la latencia de Postgres y Redis?
 
 

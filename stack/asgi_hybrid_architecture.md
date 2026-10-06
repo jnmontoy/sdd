@@ -165,3 +165,32 @@ def get_usuarios_values():
         )
     )
 ```
+
+---
+
+### 5. Prohibición de Ciclos `for` Anidados (Algoritmos O(1) para Respuestas en Microsegundos)
+
+Para que FastAPI cumpla su estándar de ser la capa de entrega de datos en JSON **ultra rápida**, los endpoints y servicios tienen prohibido anidar bucles `for` ($O(N^2)$ o $O(N \times M)$) para cruzar o transformar colecciones.
+
+1. **Regla de Oro**: Ninguna transformación de datos en memoria debe realizar búsquedas secuenciales dentro de bucles.
+2. **Uso Mandatorio de Diccionarios Hash ($O(1)$)**: Si se deben relacionar o cruzar dos listas de datos (ej. clientes con pedidos, o usuarios con roles), la colección secundaria debe pre-indexarse en un `dict` o `defaultdict(list)` por clave foránea. Esto garantiza complejidad lineal **$O(N + M)$** en lugar de cuadrática $O(N \times M)$.
+3. **Prohibición de Queries en Bucles**: Jamás ejecutar llamadas `get()`, `filter()` o consultas a base de datos dentro de un bucle `for`. Se deben precargar todas las entidades necesarias en lote con `filter(id__in=ids)` e indexarlas en memoria antes de la serialización JSON.
+
+#### Ejemplo Canónico de Procesamiento en FastAPI:
+```python
+from collections import defaultdict
+from typing import List, Dict, Any
+
+def enriquecer_datos_ultra_rapido(usuarios: List[Dict[str, Any]], roles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    # 1. Pre-indexar roles en Hash Map O(1) tiempo constante
+    roles_map = {r["id"]: r["nombre"] for r in roles}
+
+    # 2. Enriquecer usuarios en un solo paso lineal O(N) sin anidar for
+    return [
+        {
+            **u,
+            "rol_nombre": roles_map.get(u["rol_id"], "Sin Rol")
+        }
+        for u in usuarios
+    ]
+```

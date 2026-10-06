@@ -101,9 +101,9 @@ Permite a las organizaciones:
 
 ---
 
-## 🛡️ 3. Las 10 Buenas Prácticas Inflexibles de Ingeniería (Normativa 00)
+## 🛡️ 3. Las 11 Buenas Prácticas Inflexibles de Ingeniería (Normativa 00)
 
-Todo proyecto o módulo del ecosistema debe cumplir estrictamente estas 10 normas para obtener conformidad técnica (100/100):
+Todo proyecto o módulo del ecosistema debe cumplir estrictamente estas 11 normas para obtener conformidad técnica (100/100):
 
 | Código | Dimensión | Regla Inflexible | Implementación Técnica Obligatoria |
 |:---|:---|:---|:---|
@@ -117,6 +117,7 @@ Todo proyecto o módulo del ecosistema debe cumplir estrictamente estas 10 norma
 | **BP-08** | **Carpeta `backend/media/`** | Estandarizar la ubicación de subida para cualquier archivo (firmas, PDFs, fotos). | Crear siempre `backend/media/` con `.gitkeep`, montar volumen Docker `./backend/media:/app/media` y exponer vía `MEDIA_ROOT`. |
 | **BP-09** | **Centralización de Endpoints** | Prohibido terminantemente quemar rutas HTTP en componentes React o vistas. | Vistas consumen `src/services/endpoints.ts` y backend/pipelines consumen `backend/config/endpoints_registry.json`. |
 | **BP-10** | **Exención de Testing en Modo Mock** | Prohibido e innecesario correr testing automatizado o validadores sobre prototipos `mock/`. | Los mocks son simulaciones visuales estáticas (HTML/CSS/JS) sin servidor real ni base de datos conectada. El testing aplica exclusivamente al desarrollo en código. |
+| **BP-11** | **Prohibición de Ciclos `for` Anidados** | Prohibido anidar bucles `for` ($O(N^2)$ / $O(N \times M)$) y ejecutar queries dentro de ciclos. | Usar diccionarios Hash en memoria ($O(1)$) reduciendo a $O(N + M)$, o cruzar datos en el motor SQL (`JOIN`, `prefetch_related`, `annotate`). |
 
 ---
 
