@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
   <meta charset="UTF-8">
@@ -85,15 +85,15 @@
       border-color: var(--color-primary);
     }
 
-    /* REJILLA Y TARJETAS KPI (ESTÁNDAR BI CARTERA) */
-    .cartera-kpi-row {
+    /* REJILLA Y TARJETAS KPI (ESTÁNDAR SDD) */
+    .joli-kpi-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
 
-    .cartera-kpi-card {
+    .joli-kpi-card {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -106,12 +106,12 @@
       transition: transform 0.15s ease, border-color 0.15s ease;
     }
 
-    .cartera-kpi-card:hover {
+    .joli-kpi-card:hover {
       transform: translateY(-2px);
       border-color: #64748B;
     }
 
-    .cartera-kpi-card.active-filter {
+    .joli-kpi-card.active-filter {
       border-color: var(--color-primary);
       box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
     }
@@ -334,10 +334,10 @@
     </div>
   </div>
 
-  <!-- 1. CARDS KPI (ESTÁNDAR BI CARTERA) -->
-  <div class="cartera-kpi-row">
+  <!-- 1. CARDS KPI (ESTÁNDAR SDD) -->
+  <div class="joli-kpi-row">
     <!-- Card 1: Ventas Hoy (Filtro Activo) -->
-    <div class="cartera-kpi-card active-filter" onclick="alert('En React, este clic activa el filtro cruzado en la tabla')">
+    <div class="joli-kpi-card active-filter" onclick="alert('En React, este clic activa el filtro cruzado en la tabla')">
       <span class="kpi-filter-badge">FILTRO ACTIVO</span>
       <div class="kpi-top-line">
         <span class="kpi-label">Ventas Hoy</span>
@@ -350,7 +350,7 @@
     </div>
 
     <!-- Card 2: Meta Cumplida -->
-    <div class="cartera-kpi-card" onclick="alert('En React, este clic activa el filtro cruzado en la tabla')">
+    <div class="joli-kpi-card" onclick="alert('En React, este clic activa el filtro cruzado en la tabla')">
       <div class="kpi-top-line">
         <span class="kpi-label">Meta del Mes</span>
         <div class="kpi-icon-box icon-blue">
@@ -362,7 +362,7 @@
     </div>
 
     <!-- Card 3: Facturas Pendientes -->
-    <div class="cartera-kpi-card" onclick="alert('En React, este clic activa el filtro cruzado en la tabla')">
+    <div class="joli-kpi-card" onclick="alert('En React, este clic activa el filtro cruzado en la tabla')">
       <div class="kpi-top-line">
         <span class="kpi-label">Por Cobrar</span>
         <div class="kpi-icon-box icon-amber">
@@ -374,7 +374,7 @@
     </div>
 
     <!-- Card 4: En Mora / Riesgo -->
-    <div class="cartera-kpi-card" onclick="alert('En React, este clic activa el filtro cruzado en la tabla')">
+    <div class="joli-kpi-card" onclick="alert('En React, este clic activa el filtro cruzado en la tabla')">
       <div class="kpi-top-line">
         <span class="kpi-label">Cartera Vencida</span>
         <div class="kpi-icon-box icon-pink">

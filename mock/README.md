@@ -71,8 +71,8 @@ Para garantizar que el prototipo refleje la identidad de los aplicativos reales 
    - **Prohibido usar breadcrumbs de navegación tipo migas de pan (`Jolifoods > Módulo > Página`) a menos que el usuario lo solicite expresamente**. En ese espacio va directamente el nombre de la pantalla actual.
    - **Prohibido aplicar textos verdes a títulos o rutas de navegación** (el verde es exclusivo de badges de estado positivo). (Ver [navbar.md](../components/layout/navbar.md)).
 3. **Acciones Agrupadas en Toda la Pantalla (Sin Botones Sueltos)**:
-   - **Toolbar de Tabla**: Botones agrupados en una caja compacta de 28px (`.cartera-compact-action-box`) con iconos `+`, `FileSpreadsheet` verde y `RefreshCw` (sin texto).
-   - **Acciones por Fila de Tabla**: En la columna de acciones de cada fila, los botones de ver detalle y desactivar **deben estar agrupados en un contenedor segmentado de 26px** (`.cartera-row-actions-group`) con divisores de 1px. (Ver [icon_action_group.md](../components/button/icon_action_group.md)).
+   - **Toolbar de Tabla**: Botones agrupados en una caja compacta de 28px (`.compact-action-box`) con iconos `+`, `FileSpreadsheet` verde y `RefreshCw` (sin texto).
+   - **Acciones por Fila de Tabla**: En la columna de acciones de cada fila, los botones de ver detalle y desactivar **deben estar agrupados en un contenedor segmentado de 26px** (`.row-actions-group`) con divisores de 1px. (Ver [icon_action_group.md](../components/button/icon_action_group.md)).
 4. **Cero Textos Verdes o Azules Innecesarios en Tablas (Tipografía Neutra)**:
    - **Prohibido aplicar color verde o azul suelto a códigos de registros, identificadores o textos comunes**.
    - El color verde se reserva **exclusivamente para badges de estado positivo** (`OPTIMO`, `PAGADA`). Los códigos usan fuente `font-mono` neutra con `var(--text-primary)` o `var(--text-secondary)`.
@@ -86,9 +86,9 @@ Para garantizar que el prototipo refleje la identidad de los aplicativos reales 
      - **Botón Confirmar Condicionado**: El botón principal de confirmación permanece **deshabilitado (`disabled`)** hasta que el usuario digite al menos 10 caracteres válidos de justificación. (Ver [confirm_modal.md](../components/modal/confirm_modal.md)).
 6. **Right Drawer Obligatorio para Formularios y Detalles**:
    - **Prohibido abrir formularios de captura o edición en modales flotantes centrados**.
-   - Se deslizan siempre desde la derecha en un panel lateral (`.cartera-sidebar-drawer` de 560px) con mini-KPIs contextuales y scroll propio. (Ver [drawer.md](../components/drawer/drawer.md)).
+   - Se deslizan siempre desde la derecha en un panel lateral (`.joli-drawer-container` de 560px) con mini-KPIs contextuales y scroll propio. (Ver [drawer.md](../components/drawer/drawer.md)).
 7. **Filtros Superiores Expandibles Segmentados**:
-   - Los filtros de cabecera se organizan en `.cartera-btn-group` con despliegue horizontal y botón `FilterX` de solo icono para limpiar. (Ver [expandable_filter_group.md](../components/dropdown/expandable_filter_group.md)).
+   - Los filtros de cabecera se organizan en `.expandable-filter-group` con despliegue horizontal y botón `FilterX` de solo icono para limpiar. (Ver [expandable_filter_group.md](../components/dropdown/expandable_filter_group.md)).
 8. **Centro de Multi-Notificaciones Desplegable en TopHeader (Estándar Tiendita / Vibra)**:
    - **Prohibido dejar el icono de la campana sin interactividad o con un `alert()` genérico**.
    - La campana debe contar con badge numérico (`.bell-badge-count`) y desplegar un popover flotante (`.notification-popover`) con **pestañas segmentadas para múltiples tipos de notificaciones** (ej. Solicitudes vs Alertas Críticas), badges por pestaña, lista con indicadores de severidad cromáticos, botones de acción en línea y estado óptimo de stock/tareas al día. (Ver [notification_popover.md](../components/notification/notification_popover.md)).
@@ -96,23 +96,23 @@ Para garantizar que el prototipo refleje la identidad de los aplicativos reales 
    - **Prohibido dejar el nombre o avatar del usuario como un badge plano sin acción**.
    - Al hacer clic sobre el colaborador en el TopHeader, se despliega el menú flotante con avatar, nombre, correo corporativo, badge de rol, enlace a *"Mi Perfil"* y botón de **"Cerrar Sesión"**.
    - Al pulsar *"Cerrar Sesión"*, **se debe abrir obligatoriamente el `ConfirmModal` canónico** solicitando confirmación explícita para evitar cierres de sesión involuntarios. (Ver [user_profile_dropdown.md](../components/layout/user_profile_dropdown.md)).
-10. **Paginación Superior Integrada y Card Contenedora hasta Abajo (Estándar bi/cartera)**:
+10. **Paginación Superior Integrada y Card Contenedora hasta Abajo (Estándar SDD)**:
     - **Prohibido ubicar el paginador debajo o al pie de la tabla**.
-    - La paginación va integrada **ARRIBA DE LA TABLA**, dentro de la toolbar superior (`.cartera-table-header-toolbar.pagination-container`), unificando en una sola fila compacta:
+    - La paginación va integrada **ARRIBA DE LA TABLA**, dentro de la toolbar superior (`.table-header-toolbar.pagination-container`), unificando en una sola fila compacta:
       - **A la izquierda**: Selector de tamaño (`Mostrar [10 v] por página`), buscador reactivo, botón de limpieza de filtros activos, selector de visibilidad de columnas (`Columns3`), botones de acción (exportar, refrescar) y el resumen `Mostrando {start} a {end} de {total} registros`.
       - **A la derecha**: Controles de navegación (`ChevronsLeft`, `ChevronLeft`, botones numéricos con estado `.active` en verde/acento corporativo, `ChevronRight`, `ChevronsRight`).
-    - **Card de Altura Completa (`.cartera-main-card`)**: La tarjeta contenedora de la tabla tiene `flex: 1; min-height: 420px; display: flex; flex-direction: column; overflow: hidden;` extendiéndose hasta el borde inferior de la pantalla visible dentro de un layout `height: 100vh; overflow: hidden;` (o `min-height: calc(100vh - 80px)`). La tabla interna (`.cartera-table-wrapper`) tiene `flex: 1; overflow: auto; min-height: 250px;`, sin dejar huecos vacíos desaprovechados.
+    - **Card de Altura Completa (`.main-card-container`)**: La tarjeta contenedora de la tabla tiene `flex: 1; min-height: 420px; display: flex; flex-direction: column; overflow: hidden;` extendiéndose hasta el borde inferior de la pantalla visible dentro de un layout `height: 100vh; overflow: hidden;` (o `min-height: calc(100vh - 80px)`). La tabla interna (`.table-wrapper-full`) tiene `flex: 1; overflow: auto; min-height: 250px;`, sin dejar huecos vacíos desaprovechados.
     - **Dataset Suficiente**: Mínimo 20 a 30 registros iniciales para verificar la funcionalidad real del paginador. (Ver [pagination.md](../components/pagination/pagination.md)).
-11. **Filtros de Columna Tipo Excel Funcionales (`ChecklistPopover` - Estándar BI Cartera)**:
+11. **Filtros de Columna Tipo Excel Funcionales (`ChecklistPopover` - Estándar SDD)**:
     - **Prohibido dejar los encabezados de tabla sin capacidad de filtrado contextual**.
     - Cada encabezado `<th>` filtrable incluye un botón de filtro (`.filter-toggle-btn`).
-    - Al hacer clic, se despliega el popover tipo Excel (`.cartera-excel-popover`) con ordenamiento A-Z / Z-A, buscador reactivo, casillas con frecuencias `(N)`, selección/deselección masiva y botones Limpiar y Aplicar.
+    - Al hacer clic, se despliega el popover tipo Excel (`.excel-popover`) con ordenamiento A-Z / Z-A, buscador reactivo, casillas con frecuencias `(N)`, selección/deselección masiva y botones Limpiar y Aplicar.
     - Al aplicar, la tabla filtra inmediatamente el dataset y recalcula la paginación.
     - Cuando una columna tiene filtros activos, se resalta con halo cromático y un punto indicador verde (`.filter-active-dot`), y en la toolbar aparece el botón de reseteo rápido (`FilterX: Filtros (N)`). (Ver [checklist_popover.md](../components/data_table/checklist_popover.md)).
 12. **Columnas Ajustables / Redimensionables (`ColumnResizer`) y Selector de Visibilidad (`Columns3`)**:
     - **Prohibido generar tablas con anchos rígidos o desbordamientos descontrolados**.
-    - Cada encabezado `<th>` debe incorporar en su borde derecho el manipulador de 6px (`.cartera-th-resizer`) con cursor `col-resize` para arrastre fluido en tiempo real (mínimo 60px) y restablecimiento de ancho predeterminado mediante doble clic. (Ver [column_resizer.md](../components/data_table/column_resizer.md)).
-    - La toolbar debe incluir el selector de visibilidad de columnas (`.cartera-col-visibility-wrapper`) con icono `Columns3`, badge de conteo `{visibles}/{totales}` y popover interactivo para ocultar o mostrar columnas garantizando al menos una visible. (Ver [column_visibility.md](../components/data_table/column_visibility.md)).
+    - Cada encabezado `<th>` debe incorporar en su borde derecho el manipulador de 6px (`.resizable-th-resizer`) con cursor `col-resize` para arrastre fluido en tiempo real (mínimo 60px) y restablecimiento de ancho predeterminado mediante doble clic. (Ver [column_resizer.md](../components/data_table/column_resizer.md)).
+    - La toolbar debe incluir el selector de visibilidad de columnas (`.col-visibility-wrapper`) con icono `Columns3`, badge de conteo `{visibles}/{totales}` y popover interactivo para ocultar o mostrar columnas garantizando al menos una visible. (Ver [column_visibility.md](../components/data_table/column_visibility.md)).
 13. **Conformidad Absoluta de Variables CSS y Tematización Día/Noche (`variables.css`)**:
     - **Prohibido inventar nombres de variables ad-hoc** o hardcodear colores directos (ej. `#ffffff`, `#16162a`, o `rgba(...)` fijos) para fondos, textos o bordes que queden estáticos al cambiar de tema.
     - Toda vista, componente o mock debe vincularse estrictamente a la taxonomía canónica de [variables.css](../components/variables.css).

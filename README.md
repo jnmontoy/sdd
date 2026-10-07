@@ -42,7 +42,7 @@ Permite a las organizaciones:
 │   ├── empty_state/                         # Estados vacíos ilustrados con llamadas a la acción
 │   ├── error_boundary/                      # Resiliencia ante caídas y auto-recarga ante ChunkLoadError
 │   ├── export/                              # Exportación a Excel (.xlsx) con auto-anchos
-│   ├── kpi/                                 # Tarjetas KPI BI Cartera con halo cromático y filtro cruzado
+│   ├── kpi/                                 # Tarjetas KPI con halo cromático y filtro cruzado
 │   ├── layout/                              # TopNavbar, UserProfileDropdown y Reglas 100% Horizontal
 │   ├── loader/                              # PageLoader con isotipo Jolifoods y Skeletons shimmer
 │   ├── login/                               # Suite de autenticación, Microsoft SSO M365, recovery y logos
@@ -255,7 +255,7 @@ La metodología SDD se nutre de las mejores soluciones de ingeniería probadas e
 
 - **`bi` (Inteligencia de Negocios)**:
   - Tutorial interactivo dividido (`SplitTutorialModal` y `TutorialStepsPanel`).
-  - Paginador superior integrado en toolbar de tabla (`.cartera-table-header-toolbar.pagination-container`).
+  - Paginador superior integrado en toolbar de tabla (`.table-header-toolbar.pagination-container`).
   - Tarjetas KPI con halo cromático y filtrado cruzado de dataset en memoria.
 - **`app_tic` (Mesa de Ayuda TIC)**:
   - Smart Polling en JavaScript con `AbortController` y detección de pestaña activa (`visibilityState`).

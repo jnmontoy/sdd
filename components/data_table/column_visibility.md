@@ -1,6 +1,6 @@
 # Componente UI: Selector de Visibilidad de Columnas (Column Visibility)
 ## Ecosistema Jolifoods — Spec-Driven Development (SDD)
-### Patrón Canónico de Referencia: Módulo BI Cartera (`cartera-col-visibility-wrapper` / `Columns3`)
+### Patrón Canónico de Referencia: Selector de Columnas Dinámico (`col-visibility-wrapper` / `Columns3`)
 
 El **Selector de Visibilidad de Columnas** permite a los usuarios mostrar u ocultar columnas de la tabla de datos mediante un menú emergente desplegable con casillas de verificación, protegiendo al menos una columna obligatoria activa y persistiendo la configuración del usuario.
 
@@ -76,10 +76,10 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
   };
 
   return (
-    <div className="cartera-col-visibility-wrapper" ref={containerRef}>
+    <div className="col-visibility-wrapper" ref={containerRef}>
       <button
         type="button"
-        className={`cartera-col-visibility-btn ${isOpen ? 'active' : ''}`}
+        className={`col-visibility-btn ${isOpen ? 'active' : ''}`}
         onClick={() => setIsOpen((prev) => !prev)}
         title="Configurar columnas visibles de la tabla"
       >
@@ -92,8 +92,8 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
       </button>
 
       {isOpen && (
-        <div className="cartera-col-visibility-popover">
-          <div className="cartera-col-visibility-header">
+        <div className="col-visibility-popover">
+          <div className="col-visibility-header">
             <span className="title">Columnas visibles</span>
             <div className="header-actions">
               <button type="button" className="link-btn" onClick={showAll}>
@@ -105,11 +105,11 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
               </button>
             </div>
           </div>
-          <div className="cartera-col-visibility-list">
+          <div className="col-visibility-list">
             {columns.map((col) => {
               const isChecked = visibleColumns.includes(col.key);
               return (
-                <label key={col.key} className="cartera-col-visibility-item">
+                <label key={col.key} className="col-visibility-item">
                   <input
                     type="checkbox"
                     className="col-checkbox"
@@ -134,12 +134,12 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
 ## 3. Estilos CSS Corporativos
 
 ```css
-.cartera-col-visibility-wrapper {
+.col-visibility-wrapper {
   position: relative;
   display: inline-block;
 }
 
-.cartera-col-visibility-btn {
+.col-visibility-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -155,8 +155,8 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
   transition: all 0.15s ease;
 }
 
-.cartera-col-visibility-btn:hover,
-.cartera-col-visibility-btn.active {
+.col-visibility-btn:hover,
+.col-visibility-btn.active {
   color: var(--text-primary);
   border-color: var(--accent-color, #3b82f6);
   background-color: var(--bg-hover);
@@ -174,7 +174,7 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
   transform: rotate(180deg);
 }
 
-.cartera-col-visibility-popover {
+.col-visibility-popover {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
@@ -187,7 +187,7 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
   overflow: hidden;
 }
 
-.cartera-col-visibility-header {
+.col-visibility-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -198,7 +198,7 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
   font-weight: 600;
 }
 
-.cartera-col-visibility-header .link-btn {
+.col-visibility-header .link-btn {
   background: none;
   border: none;
   color: var(--accent-color, #3b82f6);
@@ -207,13 +207,13 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
   padding: 0;
 }
 
-.cartera-col-visibility-list {
+.col-visibility-list {
   max-height: 240px;
   overflow-y: auto;
   padding: 6px 0;
 }
 
-.cartera-col-visibility-item {
+.col-visibility-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -224,7 +224,7 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
   transition: background-color 0.1s ease;
 }
 
-.cartera-col-visibility-item:hover {
+.col-visibility-item:hover {
   background-color: var(--bg-hover);
 }
 ```

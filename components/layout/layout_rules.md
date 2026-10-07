@@ -21,9 +21,9 @@ Las soluciones de Jolifoods (`app_tic`, `tiendita`, `vibra`, `contenedores`, `po
 
 | Elemento | ❌ PROHIBIDO (Centrado / Bloque Estrecho) | ✅ OBLIGATORIO (Horizontal a lo Largo de la Pantalla) |
 | :--- | :--- | :--- |
-| **Contenedor Principal de Vista** | `<div class="container max-w-4xl mx-auto flex flex-col items-center">` | `<div class="cartera-view-container w-full" style="width: 100%; min-width: 100%;">` |
+| **Contenedor Principal de Vista** | `<div class="container max-w-4xl mx-auto flex flex-col items-center">` | `<div class="view-container-full w-full" style="width: 100%; min-width: 100%;">` |
 | **TopHeader / Barra Superior** | Barra centrada o con márgenes laterales vacíos | Ocupa el **100% del viewport de borde a borde**. Branding a la izquierda extrema, controles a la derecha extrema. |
-| **Barra de Filtros y Búsqueda** | Apilada verticalmente o en caja centrada | Barra horizontal continua (`.cartera-topbar`) expandida al 100% con inputs, selects y botones en línea fluida. |
+| **Barra de Filtros y Búsqueda** | Apilada verticalmente o en caja centrada | Barra horizontal continua (`.filter-topbar`) expandida al 100% con inputs, selects y botones en línea fluida. |
 | **Tablas de Datos (`DataTable`)** | Tablas encerradas en tarjetas pequeñas con scroll forzado | La tabla se extiende a lo largo de todo el ancho disponible (`width: 100%`), permitiendo visualizar todas las columnas cómodamente. |
 | **Tarjetas KPI** | Tarjetas apiladas en columna o centradas en el medio | Rejilla inteligente horizontal fluida (`display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); width: 100%;`). |
 | **Toolbar de Acciones** | Botones centrados o dispersos | Caja compacta alineada a la izquierda o derecha ocupando el flujo horizontal natural de la vista. |
@@ -46,7 +46,7 @@ Una vez el usuario ingresa al sistema autenticado, **EL 100% DE LAS VISTAS ES HO
 /* ==========================================================================
    CONTENEDOR MAESTRO DE VISTA — FULL WIDTH HORIZONTAL (100% ANCHO)
    ========================================================================== */
-.cartera-page-wrapper {
+.page-wrapper-full {
   width: 100%;
   min-height: calc(100vh - var(--topheader-height, 60px));
   padding: 1.25rem 1.5rem;
@@ -60,7 +60,7 @@ Una vez el usuario ingresa al sistema autenticado, **EL 100% DE LAS VISTAS ES HO
 }
 
 /* Rejilla de KPIs a lo largo de la pantalla */
-.cartera-kpi-grid-full {
+.kpi-grid-full {
   width: 100%;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -68,7 +68,7 @@ Una vez el usuario ingresa al sistema autenticado, **EL 100% DE LAS VISTAS ES HO
 }
 
 /* Barra de filtros horizontal */
-.cartera-topbar-full {
+.filter-topbar-full {
   width: 100%;
   display: flex;
   align-items: center;
@@ -82,7 +82,7 @@ Una vez el usuario ingresa al sistema autenticado, **EL 100% DE LAS VISTAS ES HO
 }
 
 /* Contenedor de tabla 100% horizontal */
-.cartera-table-wrapper-full {
+.table-wrapper-full {
   width: 100%;
   overflow-x: auto;
   background: var(--bg-card);
@@ -97,7 +97,7 @@ import React from 'react';
 
 export const MasterLayoutPage: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="cartera-page-wrapper w-full">
+    <div className="page-wrapper-full w-full">
       {/* Todo el contenido se expande a lo largo de la pantalla */}
       {children}
     </div>

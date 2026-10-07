@@ -122,12 +122,12 @@ Si la página incluye una tabla, la IA presenta el **Menú de Capacidades de Tab
 
 La IA asegura la adherencia estricta a las normas corporativas Jolifoods:
 1. **Layout Full-Width por Defecto (Cero Sidebar)**: Toda pantalla es de ancho completo a menos que el usuario pida explícitamente navegación lateral. El título de pantalla/módulo va siempre en el **TopHeader a la izquierda (`.topheader-left`)** junto a la marca Jolifoods (sin `<h1>` gigantes en el cuerpo).
-2. **Paginación Superior y Card hasta Abajo (Estándar bi/cartera)**: El paginador se ubica **ARRIBA DE LA TABLA** en la toolbar superior (`.cartera-table-header-toolbar.pagination-container`), y la card contenedora (`.cartera-main-card`) tiene `flex: 1` ocupando todo el espacio vertical disponible hasta el fondo del viewport visible.
+2. **Paginación Superior y Card hasta Abajo (Estándar SDD)**: El paginador se ubica **ARRIBA DE LA TABLA** en la toolbar superior (`.table-header-toolbar.pagination-container`), y la card contenedora (`.main-card-container`) tiene `flex: 1` ocupando todo el espacio vertical disponible hasta el fondo del viewport visible.
 3. **Estilo Corporativo en Controles de Formulario e Inputs**: Todo `<input>`, `<select>` y `<textarea>` dentro de modales o del Right Drawer debe implementar `.form-field` / `.drawer-form-field`, etiquetas en mayúsculas discretas (`.form-label`) y contenedor `.input-control` / `.drawer-input-control` con bordes, radios y halo de foco de acento corporativo (prohibido inputs nativos del navegador).
 4. **Textos Contextuales en Botones**: El botón principal del footer en formularios debe reflejar la entidad (ej. *"Guardar Partido"*, *"Guardar Registro"*), prohibido textos fijos desfasados como *"Guardar Notas"*.
 5. **Acciones Agrupadas Obligatorias**:
-   - En Toolbar: Caja compacta de 28px (`.cartera-compact-action-box`) con iconos `+`, `FileSpreadsheet` verde y `RefreshCw`.
-   - En Filas de Tabla: Contenedor unificado de 26px (`.cartera-row-actions-group`) con divisor de 1px (prohibido botones sueltos).
+   - En Toolbar: Caja compacta de 28px (`.compact-action-box`) con iconos `+`, `FileSpreadsheet` verde y `RefreshCw`.
+   - En Filas de Tabla: Contenedor unificado de 26px (`.row-actions-group`) con divisor de 1px (prohibido botones sueltos).
 6. **Cero Texto Verde o Azul en Códigos/IDs**: Los identificadores y números usan fuente monoespaciada con color de texto neutro. El color verde queda reservado **exclusivamente para badges de estado positivo**.
 7. **Cero Selects Planos**: Todos los catálogos o claves foráneas utilizarán `SelectFilter` (Searchable Select interactivo con soporte de teclado).
 8. **Cero Confirmaciones Nativas**: Suspensiones, bajas o reinicios de clave utilizarán el `ConfirmModal` canónico Jolifoods con justificación de 10+ caracteres, portal y spinner.
@@ -156,7 +156,7 @@ La IA asegura la adherencia estricta a las normas corporativas Jolifoods:
 > 3. **Componentes para la Tabla de Proveedores**:
 >    He preparado la configuración recomendada:
 >    - [x] Toolbar compacta con acciones agrupadas en 28px (`+`, Excel verde, Refrescar)
->    - [x] Acciones por fila agrupadas en contenedor unificado de 26px (`.cartera-row-actions-group`)
+>    - [x] Acciones por fila agrupadas en contenedor unificado de 26px (`.row-actions-group`)
 >    - [x] Códigos y NITs en tipografía monoespaciada neutra (sin textos verdes)
 >    - [x] Filtros por columna tipo Excel (`ChecklistPopover` en NIT, Ciudad, Estado)
 >    - [x] Selector de columnas visibles (`Columns3`)

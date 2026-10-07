@@ -7,11 +7,11 @@ El componente `Pagination` garantiza la navegación eficiente sobre conjuntos ma
 
 ### 1. Requisitos de Negocio, Ubicación y Accesibilidad
 
-> **REGLA DE ORO DE UBICACIÓN (ESTÁNDAR BI/CARTERA)**:  
+> **REGLA DE ORO DE UBICACIÓN (ESTÁNDAR SDD)**:  
 > En el diseño corporativo Jolifoods, **la paginación NO se ubica al pie o debajo de la tabla**.  
-> **SE UBICA OBLIGATORIAMENTE EN LA PARTE DE ARRIBA DE LA TABLA**, integrada directamente en la barra de herramientas superior (`.cartera-table-header-toolbar.pagination-container`).  
+> **SE UBICA OBLIGATORIAMENTE EN LA PARTE DE ARRIBA DE LA TABLA**, integrada directamente en la barra de herramientas superior (`.table-header-toolbar.pagination-container`).  
 > Esto permite que el usuario controle la página, el tamaño de lote y la búsqueda sin tener que desplazarse hasta el fondo de la pantalla.  
-> Además, la tarjeta contenedora principal (`.cartera-main-card`) tiene `flex: 1` para **extenderse hasta la parte inferior del viewport visible**, alojando la tabla con scroll interno (`overflow: auto`).
+> Además, la tarjeta contenedora principal (`.main-card-container`) tiene `flex: 1` para **extenderse hasta la parte inferior del viewport visible**, alojando la tabla con scroll interno (`overflow: auto`).
 
 1. **Ubicación Superior en Toolbar**: El contenedor del paginador se coloca arriba de la tabla con `border-bottom: 1px solid var(--border-color)`, agrupando:
    - **Lado Izquierdo**: Selector de filas (`Mostrar [10 v] por página`), buscador en vivo, indicadores de filtros activos, selector de visibilidad de columnas (`Columns3`), botones de acción (exportar, refrescar) y el resumen `Mostrando {inicio} a {fin} de {total} registros`.
@@ -179,8 +179,8 @@ export const Pagination: React.FC<PaginationProps> = ({
 ### 3. Estilos CSS (`pagination.css`)
 
 ```css
-/* Toolbar superior con paginador e info ARRIBA de la tabla (Estándar bi/cartera) */
-.cartera-table-header-toolbar.pagination-container,
+/* Toolbar superior con paginador e info ARRIBA de la tabla */
+.table-header-toolbar.pagination-container,
 .joli-pagination-container {
   display: flex;
   justify-content: space-between;

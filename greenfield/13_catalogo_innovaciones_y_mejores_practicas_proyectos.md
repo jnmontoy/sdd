@@ -40,6 +40,8 @@ Este documento documenta **lo mejor de cada uno de los proyectos desarrollados e
    - Reglas de validación en tiempo real para detectar registros huérfanos, inconsistencias de formato y anomalías en tablas maestras.
 3. **Gestión de Tickets PQRS**:
    - Módulo integrado para registrar, clasificar y dar seguimiento a peticiones, quejas, reclamos y solicitudes de analítica.
+4. **Autenticación Híbrida y Fallback Controlado de Token en URL (`TokenAuthentication`)**:
+   - Prioriza la cabecera `Authorization: Token <key>` pero ofrece fallback seguro mediante query param `?token=` para herramientas externas que no pueden inyectar headers (como consultas Power BI Desktop, conectores Excel y endpoints de descarga directa de archivos pesados), optimizado con caché en memoria (`LocMemCache`) de 60s y sliding session de 7 días.
 
 ---
 
@@ -58,13 +60,16 @@ Este documento documenta **lo mejor de cada uno de los proyectos desarrollados e
 ## 3. Proyecto `tiendita` (Entrega de Dotaciones y Beneficios)
 
 ### 🌟 Innovaciones Destacadas:
-1. **Firma Digital Táctil con Auto-Recorte (`SignatureModal`)**:
+1. **Estabilización Dinámica de Permisos y Gobernanza de Roles (`RolesAdminSidebar` + `MisPermisosView`)**:
+   - **Problema resuelto**: Cada vez que se creaba un nuevo rol o se modificaban accesos a un módulo, era necesario editar Enums en código, aplicar migraciones y pedirle a los usuarios que cerraran e iniciaran sesión.
+   - **Solución Canónica**: Tabla propia e independiente para roles (`roles` / modelo `Rol`) con `permisos: JSONField` que mapea cada bandera booleana. Se cruza con usuarios mediante relación **Muchos a Muchos (`ManyToManyField`)**. El endpoint `GET /api/mis-permisos/` realiza la unión booleana de todos los roles asignados, y el frontend (`AuthContext`) refresca en tiempo real cada 5s los permisos, agregando o retirando módulos al instante sin deslogueo. Incluye el panel lateral interactivo [`RolesAdminSidebar`](../components/roles/roles_admin_sidebar.md) para edición visual.
+2. **Firma Digital Táctil con Auto-Recorte (`SignatureModal`)**:
    - Captura sobre Canvas con algoritmo `cropToSignature` que elimina los espacios vacíos y genera un PNG transparente Base64 optimizado para almacenamiento.
-2. **Visor de Documentos PDF en Canvas (`PdfPreviewFrame`)**:
+3. **Visor de Documentos PDF en Canvas (`PdfPreviewFrame`)**:
    - Renderizado con `pdfjs-dist` en elementos `<canvas>` simulando hojas físicas apiladas con sombras, zoom escalonado (`ZoomControls`) y navegación sin depender del plugin nativo del navegador.
-3. **Lector de Código de Barras y QR por Cámara (`ScannerModal`)**:
+4. **Lector de Código de Barras y QR por Cámara (`ScannerModal`)**:
    - Integración con `html5-qrcode` para lectura instantánea de etiquetas de dotación o cédulas con cierre automático al detectar lectura válida.
-4. **Selector de Modalidad de Entrega (`EntregaTypeModal`)**:
+5. **Selector de Modalidad de Entrega (`EntregaTypeModal`)**:
    - Flujo diferenciado si la entrega es presencial en planta o despacho a domicilio.
 
 ---
@@ -127,7 +132,10 @@ Este documento documenta **lo mejor de cada uno de los proyectos desarrollados e
 | Automatizar tareas con agentes de IA y registrar ADRs/sprints | **`app_tic`** | [`greenfield/12_protocolo_ciclo_de_vida_sdlc_y_mejora_continua.md`](12_protocolo_ciclo_de_vida_sdlc_y_mejora_continua.md) |
 | Capturar firmas táctiles limpias y previsualizar PDFs | **`tiendita`** | [`components/signature/signature_modal.md`](../components/signature/signature_modal.md) y [`pdf_preview_frame.md`](../components/pdf/pdf_preview_frame.md) |
 | Validar identidad facial por cámara o escanear QR/Barcode | **`contenedores`** y **`tiendita`** | [`components/biometrics/facial_scanner.md`](../components/biometrics/facial_scanner.md) y [`scanner_modal.md`](../components/scanner/scanner_modal.md) |
+| Estabilizar permisos dinámicos y gobernar roles en tiempo real | **`tiendita`** | [`components/roles/roles_admin_sidebar.md`](../components/roles/roles_admin_sidebar.md) y [`pages/usuarios/01_usuarios_crud_especificacion.md`](pages/usuarios/01_usuarios_crud_especificacion.md) |
+| Autenticar con fallback de token en URL para descargas masivas o BI | **`bi`** | `TokenAuthentication` en `bi/backend/core/authentication.py` |
 | Instalar la app como app nativa en tablets de planta | **`porterias`** | [`components/pwa/pwa_install_banner.md`](../components/pwa/pwa_install_banner.md) |
 | Gestionar cuadrillas, turnos rotativos y vacaciones | **`vibra`** | [`components/calendar/corporate_calendar.md`](../components/calendar/corporate_calendar.md) |
 | Formular colores reales o mezclar tintes desde fotos | **`color`** | Algoritmos de mezcla sustractiva en `pigmentos.py` |
 | Desplegar en computadores sin internet ni Python instalado | **`instalador Joli`** | Plantilla de empaquetado `Instalador_JoliFoods.spec` |
+

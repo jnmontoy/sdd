@@ -36,7 +36,7 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
         cromática animada y porcentaje de cumplimiento.
      -> Código y CSS listos en: .sdd/components/kpi/kpi_cards.md (Sección Variante 4)
 
- [5] Rejilla Completa Responsive de KPIs (.cartera-kpi-row)
+ [5] Rejilla Completa Responsive de KPIs (.joli-kpi-row)
      -> Estructura: Fila inteligente que se adapta con scroll horizontal táctil en dispositivos móviles
         y minmax(210px, 1fr) en escritorio, con soporte de Skeleton Loaders pulsantes.
      -> Código y CSS listos en: .sdd/components/kpi/kpi_cards.md (Sección Rejilla y Skeletons)
@@ -113,7 +113,7 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
      -> Queda prohibido generar modales o redirigir a páginas separadas salvo solicitud específica del usuario.
 
  [1] Drawer de Formulario y Edición CRUD (Estándar Oficial - Size: 'md' - 560px)
-     -> Estructura: Deslizamiento lateral derecho (.cartera-sidebar-drawer), backdrop blur,
+     -> Estructura: Deslizamiento lateral derecho (.joli-drawer-container), backdrop blur,
         cuerpo scrollable para inputs, y pie fijo con botones 'Guardar' y 'Cancelar'.
      -> Código y CSS listos en: .sdd/components/drawer/drawer.md (Variante 2)
 
@@ -219,7 +219,7 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
                        OPCIONES DE BOTONES DE ACCIÓN (TOOLBAR)
 ====================================================================================================
  [1] Caja Compacta de Iconos Agrupados (Estándar Oficial Jolifoods - Sin Texto)
-     -> Estructura: Contenedor .cartera-compact-action-box con altura de 28px, bordes sutiles y divisores
+     -> Estructura: Contenedor .compact-action-box con altura de 28px, bordes sutiles y divisores
         verticales de 1px. Botones de solo iconos con tooltip:
         - [+] Nuevo Registro (Abre Right Drawer)
         - [FileSpreadsheet Verde] Exportar a Excel
@@ -227,8 +227,8 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
      -> Código y CSS listos en: .sdd/components/button/icon_action_group.md
 
  [2] Acciones por Fila en Tabla (Agrupación Obligatoria con Bootstrap btn-group)
-     -> Estructura: Contenedor Bootstrap `<div class="btn-group btn-group-sm cartera-row-actions-group" role="group">`:
-        - [Ojo] Ver / Editar detalle en Right Drawer (.cartera-sidebar-drawer)
+     -> Estructura: Contenedor Bootstrap `<div class="btn-group btn-group-sm row-actions-group" role="group">`:
+        - [Ojo] Ver / Editar detalle en Right Drawer (.joli-drawer-container)
         - [Llave] Restablecer clave o acción secundaria
         - [Papelera Roja] ConfirmModal destructivo con justificación de 10+ caracteres
      -> REGLA: Si hay más de un botón en opciones, NUNCA deben estar sueltos ni separados por márgenes;
@@ -246,9 +246,9 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
 
 ```text
 ====================================================================================================
-                       OPCIONES DE FILTROS SUPERIORES (.cartera-topbar)
+                       OPCIONES DE FILTROS SUPERIORES (.filter-topbar)
 ====================================================================================================
- [1] Barra de Filtros Expandibles Segmentados (.cartera-btn-group)
+ [1] Barra de Filtros Expandibles Segmentados (.expandable-filter-group)
      -> Estructura: Agrupador con triggers horizontales que despliegan selects en línea animados:
         - Filtro Zona / Área (con badge dinámico del valor activo)
         - Filtro Tipo de Documento / Estado

@@ -46,7 +46,7 @@ La IA activa el flujo de prototipado rápido en la carpeta **`mock/<nombre_modul
 
 > **REGLA FUNDAMENTAL DE AGNOSTICISMO TEMÁTICO**:  
 > La IA **NUNCA DEBE ASUMIR QUE EL MÓDULO O PANTALLA ES DE VENTAS O FINANZAS**. La persona puede pedir un módulo del **clima y sensores agrícolas**, inventario de fruta, mantenimiento de maquinaria, despacho de vehículos, recursos humanos o cualquier otra área.  
-> Lo que es **estricto y no negociable** es la **reutilización de componentes y estilos del SDD** (tarjetas KPI `.cartera-kpi-card`, tabla interactiva `.joli-table`, badges de estado, buscador en vivo, `ConfirmModal` con justificación). Los campos y datos se moldean dinámicamente según la necesidad del usuario sin inventar CSS nuevo.
+> Lo que es **estricto y no negociable** es la **reutilización de componentes y estilos del SDD** (tarjetas KPI `.joli-kpi-card`, tabla interactiva `.joli-table`, badges de estado, buscador en vivo, `ConfirmModal` con justificación). Los campos y datos se moldean dinámicamente según la necesidad del usuario sin inventar CSS nuevo.
 
 1. **Lenguaje 100% Humano y de Negocio**:
    - Cero jerga técnica (sin menciones a Docker, puertos, Pydantic, migraciones, ORM ni hooks).
@@ -62,7 +62,7 @@ La IA activa el flujo de prototipado rápido en la carpeta **`mock/<nombre_modul
 3. **Generación del Paquete No-Code Modular y Portable en `mock/<nombre_modulo>/`**:
    Todo módulo para perfiles no técnicos se genera obligatoriamente en **4 archivos separados e independientes más su subcarpeta de assets locales (Cero HTML monolítico)**:
    - **`[nombre_modulo].html`**: Estructura de marcado semántico limpia, que enlaza `<link rel="stylesheet" href="./[nombre_modulo].css">`, `<script src="./[nombre_modulo].js"></script>` y `<img src="./assets/Jolifoods.svg" class="topheader-logo">`, abriendo con doble clic en cualquier navegador.
-   - **`[nombre_modulo].css`**: Hoja de estilos con variables oficiales de [variables.css](../components/variables.css), layout de pantalla con card principal (`.cartera-main-card`) que ocupa hasta la parte inferior del viewport visible (`flex: 1`), toolbar con paginador superior, tabla con scroll interno y controles de formulario.
+   - **`[nombre_modulo].css`**: Hoja de estilos con variables oficiales de [variables.css](../components/variables.css), layout de pantalla con card principal (`.main-card-container`) que ocupa hasta la parte inferior del viewport visible (`flex: 1`), toolbar con paginador superior, tabla con scroll interno y controles de formulario.
    - **`[nombre_modulo].js`**: Lógica funcional interactiva (dataset `MOCK_DATA` con 20-30 registros, paginación dinámica superior, filtros tipo Excel `ChecklistPopover`, arrastre de columnas `ColumnResizer`, selector `Columns3`, apertura de Right Drawer y conmutador sincrónico de tema).
    - **`datos_[nombre_modulo].md`**: Documento de especificación de datos basado en [plantilla_datos_necesarios.md](../mock/plantilla_datos_necesarios.md), detallando campos JSON, tipos de datos, filtros y fixtures para el integrador backend.
    - **`assets/` (Directorio Local de Identidad de Marca)**: Subcarpeta con copias locales de los logos corporativos (`Jolifoods.svg`, `Joli.svg`, `logoJoli.png`) copiados desde `.sdd/assets/`, asegurando que el prototipo sea 100% portable y offline al abrirse o trasladarse entre computadores.
@@ -71,13 +71,13 @@ La IA activa el flujo de prototipado rápido en la carpeta **`mock/<nombre_modul
    - **Identidad Corporativa y Assets Locales Portables**: La Top Navbar debe incluir el logo Jolifoods enlazado relativamente desde `./assets/Jolifoods.svg` (con fallback a `./assets/logoJoli.png`) y favicon corporativo. Prohibido enlaces absolutos a rutas locales de usuario o imágenes rotas. (Ver [logo.md](../components/login/logo.md)).
    - **Layout 100% Horizontal a lo Largo de la Pantalla (PROHIBIDO CENTRAR EL FRONTEND)**: Queda estrictamente prohibido generar interfaces encogidas o centradas en el medio de la pantalla (prohibido `max-w-xl mx-auto`). Todo desarrollo debe extenderse horizontalmente ocupando el 100% del ancho del viewport de borde a borde para maximizar la productividad y visibilidad de datos. (Ver [layout_rules.md](../components/layout/layout_rules.md) y [sidebar.md](../components/layout/sidebar.md)).
    - **Título Directo de la Página en Lado Izquierdo (Cero Breadcrumbs de Navegación)**: (Ver [navbar.md](../components/layout/navbar.md)).
-   - **Paginador Superior Integrado en Toolbar (Estándar bi/cartera)**: El paginador se coloca **ARRIBA DE LA TABLA**, dentro de la toolbar superior (`.cartera-table-header-toolbar.pagination-container`), unificando selector de filas ("Mostrar [10 v] por página"), buscador, filtros activos, visibilidad de columnas, info de registros y botonera de páginas (`<<`, `<`, 1, 2, `>`, `>>`).
-   - **Card Contenedora hasta Abajo del Viewport (`.cartera-main-card`)**: La card principal tiene `flex: 1; min-height: 420px; display: flex; flex-direction: column; overflow: hidden;` extendiéndose hasta el borde inferior de la pantalla sin dejar espacios vacíos desaprovechados. La tabla interna tiene `flex: 1; overflow: auto; min-height: 250px;`.
+   - **Paginador Superior Integrado en Toolbar (Estándar SDD)**: El paginador se coloca **ARRIBA DE LA TABLA**, dentro de la toolbar superior (`.table-header-toolbar.pagination-container`), unificando selector de filas ("Mostrar [10 v] por página"), buscador, filtros activos, visibilidad de columnas, info de registros y botonera de páginas (`<<`, `<`, 1, 2, `>`, `>>`).
+   - **Card Contenedora hasta Abajo del Viewport (`.main-card-container`)**: La card principal tiene `flex: 1; min-height: 420px; display: flex; flex-direction: column; overflow: hidden;` extendiéndose hasta el borde inferior de la pantalla sin dejar espacios vacíos desaprovechados. La tabla interna tiene `flex: 1; overflow: auto; min-height: 250px;`.
    - **Estilo Obligatorio en Controles de Formulario e Inputs (Modales y Drawers)**: Queda prohibido el uso de inputs nativos sin estilo. Todo formulario usa `.form-field` / `.drawer-form-field`, etiqueta `.form-label` (uppercase 0.72rem, `--text-secondary`) y control `.input-control` / `.drawer-input-control` con altura de 38px, fondo `var(--input-bg)`, borde `var(--input-border)` y halo de foco de acento.
-   - **Acciones Agrupadas**: Toolbar compacta de 28px (`.cartera-compact-action-box`) y acciones por fila en contenedor de 26px (`.cartera-row-actions-group`) con divisores de 1px.
+   - **Acciones Agrupadas**: Toolbar compacta de 28px (`.compact-action-box`) y acciones por fila en contenedor de 26px (`.row-actions-group`) con divisores de 1px.
    - **Cero Textos Verdes o Azules Innecesarios**: Los códigos de registro y datos usan tipografía monospace neutra (`var(--text-primary)` o `var(--text-secondary)`). Colores reservados exclusivamente para badges de estado (`OPTIMO`, `PAGADA`).
    - **ConfirmModal Canónico con Justificación de Auditoría**: Diálogo con halo cromático, textarea a ancho 100% (`.joli-modal-textarea`), contador dinámico (`0 / 10 mín.`) y botón confirmar condicionado a mínimo 10 caracteres para acciones críticas ([confirm_modal.md](../components/modal/confirm_modal.md)).
-   - **Right Drawer Lateral Obligatorio para Creación y Edición CRUD (`.cartera-sidebar-drawer`) (PROHIBIDO MODALES O PÁGINAS SEPARADAS)**: La creación (`+ Nuevo Registro`) y edición (`Editar`) de cualquier CRUD debe realizarse obligatoriamente desde el panel lateral derecho deslizante de 560px con pie contextual fijo ([drawer.md](../components/drawer/drawer.md)). Queda terminantemente prohibido abrir formularios de CRUD en modales flotantes centrados o navegar a páginas separadas a menos que el usuario lo solicite expresamente.
+   - **Right Drawer Lateral Obligatorio para Creación y Edición CRUD (`.joli-drawer-container`) (PROHIBIDO MODALES O PÁGINAS SEPARADAS)**: La creación (`+ Nuevo Registro`) y edición (`Editar`) de cualquier CRUD debe realizarse obligatoriamente desde el panel lateral derecho deslizante de 560px con pie contextual fijo ([drawer.md](../components/drawer/drawer.md)). Queda terminantemente prohibido abrir formularios de CRUD en modales flotantes centrados o navegar a páginas separadas a menos que el usuario lo solicite expresamente.
    - **Centro de Multi-Notificaciones Desplegable**: Popover interactivo con pestañas segmentadas y badges ([notification_popover.md](../components/notification/notification_popover.md)).
    - **Menú Desplegable de Perfil con Salida Segura**: Avatar y nombre con menú flotante respaldado por `ConfirmModal` ([user_profile_dropdown.md](../components/layout/user_profile_dropdown.md)).
    - **Conmutador de Tema**: Alternancia instantánea y sincrónica (`data-theme`, `data-bs-theme`, `style.colorScheme`).
@@ -96,10 +96,10 @@ La IA procede con las gestiones técnicas de arquitectura y desarrollo:
 > **OBLIGACIÓN DE CONSUMO DE COMPONENTES YA AUDITADOS**:  
 > En el desarrollo de nuevos módulos, vistas o pantallas, queda **TERMINANTEMENTE PROHIBIDO CREAR ARCHIVOS `.css` AISLADOS O IMPROVISADOS** (ej. inventar `users.css`, `productos.css` con reglas CSS ad-hoc no auditadas).  
 > **TODO DESARROLLO DEBE ENSAMBLARSE REUTILIZANDO LAS CLASES Y COMPONENTES PROBADOS DE `.sdd/components/`**:  
-> - **Tablas**: `.sdd/components/data_table/data_table.md` (`.joli-table`, `.cartera-table-wrapper-full`, `ChecklistPopover`, `ColumnResizer`, `ColumnVisibility`).  
-> - **Toolbars y Acciones**: `.sdd/components/button/icon_action_group.md` (`.cartera-compact-action-box` 28px y acciones por fila 26px).  
-> - **Filtros**: `.sdd/components/dropdown/expandable_filter_group.md` (`.cartera-topbar`, `.cartera-btn-group`).  
-> - **Detalle y Edición**: `.sdd/components/drawer/drawer.md` (`.cartera-sidebar-drawer`).  
+> - **Tablas**: `.sdd/components/data_table/data_table.md` (`.joli-table`, `.table-wrapper-full`, `ChecklistPopover`, `ColumnResizer`, `ColumnVisibility`).  
+> - **Toolbars y Acciones**: `.sdd/components/button/icon_action_group.md` (`.compact-action-box` 28px y acciones por fila 26px).  
+> - **Filtros**: `.sdd/components/dropdown/expandable_filter_group.md` (`.filter-topbar`, `.expandable-filter-group`).  
+> - **Detalle y Edición**: `.sdd/components/drawer/drawer.md` (`.joli-drawer-container`).  
 > - **Modales**: `.sdd/components/modal/confirm_modal.md` y `modal_dialog.md`.  
 > - **Selectores**: `.sdd/components/dropdown/select_filter.md`.  
 > - **Tokens**: `variables.css` (Día/Noche).  
@@ -153,8 +153,8 @@ Cuando el usuario pida agregar una funcionalidad, módulo o complemento a un pro
         Paginación server-side Anti-N+1, Selector de columnas visibles (Columns3) y Exportador a Excel.
      -> Ref: .sdd/components/data_table/data_table.md | checklist_popover.md | pagination.md
 
- [2] Tablero de Control y Métricas KPI (Estándar BI Cartera)
-     -> Incluye: Rejilla inteligente .cartera-kpi-row, Cards interactivas con halo cromático,
+ [2] Tablero de Control y Métricas KPI
+     -> Incluye: Rejilla inteligente .joli-kpi-row, Cards interactivas con halo cromático,
         indicador flotante 'FILTRO ACTIVO', Skeleton loaders y filtrado dinámico cruzado.
      -> Ref: .sdd/components/kpi/kpi_cards.md | .sdd/greenfield/pages/dashboard/
 
@@ -534,7 +534,7 @@ Para permitir que cualquier persona sin conocimientos de programación proponga 
    - Consultar la guía completa de directrices visuales en [mock/README.md](../mock/README.md):
      1. Layout Full-Width por defecto (Cero Sidebar a menos que se solicite expresamente).
      2. Título directo de la página a la izquierda del TopHeader (Cero breadcrumbs de navegación `>` y cero textos verdes en títulos).
-     3. Acciones agrupadas tanto en toolbar (`.cartera-compact-action-box`) como por fila (`.cartera-row-actions-group`).
+     3. Acciones agrupadas tanto en toolbar (`.compact-action-box`) como por fila (`.row-actions-group`).
      4. Cero textos verdes o azules innecesarios en tablas (códigos e IDs en tipografía monospace neutra).
      5. Diálogo modal canónico con justificación auditada, textarea al 100% y contador dinámico ([confirm_modal.md](../components/modal/confirm_modal.md)).
      6. Panel lateral deslizable para formularios ([drawer.md](../components/drawer/drawer.md)).

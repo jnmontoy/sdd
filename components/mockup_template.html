@@ -344,7 +344,7 @@
     }
 
     /* CONTENEDOR PRINCIPAL */
-    .cartera-page-container {
+    .joli-page-container {
       display: flex;
       flex-direction: column;
       width: 100%;
@@ -353,7 +353,7 @@
     }
 
     /* BARRA SUPERIOR DE FILTROS EXPANDIBLES */
-    .cartera-topbar {
+    .filter-topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -364,7 +364,7 @@
       border-bottom: 1px solid var(--border-color);
     }
 
-    .cartera-view-switcher {
+    .view-switcher {
       display: inline-flex;
       align-items: center;
       padding: 3px;
@@ -374,7 +374,7 @@
       gap: 2px;
     }
 
-    .cartera-switcher-btn {
+    .switcher-btn {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
@@ -389,13 +389,13 @@
       transition: all 150ms ease;
     }
 
-    .cartera-switcher-btn.is-active {
+    .switcher-btn.is-active {
       background: var(--surface-active);
       color: var(--text-primary);
       font-weight: 600;
     }
 
-    .cartera-btn-group {
+    .expandable-filter-group {
       display: inline-flex;
       align-items: stretch;
       background: var(--surface-card);
@@ -405,7 +405,7 @@
       vertical-align: middle;
     }
 
-    .cartera-expandable-filter {
+    .expandable-filter-item {
       display: inline-flex;
       align-items: stretch;
       position: relative;
@@ -416,12 +416,12 @@
       transition: background-color 0.2s ease, width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .cartera-expandable-filter:last-child { border-right: none; }
-    .cartera-expandable-filter:hover:not(.is-open) { background: rgba(255, 255, 255, 0.04); }
-    .cartera-expandable-filter.has-active-val { background: rgba(99, 102, 241, 0.14); }
-    .cartera-expandable-filter.is-open { background: var(--surface-elevated, #1b1b36); }
+    .expandable-filter-item:last-child { border-right: none; }
+    .expandable-filter-item:hover:not(.is-open) { background: rgba(255, 255, 255, 0.04); }
+    .expandable-filter-item.has-active-val { background: rgba(99, 102, 241, 0.14); }
+    .expandable-filter-item.is-open { background: var(--surface-elevated, #1b1b36); }
 
-    .cartera-filter-trigger {
+    .filter-trigger-btn {
       display: inline-flex;
       align-items: center;
       gap: 0.45rem;
@@ -437,9 +437,9 @@
       transition: color 0.2s ease;
     }
 
-    .cartera-filter-trigger:hover { color: var(--text-primary); }
-    .cartera-filter-trigger .trigger-icon { color: var(--text-muted); }
-    .cartera-filter-trigger:hover .trigger-icon { color: var(--primary); }
+    .filter-trigger-btn:hover { color: var(--text-primary); }
+    .filter-trigger-btn .trigger-icon { color: var(--text-muted); }
+    .filter-trigger-btn:hover .trigger-icon { color: var(--primary); }
 
     .trigger-badge {
       display: inline-flex;
@@ -460,14 +460,14 @@
       transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
     }
 
-    .cartera-expandable-filter.is-open .trigger-arrow,
+    .expandable-filter-item.is-open .trigger-arrow,
     .trigger-arrow.open {
       transform: rotate(180deg);
       color: var(--primary);
     }
 
-    /* Expansión horizontal en línea idéntica a Cartera.css */
-    .cartera-filter-expanded-content {
+    /* Expansión horizontal en línea idéntica a styles.css */
+    .filter-expanded-content {
       display: flex;
       align-items: center;
       gap: 0.45rem;
@@ -485,7 +485,7 @@
       border-left: 0 solid transparent;
     }
 
-    .cartera-expandable-filter.is-open .cartera-filter-expanded-content {
+    .expandable-filter-item.is-open .filter-expanded-content {
       max-width: 480px;
       opacity: 1;
       transform: scaleX(1);
@@ -494,7 +494,7 @@
       border-left: 1px solid var(--border-color);
     }
 
-    .cartera-expanded-select {
+    .filter-expanded-select {
       appearance: none;
       -webkit-appearance: none;
       background-color: var(--surface-elevated);
@@ -514,12 +514,12 @@
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .cartera-expanded-select:focus {
+    .filter-expanded-select:focus {
       border-color: var(--primary) !important;
       box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25) !important;
     }
 
-    .cartera-expanded-close {
+    .filter-expanded-close {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -534,12 +534,12 @@
       transition: all 0.2s ease;
     }
 
-    .cartera-expanded-close:hover {
+    .filter-expanded-close:hover {
       background: rgba(239, 68, 68, 0.18);
       color: #ef4444;
     }
 
-    .cartera-action-icon-btn {
+    .action-icon-btn {
       background: var(--surface-card);
       border: 1px solid var(--border-color);
       color: var(--text-secondary);
@@ -553,19 +553,19 @@
       transition: background-color 0.2s ease, color 0.2s ease;
     }
 
-    .cartera-action-icon-btn:hover {
+    .action-icon-btn:hover {
       background: rgba(239, 68, 68, 0.12);
       color: #ef4444;
     }
 
     /* REJILLA DE CARDS KPI */
-    .cartera-kpi-row {
+    .joli-kpi-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 1rem;
     }
 
-    .cartera-kpi-card {
+    .joli-kpi-card {
       background: var(--surface-card);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
@@ -577,13 +577,13 @@
       transition: all 200ms ease;
     }
 
-    .cartera-kpi-card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.2); }
-    .cartera-kpi-card.active-filter { border-color: #10b981; background: rgba(16, 185, 129, 0.08); }
-    .cartera-kpi-label { font-size: 0.74rem; color: var(--text-muted); font-weight: 500; }
-    .cartera-kpi-value { font-size: 1.38rem; font-weight: 800; color: var(--text-primary); margin: 0.2rem 0; }
-    .cartera-kpi-subtext { font-size: 0.7rem; color: var(--text-muted); }
+    .joli-kpi-card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.2); }
+    .joli-kpi-card.active-filter { border-color: #10b981; background: rgba(16, 185, 129, 0.08); }
+    .joli-kpi-label { font-size: 0.74rem; color: var(--text-muted); font-weight: 500; }
+    .joli-kpi-value { font-size: 1.38rem; font-weight: 800; color: var(--text-primary); margin: 0.2rem 0; }
+    .joli-kpi-subtext { font-size: 0.7rem; color: var(--text-muted); }
 
-    .cartera-kpi-icon-box {
+    .joli-kpi-icon-box {
       width: 44px;
       height: 44px;
       border-radius: var(--radius-md);
@@ -592,10 +592,10 @@
       justify-content: center;
     }
 
-    .cartera-icon-blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-    .cartera-icon-emerald { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-    .cartera-icon-amber { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-    .cartera-icon-pink { background: rgba(244, 63, 94, 0.15); color: #f43f5e; }
+    .icon-blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .icon-emerald { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .icon-amber { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .icon-pink { background: rgba(244, 63, 94, 0.15); color: #f43f5e; }
 
     /* TOOLBAR DE TABLA Y CAJA COMPACTA DE ACCIONES */
     .joli-datatable-wrapper {
@@ -606,7 +606,7 @@
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
 
-    .cartera-table-header-toolbar {
+    .table-header-toolbar {
       padding: 0.75rem 1.15rem;
       border-bottom: 1px solid var(--border-color);
       display: flex;
@@ -616,7 +616,7 @@
       gap: 0.75rem;
     }
 
-    .cartera-toolbar-search {
+    .toolbar-search-box {
       display: flex;
       align-items: center;
       gap: 0.4rem;
@@ -626,7 +626,7 @@
       border-radius: var(--radius-md);
     }
 
-    .cartera-toolbar-search input {
+    .toolbar-search-box input {
       background: transparent;
       border: none;
       outline: none;
@@ -636,7 +636,7 @@
     }
 
     /* Caja Compacta de Iconos Agrupados en Toolbar */
-    .cartera-compact-action-box {
+    .compact-action-box {
       display: inline-flex;
       align-items: center;
       height: 28px;
@@ -701,7 +701,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .cartera-th-resizer {
+    .resizable-th-resizer {
       position: absolute;
       top: 0;
       right: 0;
@@ -712,8 +712,8 @@
       z-index: 10;
       transition: background-color 0.15s ease;
     }
-    .cartera-th-resizer:hover,
-    .cartera-th-resizer:active {
+    .resizable-th-resizer:hover,
+    .resizable-th-resizer:active {
       background-color: #10b981;
     }
 
@@ -750,7 +750,7 @@
     }
 
     /* Popover Desplegable Tipo Excel */
-    .cartera-excel-popover {
+    .excel-popover {
       position: absolute;
       top: calc(100% + 5px);
       left: 0;
@@ -767,7 +767,7 @@
       gap: 0.5rem;
       text-align: left;
     }
-    .cartera-excel-popover.align-right {
+    .excel-popover.align-right {
       left: auto;
       right: 0;
     }
@@ -876,11 +876,11 @@
     }
 
     /* Selector de Visibilidad de Columnas */
-    .cartera-col-visibility-wrapper {
+    .col-visibility-wrapper {
       position: relative;
       display: inline-block;
     }
-    .cartera-col-visibility-btn {
+    .col-visibility-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -895,8 +895,8 @@
       cursor: pointer;
       transition: all 0.15s ease;
     }
-    .cartera-col-visibility-btn:hover,
-    .cartera-col-visibility-btn.active {
+    .col-visibility-btn:hover,
+    .col-visibility-btn.active {
       color: var(--text-primary);
       border-color: #10b981;
     }
@@ -907,7 +907,7 @@
       background: var(--bg-hover);
       border-radius: 8px;
     }
-    .cartera-col-visibility-popover {
+    .col-visibility-popover {
       position: absolute;
       top: calc(100% + 4px);
       right: 0;
@@ -919,7 +919,7 @@
       z-index: 1050;
       overflow: hidden;
     }
-    .cartera-col-visibility-header {
+    .col-visibility-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -930,7 +930,7 @@
       font-weight: 600;
       color: var(--text-primary);
     }
-    .cartera-col-visibility-header .link-btn {
+    .col-visibility-header .link-btn {
       background: none;
       border: none;
       color: #10b981;
@@ -938,12 +938,12 @@
       cursor: pointer;
       padding: 0;
     }
-    .cartera-col-visibility-list {
+    .col-visibility-list {
       max-height: 220px;
       overflow-y: auto;
       padding: 6px 0;
     }
-    .cartera-col-visibility-item {
+    .col-visibility-item {
       display: flex;
       align-items: center;
       gap: 8px;
@@ -953,13 +953,13 @@
       cursor: pointer;
       transition: background-color 0.1s ease;
     }
-    .cartera-col-visibility-item:hover {
+    .col-visibility-item:hover {
       background-color: var(--bg-hover);
       color: var(--text-primary);
     }
 
     /* Botón de Limpiar Filtros de Columna en Toolbar */
-    .cartera-clear-column-filters-btn {
+    .clear-column-filters-btn {
       display: inline-flex;
       align-items: center;
       gap: 4px;
@@ -974,13 +974,13 @@
       cursor: pointer;
       transition: all 0.15s ease;
     }
-    .cartera-clear-column-filters-btn:hover {
+    .clear-column-filters-btn:hover {
       background: rgba(239, 68, 68, 0.2);
     }
 
 
     /* Contenedor de Acciones por Fila Agrupadas */
-    .cartera-row-actions-group {
+    .row-actions-group {
       display: inline-flex;
       align-items: center;
       height: 26px;
@@ -1026,13 +1026,13 @@
     /* ==========================================================================
        RIGHT DRAWER (PANEL LATERAL DERECHO) — Regla de Oro Jolifoods
        ========================================================================== */
-    .cartera-sidebar-backdrop {
+    .drawer-backdrop {
       position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65);
       backdrop-filter: blur(4px); z-index: 1200; opacity: 0; pointer-events: none;
       transition: opacity 250ms ease;
     }
-    .cartera-sidebar-backdrop.is-open { opacity: 1; pointer-events: auto; }
-    .cartera-sidebar-drawer {
+    .drawer-backdrop.is-open { opacity: 1; pointer-events: auto; }
+    .joli-drawer-container {
       position: fixed; top: 0; right: 0; bottom: 0;
       width: 560px; max-width: 95vw; background: var(--surface-card);
       border-left: 1px solid var(--border-color); z-index: 1210;
@@ -1041,27 +1041,27 @@
       transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: -10px 0 35px rgba(0, 0, 0, 0.5);
     }
-    .cartera-sidebar-drawer.is-open { transform: translateX(0); }
-    .cartera-sidebar-header {
+    .joli-drawer-container.is-open { transform: translateX(0); }
+    .drawer-header {
       padding: 1.15rem 1.5rem; border-bottom: 1px solid var(--border-color);
       display: flex; justify-content: space-between; align-items: center;
     }
     .drawer-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
     .drawer-subtitle { margin: 0.15rem 0 0 0; font-size: 0.75rem; color: var(--text-muted); }
-    .cartera-sidebar-close-btn {
+    .drawer-close-btn {
       background: var(--bg-hover); border: 1px solid var(--border-color);
       color: var(--text-secondary); width: 34px; height: 34px;
       border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;
       cursor: pointer;
     }
-    .cartera-sidebar-body { flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
+    .drawer-body { flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
     .drawer-input {
       width: 100%; background: var(--surface-elevated); border: 1px solid var(--border-color);
       border-radius: var(--radius-md); padding: 0.55rem 0.75rem;
       color: var(--text-primary); font-size: 0.82rem; outline: none; margin-top: 0.25rem;
     }
     .drawer-form-label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
-    .cartera-sidebar-footer {
+    .drawer-footer {
       padding: 1rem 1.5rem; border-top: 1px solid var(--border-color);
       display: flex; justify-content: flex-end; gap: 0.75rem;
     }
@@ -1890,75 +1890,75 @@
     </header>
 
     <!-- CUERPO DE PÁGINA FULL-WIDTH -->
-    <div class="cartera-page-container">
+    <div class="joli-page-container">
       
       <!-- Topbar de Filtros Expandibles y Switcher -->
-      <div class="cartera-topbar">
-        <div class="cartera-view-switcher">
-          <button type="button" class="cartera-switcher-btn is-active">
+      <div class="filter-topbar">
+        <div class="view-switcher">
+          <button type="button" class="switcher-btn is-active">
             <i data-lucide="layers" style="width: 13px; height: 13px;"></i>
             <span>Vista Principal</span>
           </button>
-          <button type="button" class="cartera-switcher-btn">
+          <button type="button" class="switcher-btn">
             <i data-lucide="alert-circle" style="width: 13px; height: 13px;"></i>
             <span>Novedades</span>
           </button>
         </div>
 
         <div class="d-flex align-items-center gap-2">
-          <div class="cartera-btn-group">
-            <div class="cartera-expandable-filter" id="filterZona">
-              <button type="button" class="cartera-filter-trigger" onclick="toggleExpandableFilter('filterZona')">
+          <div class="expandable-filter-group">
+            <div class="expandable-filter-item" id="filterZona">
+              <button type="button" class="filter-trigger-btn" onclick="toggleExpandableFilter('filterZona')">
                 <i data-lucide="map-pin" class="trigger-icon" style="width: 14px; height: 14px;"></i>
                 <span class="trigger-text">Zona</span>
                 <span class="trigger-badge" id="badgeFilterZona" style="display:none;"></span>
                 <i data-lucide="chevron-down" class="trigger-arrow" style="width: 12px; height: 12px;"></i>
               </button>
-              <div class="cartera-filter-expanded-content">
-                <select class="cartera-expanded-select" id="selectFilterZona" onchange="filterByField(this.value)">
+              <div class="filter-expanded-content">
+                <select class="filter-expanded-select" id="selectFilterZona" onchange="filterByField(this.value)">
                   <option value="">Todas</option>
                   <option value="Norte">Norte</option>
                   <option value="Sur">Sur</option>
                 </select>
-                <button type="button" class="cartera-expanded-close" onclick="closeExpandableFilter('filterZona')" title="Cerrar filtro">
+                <button type="button" class="filter-expanded-close" onclick="closeExpandableFilter('filterZona')" title="Cerrar filtro">
                   <i data-lucide="x" style="width: 12px; height: 12px;"></i>
                 </button>
               </div>
             </div>
           </div>
-          <button type="button" class="cartera-action-icon-btn" onclick="resetFilters()" title="Limpiar Filtros">
+          <button type="button" class="action-icon-btn" onclick="resetFilters()" title="Limpiar Filtros">
             <i data-lucide="filter-x" style="width: 14px; height: 14px;"></i>
           </button>
         </div>
       </div>
 
       <!-- Fila de Tarjetas KPI -->
-      <div class="cartera-kpi-row" id="kpiContainer"></div>
+      <div class="joli-kpi-row" id="kpiContainer"></div>
 
       <!-- Tabla de Datos con Toolbar Compacto de Iconos -->
       <div class="joli-datatable-wrapper">
-        <div class="cartera-table-header-toolbar">
+        <div class="table-header-toolbar">
           <div class="d-flex align-items-center gap-2">
             <span class="small text-muted me-1" id="recordCountText">Cargando registros...</span>
-            <div class="cartera-toolbar-search">
+            <div class="toolbar-search-box">
               <i data-lucide="search" style="width: 13px; height: 13px; opacity: 0.6;"></i>
               <input type="text" id="searchInput" placeholder="Buscar registros..." oninput="handleSearch(this.value)">
             </div>
             <!-- Botón Dinámico de Limpiar Filtros de Columna -->
-            <button type="button" class="cartera-clear-column-filters-btn d-none" id="clearColFiltersBtn" onclick="clearAllColumnFilters()" title="Limpiar todos los filtros de columna">
+            <button type="button" class="clear-column-filters-btn d-none" id="clearColFiltersBtn" onclick="clearAllColumnFilters()" title="Limpiar todos los filtros de columna">
               <i data-lucide="filter-x" style="width: 12px; height: 12px;"></i>
               <span id="colFiltersCountText">Filtros (0)</span>
             </button>
             <!-- Selector de Visibilidad de Columnas (Columns3) -->
-            <div class="cartera-col-visibility-wrapper" id="colVisibilityWrapper">
-              <button type="button" class="cartera-col-visibility-btn" onclick="toggleColVisibilityMenu(event)" title="Configurar columnas visibles">
+            <div class="col-visibility-wrapper" id="colVisibilityWrapper">
+              <button type="button" class="col-visibility-btn" onclick="toggleColVisibilityMenu(event)" title="Configurar columnas visibles">
                 <i data-lucide="columns-3" style="width: 14px; height: 14px;"></i>
                 <span>Columnas</span>
                 <span class="col-btn-badge" id="colVisibleBadge">6/6</span>
                 <i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i>
               </button>
-              <div class="cartera-col-visibility-popover d-none" id="colVisibilityPopover" onclick="event.stopPropagation()">
-                <div class="cartera-col-visibility-header">
+              <div class="col-visibility-popover d-none" id="colVisibilityPopover" onclick="event.stopPropagation()">
+                <div class="col-visibility-header">
                   <span class="title">Columnas visibles</span>
                   <div class="header-actions">
                     <button type="button" class="link-btn" onclick="showAllColumns()">Todas</button>
@@ -1966,13 +1966,13 @@
                     <button type="button" class="link-btn" onclick="resetDefaultColumns()">Restablecer</button>
                   </div>
                 </div>
-                <div class="cartera-col-visibility-list" id="colVisibilityList"></div>
+                <div class="col-visibility-list" id="colVisibilityList"></div>
               </div>
             </div>
           </div>
 
           <!-- Caja Compacta de Iconos Agrupados en Toolbar -->
-          <div class="cartera-compact-action-box">
+          <div class="compact-action-box">
             <button type="button" class="btn-compact-action" onclick="openDrawerForNew()" title="Nuevo Registro (+)">
               <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
             </button>
@@ -2022,18 +2022,18 @@
   </div>
 
   <!-- RIGHT DRAWER (Panel Lateral Derecho) -->
-  <div class="cartera-sidebar-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
-  <aside class="cartera-sidebar-drawer" id="rightDrawer">
-    <div class="cartera-sidebar-header">
+  <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+  <aside class="joli-drawer-container" id="rightDrawer">
+    <div class="drawer-header">
       <div>
         <h3 class="drawer-title" id="drawerTitle">Nuevo Registro</h3>
         <p class="drawer-subtitle" id="drawerSubtitle">Captura de información en el sistema</p>
       </div>
-      <button type="button" class="cartera-sidebar-close-btn" onclick="closeDrawer()">
+      <button type="button" class="drawer-close-btn" onclick="closeDrawer()">
         <i data-lucide="chevron-right" style="width: 18px; height: 18px;"></i>
       </button>
     </div>
-    <div class="cartera-sidebar-body">
+    <div class="drawer-body">
       <form id="drawerForm" onsubmit="handleDrawerSubmit(event)">
         <div>
           <label class="drawer-form-label">Identificador</label>
@@ -2057,7 +2057,7 @@
         </div>
       </form>
     </div>
-    <div class="cartera-sidebar-footer">
+    <div class="drawer-footer">
       <button type="button" class="btn-drawer-cancel" onclick="closeDrawer()">Cancelar</button>
       <button type="button" class="btn-drawer-save" onclick="document.getElementById('drawerForm').requestSubmit()">Guardar</button>
     </div>
@@ -2144,22 +2144,22 @@
     let pageSize = 8;
 
     const KPIS = [
-      { id: "k1", label: "Rendimiento Operativo", value: "94.2 %", sub: "+3.1% vs anterior", icon: "trending-up", cls: "cartera-icon-emerald" },
-      { id: "k2", label: "Medición Promedio", value: "24.8 Unid", sub: "25 registros activos", icon: "activity", cls: "cartera-icon-blue" },
-      { id: "k3", label: "Alertas Activas", value: "5 avisos", sub: "Atención técnica", icon: "alert-triangle", cls: "cartera-icon-amber" },
-      { id: "k4", label: "Incidentes Críticos", value: "3 casos", sub: "Stock / silos", icon: "shield-alert", cls: "cartera-icon-pink" }
+      { id: "k1", label: "Rendimiento Operativo", value: "94.2 %", sub: "+3.1% vs anterior", icon: "trending-up", cls: "icon-emerald" },
+      { id: "k2", label: "Medición Promedio", value: "24.8 Unid", sub: "25 registros activos", icon: "activity", cls: "icon-blue" },
+      { id: "k3", label: "Alertas Activas", value: "5 avisos", sub: "Atención técnica", icon: "alert-triangle", cls: "icon-amber" },
+      { id: "k4", label: "Incidentes Críticos", value: "3 casos", sub: "Stock / silos", icon: "shield-alert", cls: "icon-pink" }
     ];
 
     function renderKPIs() {
       const el = document.getElementById("kpiContainer");
       el.innerHTML = KPIS.map(k => `
-        <div class="cartera-kpi-card">
+        <div class="joli-kpi-card">
           <div>
-            <div class="cartera-kpi-label">${k.label}</div>
-            <div class="cartera-kpi-value">${k.value}</div>
-            <div class="cartera-kpi-subtext">${k.sub}</div>
+            <div class="joli-kpi-label">${k.label}</div>
+            <div class="joli-kpi-value">${k.value}</div>
+            <div class="joli-kpi-subtext">${k.sub}</div>
           </div>
-          <div class="cartera-kpi-icon-box ${k.cls}">
+          <div class="joli-kpi-icon-box ${k.cls}">
             <i data-lucide="${k.icon}"></i>
           </div>
         </div>
@@ -2288,7 +2288,7 @@
 
       const popover = document.createElement("div");
       popover.id = "excelFilterPopover";
-      popover.className = `cartera-excel-popover ${colKey === 'valor' || colKey === 'estado' ? 'align-right' : ''}`;
+      popover.className = `excel-popover ${colKey === 'valor' || colKey === 'estado' ? 'align-right' : ''}`;
       popover.onclick = (e) => e.stopPropagation();
 
       popover.innerHTML = `
@@ -2416,7 +2416,7 @@
         const isChecked = visibleColumns.includes(col.key);
         const isOnlyOne = isChecked && visibleColumns.length <= 1;
         return `
-          <label class="cartera-col-visibility-item">
+          <label class="col-visibility-item">
             <input type="checkbox" ${isChecked ? 'checked' : ''} ${isOnlyOne ? 'disabled' : ''} onchange="toggleColumnVisibility('${col.key}')">
             <span>${col.label}</span>
           </label>
@@ -2540,7 +2540,7 @@
                     </button>
                   ` : ''}
                 </div>
-                <div class="cartera-th-resizer" onmousedown="handleStartColResize('${col.key}', event)" ondblclick="handleResetColWidth('${col.key}', event)" title="Arrastra para redimensionar (Doble clic restablece)"></div>
+                <div class="resizable-th-resizer" onmousedown="handleStartColResize('${col.key}', event)" ondblclick="handleResetColWidth('${col.key}', event)" title="Arrastra para redimensionar (Doble clic restablece)"></div>
               </th>
             `;
           }).join('')}
@@ -2599,7 +2599,7 @@
           ` : ''}
           ${visibleColumns.includes('acciones') ? `
             <td data-col="acciones" style="text-align: center; width: ${colWidths.acciones}px;">
-              <div class="cartera-row-actions-group">
+              <div class="row-actions-group">
                 <button type="button" class="btn-row-action btn-row-view" onclick="openDrawerForDetail(${r.id})" title="Ver detalle en panel lateral">
                   <i data-lucide="eye" style="width: 13px; height: 13px;"></i>
                 </button>
@@ -2751,7 +2751,7 @@
       const el = document.getElementById(id);
       if (!el) return;
       const isOpen = el.classList.contains("is-open");
-      document.querySelectorAll(".cartera-expandable-filter").forEach(f => {
+      document.querySelectorAll(".expandable-filter-item").forEach(f => {
         f.classList.remove("is-open");
         const badge = f.querySelector(".trigger-badge");
         if (badge && f.classList.contains("has-active-val")) badge.style.display = "inline-flex";

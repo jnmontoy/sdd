@@ -18,9 +18,9 @@ Cuando un usuario o desarrollador solicite: *"Quiero crear un complemento"*, *"A
      -> Incluye: ChecklistPopover en cabeceras, orden A-Z/Z-A, buscador reactivo, botón 'Solo',
         selector de columnas (Columns3), paginación server-side y exportador a Excel (.xlsx).
 
- [2] Tablero de Control y Métricas KPI (Estándar BI Cartera)
+ [2] Tablero de Control y Métricas KPI
      -> Ideal para: Dashboards directivos, monitoreo operativo e indicadores en tiempo real.
-     -> Incluye: Rejilla responsive .cartera-kpi-row, tarjetas clickeables como filtros cruzados,
+     -> Incluye: Rejilla responsive .joli-kpi-row, tarjetas clickeables como filtros cruzados,
         halo cromático (blue, amber, pink, emerald, cyan), badge 'FILTRO ACTIVO' y skeletons.
 
  [3] Panel Lateral Deslizable de Detalle o Edición (Drawer / Slide-Over)

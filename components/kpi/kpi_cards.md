@@ -1,4 +1,4 @@
-﻿# Componente UI: Tarjetas de Indicadores KPI (KPI Cards)
+# Componente UI: Tarjetas de Indicadores KPI (KPI Cards)
 ## Ecosistema Jolifoods — Spec-Driven Development (SDD)
 ### Patrón Canónico de Referencia: Módulo BI Cartera
 
@@ -22,7 +22,7 @@ Inspirado en el estándar de mayor fidelidad de **BI Cartera**, este componente 
      - `.icon-emerald` / `.icon-success`: Verde esmeralda (Completados, Saludables).
      - `.icon-cyan`: Cian (En tránsito, En proceso).
 3. **Soporte de Estado Esqueleto (`is-skeleton`)**:
-   - Renderiza esqueletos animados (`cartera-skeleton-bone`) mientras el backend resuelve las consultas.
+   - Renderiza esqueletos animados (`joli-skeleton-bone`) mientras el backend resuelve las consultas.
 
 ---
 

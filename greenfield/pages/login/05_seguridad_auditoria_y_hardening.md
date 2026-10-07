@@ -1,4 +1,4 @@
-﻿# 05. Seguridad, Auditoría y Hardening
+# 05. Seguridad, Auditoría y Hardening
 ## Módulo de Login / Autenticación — SDD Greenyard (`GY-SPEC-AUTH-001`)
 
 Este documento especifica las defensas, políticas criptográficas y mecanismos de trazabilidad requeridos para blindar el inicio de sesión contra ataques informáticos en conformidad con las normas **OWASP Top 10** y las políticas de ciberseguridad de Greenyard.
@@ -83,3 +83,43 @@ Cada evento relacionado con el ciclo de vida de la sesión debe persistirse en u
 - `LOGIN_BLOCKED_RATE_LIMIT`: Petición rechazada por exceso de intentos.
 - `LOGOUT`: Cierre de sesión voluntario del usuario.
 - `SESSION_TIMEOUT`: Caducidad automática por inactividad.
+
+---
+
+## 5. Protocolo de Caducidad de Tokens y Cierre de Sesión Seguro (BP-20)
+
+Para evitar desorientación del usuario, fugas de datos o bucles infinitos de peticiones HTTP 401 en consola, todo frontend y backend debe aplicar el **Protocolo de Cierre Controlado por Token Vencido**:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant FE as Frontend React (AuthContext)
+    participant API as Backend (Django / FastAPI)
+    participant MODAL as SessionExpirationModal
+
+    alt Detección Proactiva (En Cliente)
+        FE->>FE: Evalúa payload.exp del JWT al montar o en intervalo
+        Note over FE: Date.now() >= payload.exp * 1000
+        FE->>MODAL: setIsSessionExpired(true)
+    else Detección Reactiva (En Servidor)
+        FE->>API: Solicitud autenticada (GET /api/v1/recurso/)
+        API-->>FE: 401 Unauthorized ("Token expirado o inválido")
+        FE->>FE: Interceptor API despacha window.dispatchEvent('session-expired')
+        FE->>MODAL: setIsSessionExpired(true)
+    end
+
+    MODAL-->>U: Despliega diálogo con fondo difuminado (blur)
+    Note over MODAL: Bloquea interacción de fondo para evitar pérdida de datos
+    U->>MODAL: Clic en "Volver a Iniciar Sesión"
+    MODAL->>FE: handleConfirmExpiredSession()
+    FE->>FE: Purgar localStorage (access_token, refresh_token, auth_user)
+    FE->>FE: Resetear estado de autenticación (user = null)
+    FE->>U: Redirección limpia a /login?redirect=/ruta-previa
+```
+
+### Reglas Inflexibles de Implementación:
+1. **Cero Pantallas en Blanco**: Queda terminantemente prohibido desloguear al usuario mediante una recarga abrupta sin advertencia previa.
+2. **Modal Corporativo con Backdrop Blur**: La alerta de sesión expirada debe renderizarse mediante [`SessionExpirationModal`](../../components/modal/session_expiration_modal.md) asegurando contraste, halo de reloj (`Clock`) en ámbar y foco accesible.
+3. **Purga Idempotente**: El manejador de confirmación debe eliminar obligatoriamente todas las llaves de autenticación locales antes de navegar al login.
+

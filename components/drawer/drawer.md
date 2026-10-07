@@ -1,21 +1,22 @@
 # Especificación de Componente: Panel Deslizable Lateral Derecho (Right Drawer / Slide-Over)
-## Ecosistema Jolifoods — Guía de Implementación SDD (Estándar Cartera)
+## Ecosistema Jolifoods — Guía de Implementación SDD
 
 > [!CAUTION]
 > **REGLA DE ORO DE EXPERIENCIA DE USUARIO (UX) — JOLIFOODS**:
 > **TODO FORMULARIO DE CREACIÓN O EDICIÓN CRUD DEBE ABRIRSE EN EL SIDEBAR DERECHO (RIGHT DRAWER)**.
 > Queda **TERMINANTEMENTE PROHIBIDO** abrir formularios de captura o edición en modales flotantes centrados o redirigir a páginas separadas (`/crear`, `/editar`), a menos que la persona o el requerimiento lo pida específicamente.
-> El Right Drawer (`.cartera-sidebar-drawer`) garantiza que el usuario nunca pierda el contexto visual de la tabla principal mientras crea o edita información.
+> El Right Drawer (`.joli-drawer-container` / `.drawer-container`) garantiza que el usuario nunca pierda el contexto visual de la tabla principal mientras crea o edita información.
 
 ---
 
 ### 1. Requisitos de Negocio y Estructura Visual
 1. **Animación y Posición**: Deslizamiento suave desde el borde derecho mediante `transform: translateX(100%)` a `translateX(0)` con `cubic-bezier(0.16, 1, 0.3, 1)`.
-2. **Backdrop Blur y Cierre por Teclado**: Fondo difuminado `backdrop-filter: blur(4px)` (`.cartera-sidebar-backdrop`) que se cierra con clic exterior o con la tecla `Escape (Esc)`.
-3. **Botón de Cierre**: Botón cuadrado con flecha hacia la derecha (`<ChevronRight size={20} />`) ubicado en la cabecera.
-4. **Mini-Kpis Contextuales**: Cabecera o cuerpo con mini rejilla de tarjetas (`.cartera-sidebar-kpi-grid` y `.cartera-sidebar-kpi-card`) con datos clave del registro seleccionado.
-5. **Cuerpo Scrollable Independiente**: `.cartera-sidebar-body` con `overflow-y: auto`.
-6. **Pie de Acción Fijo**: `.cartera-sidebar-footer` con botones de acción agrupados a la derecha ("Cancelar" y "Guardar / Confirmar").
+2. **Backdrop Blur y Cierre por Teclado**: Fondo difuminado `backdrop-filter: blur(4px)` (`.joli-drawer-overlay`) que se cierra con clic exterior o con la tecla `Escape (Esc)`.
+3. **Botón de Cierre**: Botón de cierre accesible (`<X size={18} />`) ubicado en la cabecera (`.drawer-close-btn`).
+4. **Mini-Kpis Contextuales**: Cabecera o cuerpo con mini rejilla de tarjetas (`.drawer-kpi-grid` y `.drawer-kpi-card`) con datos clave del registro seleccionado.
+5. **Cuerpo Scrollable Independiente**: `.drawer-body` con `overflow-y: auto`.
+6. **Pie de Acción Fijo**: `.drawer-footer` con botones de acción agrupados a la derecha ("Cancelar" y "Guardar / Confirmar").
+
 
 
 ---

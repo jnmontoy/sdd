@@ -1,9 +1,9 @@
 # Especificación Canónica de Componente: Grupo de Filtros Superiores Expandibles (`ExpandableFilterGroup`)
-## Ecosistema Jolifoods — Estándar Oficial Cartera (`bi/frontend/src/pages/Cartera.css`)
+## Ecosistema Jolifoods — Spec-Driven Development (SDD)
 
 > **REGLA MANDATORIA DE DISEÑO**:
 > Los filtros superiores en los tableros analíticos y operacionales de Jolifoods **NO SON MODALES NI DROPDOWNS DESPLEGABLES VERTICALES**.
-> Pertenecen al estándar unificado de Cartera BI: un grupo segmentado en una sola fila (`.cartera-btn-group`) donde cada filtro **se expande horizontalmente en línea (`inline-flex`) hacia la derecha**, revelando el `<select>` y el botón de cierre `✕` dentro de la misma barra, sin superponer capas flotantes ni abrir ventanas modales.
+> Pertenecen al estándar unificado de filtros en línea: un grupo segmentado en una sola fila (`.expandable-filter-group`) donde cada filtro **se expande horizontalmente en línea (`inline-flex`) hacia la derecha**, revelando el `<select>` y el botón de cierre `✕` dentro de la misma barra, sin superponer capas flotantes ni abrir ventanas modales.
 
 ---
 
@@ -11,29 +11,29 @@
 
 ```css
 :root {
-  --cartera-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --cartera-badge-bg: rgba(99, 102, 241, 0.22);
-  --cartera-badge-color: #c7d2fe;
-  --cartera-badge-border: rgba(99, 102, 241, 0.45);
-  --cartera-active-filter-bg: rgba(99, 102, 241, 0.14);
-  --cartera-open-filter-bg: var(--surface-elevated, #1b1b36);
-  --cartera-focus-color: #6366f1;
-  --cartera-focus-glow: rgba(99, 102, 241, 0.28);
-  --cartera-accent-hover: #818cf8;
-  --cartera-card-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  --filter-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --filter-badge-bg: rgba(99, 102, 241, 0.22);
+  --filter-badge-color: #c7d2fe;
+  --filter-badge-border: rgba(99, 102, 241, 0.45);
+  --filter-active-filter-bg: rgba(99, 102, 241, 0.14);
+  --filter-open-filter-bg: var(--surface-elevated, #1b1b36);
+  --filter-focus-color: #6366f1;
+  --filter-focus-glow: rgba(99, 102, 241, 0.28);
+  --filter-accent-hover: #818cf8;
+  --filter-card-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 [data-theme='light'] {
-  --cartera-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --cartera-badge-bg: #e0e7ff;
-  --cartera-badge-color: #3730a3;
-  --cartera-badge-border: #c7d2fe;
-  --cartera-active-filter-bg: #eef2ff;
-  --cartera-open-filter-bg: #f1f5f9;
-  --cartera-focus-color: #4f46e5;
-  --cartera-focus-glow: rgba(79, 70, 229, 0.2);
-  --cartera-accent-hover: #4f46e5;
-  --cartera-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --filter-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --filter-badge-bg: #e0e7ff;
+  --filter-badge-color: #3730a3;
+  --filter-badge-border: #c7d2fe;
+  --filter-active-filter-bg: #eef2ff;
+  --filter-open-filter-bg: #f1f5f9;
+  --filter-focus-color: #4f46e5;
+  --filter-focus-glow: rgba(79, 70, 229, 0.2);
+  --filter-accent-hover: #4f46e5;
+  --filter-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 ```
 
@@ -44,11 +44,11 @@
 ```html
 <div class="d-flex align-items-center gap-2">
   <!-- Grupo Segmentado de Filtros Expandibles -->
-  <div class="cartera-btn-group">
+  <div class="expandable-filter-group">
     <!-- Item de Filtro Expandible -->
-    <div class="cartera-expandable-filter" id="filterZona">
+    <div class="expandable-filter-item" id="filterZona">
       <!-- Botón Trigger -->
-      <button type="button" class="cartera-filter-trigger" onclick="toggleExpandableFilter('filterZona')">
+      <button type="button" class="filter-trigger-btn" onclick="toggleExpandableFilter('filterZona')">
         <i data-lucide="map-pin" class="trigger-icon"></i>
         <span class="trigger-text">Zona</span>
         <!-- Badge Pill (Se muestra cuando hay valor seleccionado y el filtro está cerrado) -->
@@ -57,14 +57,14 @@
       </button>
 
       <!-- Contenedor de Expansión Horizontal Inline -->
-      <div class="cartera-filter-expanded-content">
-        <select class="cartera-expanded-select" id="selectFilterZona" onchange="handleSelectFilter('filterZona', this.value)">
+      <div class="filter-expanded-content">
+        <select class="filter-expanded-select" id="selectFilterZona" onchange="handleSelectFilter('filterZona', this.value)">
           <option value="">Todas</option>
           <option value="Zona Norte">Zona Norte</option>
           <option value="Zona Centro">Zona Centro</option>
           <option value="Zona Sur">Zona Sur</option>
         </select>
-        <button type="button" class="cartera-expanded-close" onclick="closeExpandableFilter('filterZona')" title="Cerrar filtro">
+        <button type="button" class="filter-expanded-close" onclick="closeExpandableFilter('filterZona')" title="Cerrar filtro">
           <i data-lucide="x"></i>
         </button>
       </div>
@@ -72,9 +72,9 @@
   </div>
 
   <!-- Grupo de Acciones: Botón Limpiar con Expansión Dinámica -->
-  <div class="cartera-actions-btn-group">
-    <div class="cartera-action-clear-wrapper" id="clearFilterWrapper">
-      <button type="button" class="cartera-action-icon-btn cartera-action-btn-clear" onclick="resetAllFilters()" title="Limpiar todos los filtros" aria-label="Limpiar todos los filtros">
+  <div class="filter-actions-group">
+    <div class="filter-action-clear-wrapper" id="clearFilterWrapper">
+      <button type="button" class="filter-action-icon-btn filter-action-btn-clear" onclick="resetAllFilters()" title="Limpiar todos los filtros" aria-label="Limpiar todos los filtros">
         <i data-lucide="filter-x"></i>
       </button>
     </div>
@@ -84,23 +84,23 @@
 
 ---
 
-### 3. Hojas de Estilo CSS Oficiales (`bi/frontend/src/pages/Cartera.css`)
+### 3. Hojas de Estilo CSS Oficiales (`expandable_filter_group.css`)
 
 ```css
 /* Contenedor Segmentado */
-.cartera-btn-group {
+.expandable-filter-group {
   display: inline-flex;
   align-items: stretch;
   background: var(--bg-card, var(--surface-card, #131325));
   border: 1px solid var(--border-color, #2d2d48);
   border-radius: var(--radius-md, 8px);
-  box-shadow: var(--cartera-card-shadow);
+  box-shadow: var(--filter-card-shadow);
   overflow: hidden;
   vertical-align: middle;
 }
 
 /* Cada Filtro Segmentado */
-.cartera-expandable-filter {
+.expandable-filter-item {
   display: inline-flex;
   align-items: stretch;
   position: relative;
@@ -114,24 +114,24 @@
   transition: background-color 0.2s ease, width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.cartera-expandable-filter:last-child {
+.expandable-filter-item:last-child {
   border-right: none;
 }
 
-.cartera-expandable-filter:hover:not(.is-open) {
+.expandable-filter-item:hover:not(.is-open) {
   background: var(--bg-hover, rgba(255, 255, 255, 0.05));
 }
 
-.cartera-expandable-filter.has-active-val {
-  background: var(--cartera-active-filter-bg);
+.expandable-filter-item.has-active-val {
+  background: var(--filter-active-filter-bg);
 }
 
-.cartera-expandable-filter.is-open {
-  background: var(--cartera-open-filter-bg);
+.expandable-filter-item.is-open {
+  background: var(--filter-open-filter-bg);
 }
 
 /* Botón Trigger */
-.cartera-filter-trigger {
+.filter-trigger-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -147,12 +147,12 @@
   transition: color 0.2s ease;
 }
 
-.cartera-filter-trigger:hover {
+.filter-trigger-btn:hover {
   color: var(--text-primary, #f8fafc);
 }
 
-.cartera-filter-trigger:hover .trigger-icon {
-  color: var(--cartera-accent-hover);
+.filter-trigger-btn:hover .trigger-icon {
+  color: var(--filter-accent-hover);
 }
 
 .trigger-icon {
@@ -168,9 +168,9 @@
 .trigger-badge {
   display: inline-flex;
   align-items: center;
-  background: var(--cartera-badge-bg);
-  color: var(--cartera-badge-color);
-  border: 1px solid var(--cartera-badge-border);
+  background: var(--filter-badge-bg);
+  color: var(--filter-badge-color);
+  border: 1px solid var(--filter-badge-border);
   font-size: var(--font-size-xs, 0.72rem);
   font-weight: 600;
   padding: 0.15rem 0.65rem;
@@ -188,13 +188,13 @@
 }
 
 .trigger-arrow.open,
-.cartera-expandable-filter.is-open .trigger-arrow {
+.expandable-filter-item.is-open .trigger-arrow {
   transform: rotate(180deg);
-  color: var(--cartera-accent-hover);
+  color: var(--filter-accent-hover);
 }
 
 /* EXPANSIÓN HORIZONTAL EN LÍNEA (NO ES MODAL NI POPOVER FLOTANTE) */
-.cartera-filter-expanded-content {
+.filter-expanded-content {
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -212,7 +212,7 @@
   border-left: 0 solid transparent;
 }
 
-.cartera-expandable-filter.is-open .cartera-filter-expanded-content {
+.expandable-filter-item.is-open .filter-expanded-content {
   max-width: 480px;
   opacity: 1;
   transform: scaleX(1);
@@ -222,11 +222,11 @@
 }
 
 /* Select Estilizado */
-.cartera-expanded-select {
+.filter-expanded-select {
   appearance: none;
   -webkit-appearance: none;
   background-color: var(--bg-input, var(--surface, #1e1e38));
-  background-image: var(--cartera-select-arrow);
+  background-image: var(--filter-select-arrow);
   background-repeat: no-repeat;
   background-position: right 0.6rem center;
   border: 1px solid var(--border-color, #2d2d48);
@@ -244,25 +244,25 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-.cartera-expanded-select:hover {
+.filter-expanded-select:hover {
   border-color: var(--text-muted, #64748b);
 }
 
-.cartera-expanded-select:focus,
-.cartera-expanded-select:focus-visible,
-.cartera-expanded-select:active {
+.filter-expanded-select:focus,
+.filter-expanded-select:focus-visible,
+.filter-expanded-select:active {
   outline: none !important;
-  border-color: var(--cartera-focus-color) !important;
-  box-shadow: 0 0 0 2px var(--cartera-focus-glow) !important;
+  border-color: var(--filter-focus-color) !important;
+  box-shadow: 0 0 0 2px var(--filter-focus-glow) !important;
 }
 
-.cartera-expanded-select option {
+.filter-expanded-select option {
   background-color: var(--surface-card, #131325);
   color: var(--text-primary, #f8fafc);
 }
 
 /* Botón Cerrar Filtro Individual */
-.cartera-expanded-close {
+.filter-expanded-close {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -277,24 +277,24 @@
   transition: all 0.2s ease;
 }
 
-.cartera-expanded-close:hover {
+.filter-expanded-close:hover {
   background: rgba(239, 68, 68, 0.18);
   color: var(--error, #ef4444);
 }
 
 /* Botones de Acción (Limpiar Filtros) */
-.cartera-actions-btn-group {
+.filter-actions-group {
   display: inline-flex;
   align-items: stretch;
   background: var(--bg-card, var(--surface-card, #131325));
   border: 1px solid var(--border-color, #2d2d48);
   border-radius: var(--radius-md, 8px);
-  box-shadow: var(--cartera-card-shadow);
+  box-shadow: var(--filter-card-shadow);
   overflow: hidden;
   vertical-align: middle;
 }
 
-.cartera-action-clear-wrapper {
+.filter-action-clear-wrapper {
   display: inline-flex;
   align-items: stretch;
   max-width: 0;
@@ -308,14 +308,14 @@
               transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.cartera-action-clear-wrapper.is-visible {
+.filter-action-clear-wrapper.is-visible {
   max-width: 45px;
   opacity: 1;
   transform: scaleX(1);
   pointer-events: auto;
 }
 
-.cartera-action-icon-btn {
+.filter-action-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -329,12 +329,12 @@
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.cartera-action-btn-clear {
+.filter-action-btn-clear {
   color: var(--error, #ef4444);
   background: rgba(239, 68, 68, 0.08);
 }
 
-.cartera-action-btn-clear:hover {
+.filter-action-btn-clear:hover {
   background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
 }
@@ -351,7 +351,7 @@ function toggleExpandableFilter(filterId) {
   const isOpen = el.classList.contains('is-open');
 
   // Cerrar todos los demás filtros
-  document.querySelectorAll('.cartera-expandable-filter').forEach(f => {
+  document.querySelectorAll('.expandable-filter-item').forEach(f => {
     f.classList.remove('is-open');
     const badge = f.querySelector('.trigger-badge');
     if (badge && f.classList.contains('has-active-val')) {
@@ -379,8 +379,8 @@ function closeExpandableFilter(filterId) {
 
 // Cerrar al hacer clic fuera del grupo
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.cartera-expandable-filter')) {
-    document.querySelectorAll('.cartera-expandable-filter').forEach(f => {
+  if (!e.target.closest('.expandable-filter-item')) {
+    document.querySelectorAll('.expandable-filter-item').forEach(f => {
       f.classList.remove('is-open');
       const badge = f.querySelector('.trigger-badge');
       if (badge && f.classList.contains('has-active-val')) {

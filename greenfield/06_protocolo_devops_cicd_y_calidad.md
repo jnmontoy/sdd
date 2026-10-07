@@ -57,7 +57,7 @@ repos:
 2. **Rama `develop` (Staging / Pruebas Integradas)**:
    - Integración continua de features completadas.
 3. **Ramas de Funcionalidad (`feature/nombre-modulo`)**:
-   - Nacen desde `develop`. Nomenclatura kebab-case: `feature/facial-scanner`, `feature/cartera-kpi`.
+   - Nacen desde `develop`. Nomenclatura kebab-case: `feature/facial-scanner`, `feature/kpi-dashboard`.
 4. **Ramas de Corrección Inmediata (`hotfix/incidente-id`)**:
    - Nacen directamente de `main` y se fusionan en `main` y `develop` simultáneamente.
 

@@ -29,6 +29,9 @@ Cualquier proyecto o módulo creado a partir de `.sdd` **debe nacer blindado baj
 | **BP-15** | **Aislamiento Estricto de Entorno (Cero Python Global)** | Prohibido terminantemente ejecutar `pip install` o comandos de Python en el intérprete global del sistema. | Operar exclusivamente dentro del entorno virtual `.venv` (`.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt`). |
 | **BP-16** | **Documentación Holística de Capacidades (Cero Changelogs de Micro-Cambios)** | Prohibido redactar bitácoras de cambios puntuales o micro-ediciones. | La carpeta de documentación (`docs/`) y el `README.md` deben documentar a nivel macro cada componente/página realizada, detallando todo lo que realiza la aplicación, su alcance funcional y el destino y visión global de la plataforma. |
 | **BP-17** | **Directorio Canónico `pruebas/` en la Raíz (Cero Tests en `backend/`)** | Prohibido terminantemente crear archivos o carpetas de pruebas dentro de `backend/`. | En modo Greenfield, toda suite de pruebas automatizadas (unitarias, integración, endpoints, E2E) debe residir exclusivamente en la carpeta raíz `pruebas/` (`<project-root>/pruebas/`), manteniendo `backend/` completamente limpio. |
+| **BP-18** | **Transporte Seguro de Tokens (Cero Tokens de Sesión en URL)** | Prohibido terminantemente usar query params (`?token=`) como método estándar de transporte para sesiones de usuario o llamadas API regulares. | Los tokens de sesión deben transmitirse exclusivamente vía cabecera HTTP `Authorization: Bearer <jwt>` (o `Token <token>`) o Cookies seguras `HttpOnly`. Se admiten solo 2 excepciones auditadas: 1) Fallback controlado para streaming/descargas masivas de reportes o conectores externos (ej. Power BI / Excel en `bi`); 2) Redirecciones de callbacks OAuth2/Azure AD (ej. `tiendita`, `app_tic`), con sanitización inmediata de la URL del navegador vía `window.history.replaceState`. |
+| **BP-19** | **Estabilización de Permisos y Roles Desacoplados (Cero Roles Rígidos en Código)** | Prohibido terminarte hardcodear listas de roles en Enums, cablear "Admin/Operador" o preguntar roles rígidos en código. | Implementar tabla propia para roles (`roles` / modelo `Rol`) con `permisos: JSONField`, cruzada con `usuarios` mediante `ManyToManyField`. Compilar permisos en backend mediante el endpoint universal `/api/mis-permisos/`, validar rutas por `permissionKey` (no por nombre de rol) y estabilizar en frontend con sincronización en caliente (`AuthContext` + `RolesAdminSidebar`) sin forzar cierre de sesión. |
+| **BP-20** | **Cierre Controlado de Sesión por Token Vencido (Cero Redirecciones Abruptas o Bucles 401)** | Prohibido redirigir bruscamente o dejar la pantalla en blanco ante un token vencido o respuesta 401. | Implementar el motor de doble detección (reactiva por interceptor HTTP 401 que despacha el evento global `session-expired` + proactiva en cliente comparando `Date.now() >= exp * 1000`). Desplegar `SessionExpirationModal` con backdrop blur, bloquear interacción de fondo, purgar de forma idempotente las credenciales y redirigir limpiamente a login preservando la ruta previa. |
 
 ---
 
@@ -186,22 +189,22 @@ with transaction.atomic():
 ### 3.5. Reutilización Estricta de Componentes y Prohibición de CSS Inventado
 - **PROHIBICIÓN TERMINANTE**: Queda estrictamente prohibido crear archivos `.css` aislados o estilos improvisados desde cero para nuevos módulos (ej. inventar `users.css`, `pedidos.css` con selectores arbitrarios).
 - **OBLIGACIÓN DE CONSUMO DE COMPONENTES `.sdd/components/`**: Todo desarrollo debe utilizar las clases, estructuras y contratos ya probados y auditados:
-  - Tablas: `.joli-table`, `.cartera-table-wrapper-full` de `data_table.md`.
-  - Toolbars: `.cartera-compact-action-box` (28px) y `.cartera-row-actions-group` (26px) de `icon_action_group.md`.
-  - Filtros: `.cartera-topbar` de `expandable_filter_group.md` y `checklist_popover.md`.
+  - Tablas: `.joli-table`, `.table-wrapper-full` de `data_table.md`.
+  - Toolbars: `.compact-action-box` (28px) y `.row-actions-group` (26px) de `icon_action_group.md`.
+  - Filtros: `.filter-topbar` de `expandable_filter_group.md` y `checklist_popover.md`.
   - Modales: `ConfirmModal` con justificación obligatoria.
-  - Paneles: Right Drawer de `drawer.md`.
+  - Paneles: Right Drawer (`.joli-drawer-container`) de `drawer.md`.
   - Colores: `variables.css`.
 - **Sanción en Auditoría**: Cualquier archivo CSS huérfano que duplique o ignore los componentes auditados de `.sdd` será penalizado como falta grave de consistencia arquitectónica.
 
 ### 3.6. Creación y Edición CRUD Exclusiva en Right Sidebar Drawer (Prohibido Modales)
 - **PROHIBICIÓN TERMINANTE**: Queda terminantemente prohibido generar formularios de creación (`+ Nuevo`) o edición (`Editar`) de cualquier CRUD en modales flotantes centrados (`ModalDialog`) o navegando a páginas separadas (`/crear`, `/editar`), a menos que la persona lo pida expresamente.
-- **OBLIGATORIEDAD DE RIGHT DRAWER**: Todo formulario de captura, edición y detalle debe operar **exclusivamente desde el panel lateral derecho deslizante** ([`drawer.md`](../components/drawer/drawer.md), `.cartera-sidebar-drawer`). Esto preserva el contexto de la tabla en segundo plano, maximiza la ergonomía horizontal y evita la proliferación de modales intrusivos.
+- **OBLIGATORIEDAD DE RIGHT DRAWER**: Todo formulario de captura, edición y detalle debe operar **exclusivamente desde el panel lateral derecho deslizante** ([`drawer.md`](../components/drawer/drawer.md), `.joli-drawer-container`). Esto preserva el contexto de la tabla en segundo plano, maximiza la ergonomía horizontal y evita la proliferación de modales intrusivos.
 - **Uso Exclusivo de Modales**: Los modales centrados quedan reservados estrictamente para confirmaciones (`ConfirmModal`), firmas digitales (`SignatureModal`), lectores biométricos o alerta de sesión expirada.
 
 ### 3.7. Agrupación Obligatoria de Botones de Acción en Tablas con Bootstrap (`btn-group`)
 - **PROHIBICIÓN TERMINANTE**: Queda terminantemente prohibido dejar botones sueltos o separados por márgenes (`btn me-1`, `btn me-2`) dentro de la celda de acciones/opciones de una tabla.
-- **OBLIGATORIEDAD DE BOOTSTRAP `btn-group`**: Siempre que haya 2 o más botones de acción en una fila (ej. Ver en Drawer, Restablecer clave, Anular con ConfirmModal), deben agruparse obligatoriamente dentro de un contenedor `<div class="btn-group btn-group-sm cartera-row-actions-group" role="group">...</div>`, unificando las esquinas redondeadas en los extremos y garantizando una altura uniforme de 26px a 28px.
+- **OBLIGATORIEDAD DE BOOTSTRAP `btn-group`**: Siempre que haya 2 o más botones de acción en una fila (ej. Ver en Drawer, Restablecer clave, Anular con ConfirmModal), deben agruparse obligatoriamente dentro de un contenedor `<div class="btn-group btn-group-sm row-actions-group" role="group">...</div>`, unificando las esquinas redondeadas en los extremos y garantizando una altura uniforme de 26px a 28px.
 
 ---
 
@@ -242,6 +245,9 @@ Antes de dar por finalizada la creación de cualquier nuevo módulo, verificar:
 - [ ] ¿El código entregado está 100% completo, sin truncamientos ni comentarios tipo `// ... resto del código ...` (BP-14)?
 - [ ] ¿La documentación en `docs/` y el `README.md` describe todo lo que realiza el módulo/aplicación de forma holística, omitiendo micro-cambios y dando contexto del destino de la plataforma (BP-16)?
 - [ ] ¿Los archivos y suites de pruebas se ubicaron exclusivamente en la carpeta raíz `pruebas/` y el directorio `backend/` quedó libre de archivos de test (BP-17)?
+- [ ] ¿Los tokens de sesión viajan exclusivamente por cabeceras `Authorization` o cookies `HttpOnly` y se sanitiza la URL de inmediato ante callbacks OAuth (BP-18)?
+- [ ] ¿Los roles y permisos cuentan con tabla propia (`roles` / `Rol` con `JSONField`) cruzada mediante `ManyToManyField`, validando por `permissionKey` en vez de roles quemados (BP-19)?
+- [ ] ¿El vencimiento de tokens se gestiona con doble detección proactiva/reactiva y modal no intrusivo `SessionExpiredModal` con purga total (BP-20)?
 - [ ] ¿La sonda `/api/v1/health/` responde HTTP 200 con la latencia de Postgres y Redis?
 
 ---
@@ -274,6 +280,13 @@ Para evitar que una Inteligencia Artificial introduzca deuda técnica, rompa có
     - Prohibido redactar bitácoras de cambios puntuales ("se agregó campo x"). Documentar todo lo que realiza la aplicación por módulo en `docs/` y mantener actualizado el `README.md` con el alcance global y visión destino del software.
 12. **Ubicación Exclusiva de Pruebas en `pruebas/` (`BP-17`)**:
     - NUNCA crear archivos o carpetas de pruebas dentro de `backend/`. En modo Greenfield, toda suite de pruebas debe crearse y ejecutarse estrictamente en la carpeta `pruebas/` en la raíz del proyecto (`<project-root>/pruebas/`), manteniendo limpio el código de producción.
+13. **Seguridad Absoluta de Tokens (`BP-18`)**:
+    - Prohibido transmitir tokens de sesión en query params (`?token=`). Utilizar cabeceras `Authorization` o cookies `HttpOnly`. Si se recibe un token por redirección OAuth/SSO, el frontend debe sanitizar la URL inmediatamente con `window.history.replaceState`.
+14. **Estabilización de Permisos Desacoplada (`BP-19`)**:
+    - Prohibido preguntar qué roles fijos tiene una plataforma o quemar Enums de roles. Implementar la tabla `roles` con `JSONField` cruzada por `ManyToManyField` con `usuarios`, compilando mediante `/api/mis-permisos/` y validando por `permissionKey`.
+15. **Cierre Controlado por Token Vencido (`BP-20`)**:
+    - Prohibido dejar la pantalla en blanco o redirigir bruscamente ante errores 401 o token expirado. Implementar la doble detección proactiva/reactiva con `SessionExpiredModal`, purga limpia de almacenamiento y redirección controlada preservando el contexto.
+
 
 
 

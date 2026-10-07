@@ -1,6 +1,6 @@
 # Componente UI: Columnas Ajustables / Redimensionables (Column Resizer)
 ## Ecosistema Jolifoods — Spec-Driven Development (SDD)
-### Patrón Canónico de Referencia: Módulo BI Cartera (`useResizable` / `cartera-th-resizer`)
+### Patrón Canónico de Referencia: Redimensionamiento Dinámico de Columnas (`useResizable` / `resizable-th-resizer`)
 
 El **Column Resizer** permite a los usuarios ajustar interactivamente el ancho de cada columna de la tabla arrastrando su borde derecho. Además, incluye la capacidad de restablecer el ancho predeterminado mediante doble clic y persistir las preferencias del usuario en `localStorage`.
 
@@ -94,7 +94,7 @@ export const useColumnResize = (storageKey: string, defaultWidths: Record<string
 ```tsx
 <th
   key={col.key}
-  className="cartera-th"
+  className="resizable-th"
   style={{
     width: `${colWidths[col.key]}px`,
     minWidth: `${colWidths[col.key]}px`,
@@ -108,7 +108,7 @@ export const useColumnResize = (storageKey: string, defaultWidths: Record<string
 
   {/* Manipulador de Redimensionamiento */}
   <div
-    className="cartera-th-resizer"
+    className="resizable-th-resizer"
     onMouseDown={(e) => handleStartResize(col.key, e)}
     onDoubleClick={(e) => handleResetWidth(col.key, e)}
     title="Arrastra para redimensionar columna (Doble clic para restablecer)"
@@ -122,14 +122,14 @@ export const useColumnResize = (storageKey: string, defaultWidths: Record<string
 
 ```css
 /* Cabecera relativa para contener el separador */
-.cartera-th {
+.resizable-th {
   position: relative;
   overflow: visible;
   user-select: none;
 }
 
 /* Barra de agarre interactiva en el borde derecho */
-.cartera-th-resizer {
+.resizable-th-resizer {
   position: absolute;
   top: 0;
   right: 0;
@@ -141,8 +141,8 @@ export const useColumnResize = (storageKey: string, defaultWidths: Record<string
   transition: background-color 0.15s ease;
 }
 
-.cartera-th-resizer:hover,
-.cartera-th-resizer:active {
+.resizable-th-resizer:hover,
+.resizable-th-resizer:active {
   background-color: var(--accent-color, #3b82f6);
   opacity: 0.8;
 }

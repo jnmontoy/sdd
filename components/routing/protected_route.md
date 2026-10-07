@@ -19,14 +19,24 @@ El componente `ProtectedRoute` intercepta la navegación para garantizar que sol
 import React from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { tienePermiso, esAdmin, esSA } from '../../utils/authRoles';
 import { Loader2 } from 'lucide-react';
 
 export interface ProtectedRouteProps {
   children?: React.ReactNode;
   allowedRoles?: string[];
+  permissionKey?: string;
+  adminOnly?: boolean;
+  saOnly?: boolean;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  allowedRoles,
+  permissionKey,
+  adminOnly = false,
+  saOnly = false,
+}) => {
   const { isAuthenticated, isLoading, user, hasRole } = useAuth();
   const location = useLocation();
 
@@ -47,15 +57,29 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // 3. Comprobar permisos RBAC
+  // 3. Comprobación por clave de permiso dinámica (Estabilización de Permisos)
+  if (permissionKey && !tienePermiso(user, permissionKey)) {
+    return <Navigate to="/403" state={{ deniedFrom: location.pathname }} replace />;
+  }
+
+  // 4. Comprobación exclusiva para administración general o rol tope (SA)
+  if (adminOnly && !tienePermiso(user, 'ver_administracion_home') && !esAdmin(user)) {
+    return <Navigate to="/home" replace />;
+  }
+
+  if (saOnly && !esSA(user)) {
+    return <Navigate to="/home" replace />;
+  }
+
+  // 5. Comprobar roles tradicionales si se especifican
   if (allowedRoles && allowedRoles.length > 0) {
-    const isAuthorized = hasRole(allowedRoles);
+    const isAuthorized = hasRole ? hasRole(allowedRoles) : allowedRoles.some((r) => user.roles?.includes(r));
     if (!isAuthorized) {
       return <Navigate to="/403" state={{ deniedFrom: location.pathname }} replace />;
     }
   }
 
-  // 4. Renderizar contenido autorizado
+  // 6. Renderizar contenido autorizado
   return children ? <>{children}</> : <Outlet />;
 };
 ```

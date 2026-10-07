@@ -45,13 +45,12 @@ La IA genera obligatoriamente **4 archivos limpios e independientes más su subc
 
 1. **La Estructura de Marcado (`[pantalla].html`)**:
    - Estructura HTML limpia y semántica, que enlaza `<link rel="stylesheet" href="./[pantalla].css">`, `<script src="./[pantalla].js"></script>` y `<img src="./assets/Jolifoods.svg" class="topheader-logo">`.
-   - **Apertura inmediata con doble clic**: Abre directamente en Edge o Chrome sin necesidad de Node.js ni servidor local.
-   - Contiene el esqueleto visual de la Top Navbar, KPIs, la card contenedora (`.cartera-main-card`) con toolbar superior, tabla interna con scroll y contenedores para el Drawer lateral y el ConfirmModal.
+   - **Apertura inmediata con doble clic**: Abre directamente en Edge o Chrome sin necesi    - Contiene el esqueleto visual de la Top Navbar, KPIs, la card contenedora (`.main-card-container`) con toolbar superior, tabla interna con scroll y contenedores para el Drawer lateral y el ConfirmModal.
 
 2. **La Hoja de Estilos del Módulo (`[pantalla].css`)**:
    - Importa o define las variables canónicas de `variables.css`.
-   - Implementa el layout donde la card principal (`.cartera-main-card`) ocupa **todo el espacio vertical disponible hasta abajo de la pantalla** (`flex: 1`), con tabla interna con scroll independiente (`overflow: auto`).
-   - Define la toolbar superior (`.cartera-table-header-toolbar.pagination-container`) donde el paginador se ubica **ARRIBA DE LA TABLA**, integrado con el buscador y el selector de filas.
+   - Implementa el layout donde la card principal (`.main-card-container`) ocupa **todo el espacio vertical disponible hasta abajo de la pantalla** (`flex: 1`), con tabla interna con scroll independiente (`overflow: auto`).
+   - Define la toolbar superior (`.table-header-toolbar.pagination-container`) donde el paginador se ubica **ARRIBA DE LA TABLA**, integrado con el buscador y el selector de filas.
    - Incluye los estilos corporativos obligatorios para controles de formulario e inputs dentro del Drawer (`.drawer-form-field`, `.drawer-field-label`, `.drawer-input-control`, `.drawer-field-input`).
 
 3. **La Lógica Interactiva Desacoplada (`[pantalla].js`)**:
@@ -91,20 +90,20 @@ Cuando el integrador abre el mockup HTML, cada sección corresponde unívocament
 | :--- | :--- | :--- | :--- |
 | **Título en TopHeader (Lado Izquierdo)** | `<div class="topheader-left">` con `.topheader-title-box` | `<TopHeader title="..." badge="..." />` *(Prohibido títulos h1 en cuerpo)* | [navbar.md](../components/layout/navbar.md) |
 | **Layout Full-Width (Sin Sidebar)** | Layout sin aside lateral | `<MainLayout fullWidth={true}>` *(Sidebar solo si usuario lo pide)* | [sidebar.md](../components/layout/sidebar.md) |
-| **Panel Lateral Derecho (Drawer)** | `<aside class="cartera-sidebar-drawer">` | `<RightDrawer />` *(Prohibido modales centrados)* | [drawer.md](../components/drawer/drawer.md) |
-| **Acciones Toolbar de Tabla** | `<div class="cartera-compact-action-box">` | `<IconActionGroup />` *(Botones de solo icono, sin texto)* | [icon_action_group.md](../components/button/icon_action_group.md) |
-| **Acciones por Fila Agrupadas** | `<div class="cartera-row-actions-group">` | `<RowActionGroup />` *(Botones agrupados con divisor de 1px)* | [icon_action_group.md](../components/button/icon_action_group.md) |
-| **Filtros Superiores Expandibles** | `<div class="cartera-btn-group">` | `<ExpandableFilterGroup />` | [expandable_filter_group.md](../components/dropdown/expandable_filter_group.md) |
-| **Switcher de Vistas (Pill)** | `<div class="cartera-view-switcher">` | `<ViewSwitcher />` | [button.md](../components/button/button.md) |
-| **Contenedor de Métricas** | `<div class="cartera-kpi-row">` | `<div className="cartera-kpi-row">` | [kpi_cards.md](../components/kpi/kpi_cards.md) |
-| **Tarjeta de Métrica (KPI)** | `<div class="cartera-kpi-card">` | `<KpiCard />` *(Content + Icon Box)* | [kpi_cards.md](../components/kpi/kpi_cards.md) |
-| **Buscador de Texto** | `<div class="cartera-toolbar-search">` | `<SearchInput />` | [input_field.md](../components/login/input_field.md) |
+| **Panel Lateral Derecho (Drawer)** | `<aside class="joli-drawer-container">` | `<RightDrawer />` *(Prohibido modales centrados)* | [drawer.md](../components/drawer/drawer.md) |
+| **Acciones Toolbar de Tabla** | `<div class="compact-action-box">` | `<IconActionGroup />` *(Botones de solo icono, sin texto)* | [icon_action_group.md](../components/button/icon_action_group.md) |
+| **Acciones por Fila Agrupadas** | `<div class="row-actions-group">` | `<RowActionGroup />` *(Botones agrupados con divisor de 1px)* | [icon_action_group.md](../components/button/icon_action_group.md) |
+| **Filtros Superiores Expandibles** | `<div class="expandable-filter-group">` | `<ExpandableFilterGroup />` | [expandable_filter_group.md](../components/dropdown/expandable_filter_group.md) |
+| **Switcher de Vistas (Pill)** | `<div class="view-switcher">` | `<ViewSwitcher />` | [button.md](../components/button/button.md) |
+| **Contenedor de Métricas** | `<div class="joli-kpi-row">` | `<div className="joli-kpi-row">` | [kpi_cards.md](../components/kpi/kpi_cards.md) |
+| **Tarjeta de Métrica (KPI)** | `<div class="joli-kpi-card">` | `<KpiCard />` *(Content + Icon Box)* | [kpi_cards.md](../components/kpi/kpi_cards.md) |
+| **Buscador de Texto** | `<div class="toolbar-search-box">` | `<SearchInput />` | [input_field.md](../components/login/input_field.md) |
 | **Tabla con Scroll y Sombra** | `<div class="joli-datatable-wrapper">` | `<DataTableWrapper />` | [data_table.md](../components/data_table/data_table.md) |
 | **Estados / Badges Pill** | `<span class="badge-pill-joli">` | `<BadgeStatus variant="..." />` *(Verde solo para óptimo/positivo)* | [badge_status.md](../components/badge/badge_status.md) |
-| **Paginador Superior en Toolbar** | `<div class="cartera-table-header-toolbar pagination-container">` | `<Pagination placement="top" />` *(Arriba de la tabla, con buscador y selector)* | [pagination.md](../components/pagination/pagination.md) |
-| **Card Contenedora hasta Abajo** | `<div class="cartera-main-card">` | `<div className="cartera-main-card">` *(`flex: 1` hasta abajo del viewport)* | [data_table.md](../components/data_table/data_table.md) |
+| **Paginador Superior en Toolbar** | `<div class="table-header-toolbar pagination-container">` | `<Pagination placement="top" />` *(Arriba de la tabla, con buscador y selector)* | [pagination.md](../components/pagination/pagination.md) |
+| **Card Contenedora hasta Abajo** | `<div class="main-card-container">` | `<div className="main-card-container">` *(`flex: 1` hasta abajo del viewport)* | [data_table.md](../components/data_table/data_table.md) |
 | **Inputs y Controles en Drawer** | `<div class="drawer-form-field">` con `.drawer-input-control` | `<FormField>`, `<Input>` corporativo *(Prohibido inputs nativos sin estilo)* | [drawer.md](../components/drawer/drawer.md) |
-| **Confirmación Crítica** | Estructura Jolifoods ConfirmModal | `<ConfirmModal type="danger" />` *(Prohibido modal Bootstrap genérico)* | [confirm_modal.md](../components/modal/confirm_modal.md) |
+| **Confirmación Crítica** | Estructura Jolifoods ConfirmModal | `<ConfirmModal type="danger" />` *(Prohibido modal Bootstrap genérico)* | [confirm_modal.md](../components/modal/confirm_modal.md) |érico)* | [confirm_modal.md](../components/modal/confirm_modal.md) |
 
 
 ---
@@ -154,7 +153,7 @@ con doble clic en mi navegador y entregárselo al programador."
 
 Cuando recibas el archivo `.html`:
 1. **Abre el archivo en el navegador** para entender el layout y los flujos que el usuario aprobó.
-2. **Abre el código HTML**: Observa los nombres de las clases CSS utilizadas (`.cartera-kpi-card`, `.joli-table`, etc.).
+2. **Abre el código HTML**: Observa los nombres de las clases CSS utilizadas (`.joli-kpi-card`, `.joli-table`, etc.).
 3. **No escribas CSS nuevo**: Importa los componentes React correspondientes desde tu librería interna o desde los templates en `.sdd/components/`.
 4. **Conecta los datos dinámicos**:
    - Las tarjetas KPI se conectan a los endpoints FastAPI `/fast/metricas/`.
@@ -171,7 +170,7 @@ Cuando recibas el archivo `.html`:
 Para asegurar que no quede ningún cabo suelto antes de iniciar el desarrollo en código, el prototipo debe cumplir este checklist de 8 puntos:
 
 1. **[ ] Layout Full-Width y Título en TopHeader**: La pantalla aprovecha el ancho completo (sin sidebar de navegación a menos que el usuario lo solicite explícitamente). El título del módulo se ubica en el TopHeader a la izquierda (`.topheader-left`) junto al logotipo de Jolifoods, eliminando encabezados gigantes innecesarios en el cuerpo.
-2. **[ ] Acciones Agrupadas**: Toolbar compacta de 28px (`.cartera-compact-action-box`) y botones de fila agrupados en contenedor unificado de 26px (`.cartera-row-actions-group`) con divisor de 1px (prohibido botones sueltos).
+2. **[ ] Acciones Agrupadas**: Toolbar compacta de 28px (`.compact-action-box`) y botones de fila agrupados en contenedor unificado de 26px (`.row-actions-group`) con divisor de 1px (prohibido botones sueltos).
 3. **[ ] Tipografía Neutra en Códigos/IDs**: Los identificadores y números usan fuente monoespaciada con color de texto neutro. Prohibido textos verdes en códigos (el verde se reserva únicamente para badges de estado positivo).
 4. **[ ] Pegado Directo desde Excel**: Si el solicitante tiene una tabla en Excel, permitir copiar y pegar las filas en el chat para transformarlas a JSON sin obligar a escribir sintaxis de programación.
 5. **[ ] Estado Vacío Diseñado (Empty State)**: La pantalla debe mostrar cómo se ve cuando no hay registros aún o la búsqueda no arroja resultados, con mensaje claro e icono ilustrado.
@@ -181,7 +180,7 @@ Para asegurar que no quede ningún cabo suelto antes de iniciar el desarrollo en
 9. **[ ] Validación de Campos**: Formulario de adición de prueba en Right Drawer con asteriscos rojos `*` en los campos obligatorios.
 10. **[ ] Formatos Locales Claros**: Cifras en pesos colombianos (`$ 1.487.500`), fechas legibles (`30 Sep 2026, 09:15 AM`) y porcentajes (`76,8%`).
 11. **[ ] Definición de Dispositivo**: Aclarar si se usará en computadores de escritorio o en tablets/celulares de campo o bodega para adaptar el layout.
-12. **[ ] Paginador Superior en Toolbar y Card hasta Abajo**: La paginación debe estar ubicada en la toolbar superior de la tabla (`.cartera-table-header-toolbar.pagination-container`), y la card principal (`.cartera-main-card`) debe expandirse hasta la parte inferior del viewport visible (`flex: 1`).
+12. **[ ] Paginador Superior en Toolbar y Card hasta Abajo**: La paginación debe estar ubicada en la toolbar superior de la tabla (`.table-header-toolbar.pagination-container`), y la card principal (`.main-card-container`) debe expandirse hasta la parte inferior del viewport visible (`flex: 1`).
 13. **[ ] Controles de Formulario e Inputs Estilizados**: Todo `<input>`, `<select>` y `<textarea>` dentro de modales o del Right Drawer debe implementar `.form-field` / `.drawer-form-field` con bordes, radios y halo de foco de acento corporativo (prohibido inputs nativos del navegador).
 14. **[ ] Textos de Botones Contextuales**: El botón principal del footer en formularios debe decir exactamente qué guarda (ej. *"Guardar Partido"*, *"Guardar Registro"*), prohibido textos fijos desfasados como *"Guardar Notas"*.
 15. **[ ] Paquete Modular de 4 Archivos**: El mock debe entregarse estrictamente en 4 archivos independientes (`.html`, `.css`, `.js`, `datos_*.md`), con cero código monolítico.
