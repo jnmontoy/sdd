@@ -27,15 +27,22 @@ Permite a las organizaciones:
 │   ├── Joli.svg                             # Isotipo oficial vectorizado
 │   └── logoJoli.png                         # Logotipo de respaldo en mapa de bits
 │
+├── changes_template/                        # [NUEVO] Estándar de cambios atómicos y especificaciones vivas (OpenSpec)
+│   ├── README.md                            # Guía de uso y ciclo de 4 fases para features y refactors
+│   ├── proposal.md                          # Propuesta, motivación, límites estrictos (Out-of-Scope) y criterios
+│   ├── design.md                            # Contratos de datos, endpoints, componentes UI y edge cases
+│   ├── tasks.md                             # Lista atómica de tareas secuenciales con casillas [ ]
+│   └── evidence.md                          # Quality Gate con evidencia real verificable (validate_endpoints / tests)
+│
 ├── components/                              # Catálogo de 36 suites UI/UX desacopladas y reutilizables
 │   ├── badge/                               # Badges semánticos de estado y rol
 │   ├── biometrics/                          # Escáner biométrico facial WebRTC con máscara oval (contenedores)
 │   ├── button/                              # Icon action groups (28px toolbar, 26px fila agrupada)
 │   ├── calendar/                            # Calendario mensual corporativo de turnos (vibra)
-│   ├── card/                                # [NUEVO] CorporateCard (Header, Body, Footer desacoplados)
-│   ├── charts/                              # Gráficas estándar y [NUEVO] Advanced Analytics (Gantt, Radar, Gauge, Sankey)
+│   ├── card/                                # CorporateCard (Header, Body, Footer desacoplados)
+│   ├── charts/                              # Gráficas estándar y Advanced Analytics (Gantt, Radar, Gauge, Sankey)
 │   ├── context/                             # AuthContext, RBAC y sincronización de tema Noche/Día
-│   ├── dashboard/                           # [NUEVO] PlatformUsageDashboard (telemetría de uso y encuestas in-app)
+│   ├── dashboard/                           # PlatformUsageDashboard (telemetría de uso y encuestas in-app)
 │   ├── data_table/                          # Tabla tipo Excel con ChecklistPopover, ColumnResizer y ColumnVisibility
 │   ├── drawer/                              # Right Sidebar Drawer para CRUDs y detalles (prohibido modales para formularios)
 │   ├── dropdown/                            # SelectFilter con búsqueda integrada y filtros de cabecera
@@ -46,7 +53,7 @@ Permite a las organizaciones:
 │   ├── layout/                              # TopNavbar, UserProfileDropdown y Reglas 100% Horizontal
 │   ├── loader/                              # PageLoader con isotipo Jolifoods y Skeletons shimmer
 │   ├── login/                               # Suite de autenticación, Microsoft SSO M365, recovery y logos
-│   ├── modal/                               # ConfirmModal, ModalDialog y [NUEVO] ProModal (Seguridad OTP, Wizard, Split)
+│   ├── modal/                               # ConfirmModal, ModalDialog y ProModal (Seguridad OTP, Wizard, Split)
 │   ├── notification/                        # NotificationPopover en TopHeader con pestañas multi-categoría
 │   ├── pagination/                          # Paginador superior integrado en toolbar de tabla
 │   ├── pdf/                                 # Visor Canvas de PDF con efecto de hojas físicas apiladas (tiendita)
@@ -54,15 +61,15 @@ Permite a las organizaciones:
 │   ├── realtime/                            # Arquitectura Smart Polling en JavaScript con AbortController (app_tic)
 │   ├── routing/                             # ProtectedRoute con validación declarativa de roles RBAC
 │   ├── scanner/                             # Escáner de código de barras y QR con html5-qrcode (contenedores)
-│   ├── services/                            # Cliente Axios dual y [NUEVO] Endpoints Registry centralizado
-│   ├── signature/                           # SignatureModal táctil y [NUEVO] MultiPartySignature criptográfico
-│   ├── stepper/                             # [NUEVO] StepperWizard de procesos secuenciales por etapas
-│   ├── timeline/                            # [NUEVO] ActivityTimeline de auditoría y tracking de estados
+│   ├── services/                            # Cliente Axios dual y Endpoints Registry centralizado
+│   ├── signature/                           # SignatureModal táctil y MultiPartySignature criptográfico
+│   ├── stepper/                             # StepperWizard de procesos secuenciales por etapas
+│   ├── timeline/                            # ActivityTimeline de auditoría y tracking de estados
 │   ├── toast/                               # Toast Notification Sonner con tokens Jolifoods
 │   ├── toggle/                              # Interruptor conmutador interactivo esmeralda accesible
 │   ├── tooltip/                             # TruncatedTooltip para celdas con elipsis sin romper layout
-│   ├── tutorial/                            # [NUEVO] SplitTutorialWalkthrough (tutorial interactivo dividido estándar bi)
-│   ├── upload/                              # [NUEVO] FileUploaderPro (Drag & Drop, Hash SHA-256 local y magic bytes)
+│   ├── tutorial/                            # SplitTutorialWalkthrough (tutorial interactivo dividido estándar bi)
+│   ├── upload/                              # FileUploaderPro (Drag & Drop, Hash SHA-256 local y magic bytes)
 │   ├── mockup_template.html                 # Plantilla maestra de prototipado rápido
 │   └── variables.css                        # Tokens canónicos CSS (Modo Noche y Modo Día)
 │
@@ -81,8 +88,19 @@ Permite a las organizaciones:
 │   ├── 11_protocolo_pruebas_automaticas_y_testing_e2e.md      # Pytest, Playwright, Zero-Bugs y exención Mock
 │   ├── 12_protocolo_ciclo_de_vida_sdlc_y_mejora_continua.md   # Las 7 fases del software, roles Técnico vs Senior y RICE
 │   ├── 13_catalogo_innovaciones_y_mejores_practicas_proyectos.md # Lo mejor de los 8 proyectos del ecosistema
-│   ├── SPEC_GUIDE.md                                         # Guía maestra de desarrollo y prompt protocol
+│   ├── 14_protocolo_cambios_atomicos_y_especificaciones_vivas.md # [NUEVO] OpenSpec, proposal, design, tasks y evidence
+│   ├── 15_protocolo_memoria_persistente_y_aprendizaje_agentes.md # [NUEVO] Memoria Engram, ADRs y Anti-Reincidencia
+│   ├── SPEC_GUIDE.md                                         # Guía maestra de desarrollo, ODD y prompt protocol
 │   └── pages/                                                # Especificaciones canónicas por página
+│
+├── memory/                                  # [NUEVO] Motor de memoria persistente para IA (Anti-Amnesia)
+│   ├── README.md                            # Guía del motor de memoria y ciclos Recall & Log
+│   ├── adrs/                                # Architectural Decision Records (Decisiones inmutables)
+│   │   ├── 0000_template_adr.md             # Plantilla de registro de decisión arquitectónica
+│   │   └── 0001_arquitectura_hibrida_fastapi_django.md # ADR canónico: FastAPI ultra rápido + Django Auth
+│   └── learnings/                           # Aprendizaje continuo acumulativo
+│       ├── bug_lessons.md                   # Catálogo anti-reincidencia de bugs conocidos para IA
+│       └── conventions.md                   # Convenciones de negocio, fechas, moneda y bases de datos
 │
 ├── mock/                                    # Entorno de prototipado interactivo No-Code (Doble clic, cero dependencias)
 │   ├── README.md                            # Guía del entorno mock y regla de cero testing
@@ -92,8 +110,11 @@ Permite a las organizaciones:
 │
 ├── model/                                   # Esquemas canónicos de base de datos (PostgreSQL y Django ORM)
 │
-└── stack/                                   # Plantilla de arquitectura backend/frontend
-    ├── init_project.py                      # Scaffolding de proyectos (crea backend/media/ y endpoints_registry.json)
+└── stack/                                   # Plantilla de arquitectura backend/frontend y Agent Harness
+    ├── agent_harness/                       # [NUEVO] Guardrails y directrices automáticas para IA
+    │   ├── AGENTS.md                        # Directrices universales para agentes (Claude, Cursor, Antigravity)
+    │   └── .cursorrules                     # Reglas de cursor para auto-inyección de estándares
+    ├── init_project.py                      # Scaffolding de proyectos (con inyección de memory, specs y agent harness)
     ├── settings_security_template.py        # Configuración blindada con rutas relativas (BASE_DIR)
     ├── endpoints_registry_template.json     # Manifiesto centralizado de rutas del sistema
     └── validate_endpoints.py                # Validador universal de endpoints, cURLs y Quality Gate CI/CD

@@ -18,13 +18,34 @@ Esta guía define el estándar operacional y metodológico que la **Inteligencia
 4. **Definición de Blueprint de Archivos**: Cada especificación debe incluir el árbol canónico de archivos que el proyecto debe generar.
 5. **Parametrización por Variables de Entorno**: Endpoints, hosts, nombres de cookies, client IDs de OAuth y secretos deben ser documentados mediante plantillas `.env.example`.
 6. **Contratos como Especificación Declarativa**: Los esquemas de datos (OpenAPI, JSON Schema, Zod, Pydantic/Serializers) son la fuente de verdad universal.
-
+7. **Memoria Persistente de Agentes**: Antes de generar propuestas o código, el agente de IA debe consultar `memory/adrs/` (decisiones tomadas) y `memory/learnings/` (bugs y convenciones conocidas).
 
 ---
 
-## 1.1. Protocolo de Preguntas Pertinentes Obligatorio para la IA
+## 1.0. Proporcionalidad del Flujo: Principio ODD (Organic-Driven Development)
 
-Antes de escribir código o generar estructuras, la Inteligencia Artificial **NO DEBE ASUMIR REQUERIMIENTOS A CIEGAS**. Debe iniciar siempre con la pregunta de perfil:
+Para evitar la burocracia innecesaria en tareas pequeñas y garantizar máximo rigor en tareas complejas, el ecosistema SDD adopta el principio de **Desarrollo Guiado Orgánico (ODD)** en 3 niveles:
+
+```mermaid
+flowchart TD
+    Req[Solicitud del Usuario] --> Clasif{¿Qué magnitud tiene el cambio?}
+    
+    Clasif -->|Ajuste menor o Bug cosmético| N1[NIVEL 1: Micro-Ajuste / Hotfix<br/>• Ejecución directa sin burocracia<br/>• Respeta BP-01 a BP-17<br/>• Verificación de no rotura]
+    
+    Clasif -->|Nueva capacidad en módulo existente| N2[NIVEL 2: Cambio Atómico / Feature<br/>• specs/changes/[fecha-cambio]/<br/>• proposal + design + tasks + evidence<br/>• Protocolo 14]
+    
+    Clasif -->|Nueva pantalla o Proyecto desde cero| N3[NIVEL 3: Greenfield / Nuevo Módulo<br/>• Paso 0: Filtro Mock vs Dev<br/>• Catálogo de 36 componentes<br/>• Arquitectura integral]
+```
+
+* **Nivel 1 (Micro-Ajuste / Hotfix)**: Corrección de un texto, ajuste de variable CSS, o arreglo de un bug trivial. No requiere crear especificaciones formales; la IA ejecuta directamente asegurando no romper contratos ni tests.
+* **Nivel 2 (Cambio Atómico / Feature Incremental)**: Creación de un nuevo endpoint, integración de un Right Drawer en una vista existente, o refactorización. Requiere la creación de la subcarpeta en `specs/changes/` (Protocolo 14).
+* **Nivel 3 (Greenfield / Nuevo Módulo o Proyecto)**: Creación de un proyecto desde cero o nueva pantalla completa. Aplica el cuestionario formal del Paso 0 y la bifurcación No-Code vs. Técnico.
+
+---
+
+## 1.1. Protocolo de Preguntas Pertinentes Obligatorio para la IA (Nivel 3 Greenfield)
+
+Antes de escribir código o generar estructuras para nuevas pantallas o proyectos, la Inteligencia Artificial **NO DEBE ASUMIR REQUERIMIENTOS A CIEGAS**. Debe iniciar siempre con la pregunta de perfil:
 
 ---
 

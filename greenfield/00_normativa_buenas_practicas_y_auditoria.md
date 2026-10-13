@@ -286,6 +286,10 @@ Para evitar que una Inteligencia Artificial introduzca deuda técnica, rompa có
     - Prohibido preguntar qué roles fijos tiene una plataforma o quemar Enums de roles. Implementar la tabla `roles` con `JSONField` cruzada por `ManyToManyField` con `usuarios`, compilando mediante `/api/mis-permisos/` y validando por `permissionKey`.
 15. **Cierre Controlado por Token Vencido (`BP-20`)**:
     - Prohibido dejar la pantalla en blanco o redirigir bruscamente ante errores 401 o token expirado. Implementar la doble detección proactiva/reactiva con `SessionExpiredModal`, purga limpia de almacenamiento y redirección controlada preservando el contexto.
+16. **Gestión de Cambios Atómicos con Evidencia Real (`BP-21` / OpenSpec)**:
+    - Prohibido modificar código en solicitudes incrementales de Nivel 2 sin crear previamente la subcarpeta en `specs/changes/[fecha-cambio]/` con sus 4 artefactos (`proposal.md`, `design.md`, `tasks.md` y `evidence.md`). La IA no puede declarar una tarea terminada sin adjuntar la salida real de `validate_endpoints.py` o de la suite de pruebas (Protocolo 14).
+17. **Memoria Persistente y Aprendizaje Continuo (`BP-22` / Engram)**:
+    - Prohibido iniciar desarrollo sin realizar la fase de *Recall* consultando `memory/adrs/` (decisiones tomadas) y `memory/learnings/` (bugs conocidos y convenciones). Todo error complejo resuelto debe registrarse inmediatamente en `memory/learnings/bug_lessons.md` para blindar al equipo contra la reincidencia (Protocolo 15).
 
 
 

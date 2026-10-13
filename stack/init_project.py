@@ -68,6 +68,10 @@ def main():
         target_dir / "frontend" / "src" / "services",
         target_dir / "frontend" / "src" / "styles",
         target_dir / "frontend" / "src" / "types",
+        target_dir / "specs" / "changes",   # Estándar OpenSpec / SDD Cambios Atómicos
+        target_dir / "memory" / "adrs",      # ADRs (Decisiones Arquitectónicas Inmutables)
+        target_dir / "memory" / "learnings", # Aprendizaje Continuo (Anti-Reincidencia de Bugs)
+        target_dir / "pruebas",              # Suite de Pruebas fuera de backend/ (BP-17)
     ]
     for d in dirs_to_create:
         d.mkdir(parents=True, exist_ok=True)
@@ -282,6 +286,50 @@ Thumbs.db
 }
 """
     (vscode_dir / "settings.json").write_text(vscode_settings, encoding="utf-8")
+
+    # Inyección de Agent Harness (AGENTS.md y .cursorrules)
+    print("   [Agent Harness] Configurando guardrails y directrices para agentes de IA...")
+    agent_harness_dir = SDD_dir / "stack" / "agent_harness"
+    if agent_harness_dir.exists():
+        if (agent_harness_dir / "AGENTS.md").exists():
+            shutil.copy2(agent_harness_dir / "AGENTS.md", target_dir / "AGENTS.md")
+        if (agent_harness_dir / ".cursorrules").exists():
+            shutil.copy2(agent_harness_dir / ".cursorrules", target_dir / ".cursorrules")
+
+    # Inyección de Plantilla de Cambios Atómicos (OpenSpec / SDD Changes)
+    print("   [SDD Changes] Inicializando estándar de cambios atómicos en specs/changes/...")
+    changes_tpl_dir = SDD_dir / "changes_template"
+    if changes_tpl_dir.exists():
+        dest_tpl = target_dir / "specs" / "changes" / "template"
+        dest_tpl.mkdir(parents=True, exist_ok=True)
+        for item in changes_tpl_dir.iterdir():
+            if item.is_file():
+                shutil.copy2(item, dest_tpl / item.name)
+
+    # Inyección de Motor de Memoria Persistente (ADRs y Anti-Reincidencia de Bugs)
+    print("   [SDD Memory] Inyectando motor de memoria persistente en memory/...")
+    memory_src_dir = SDD_dir / "memory"
+    if memory_src_dir.exists():
+        for sub in ["adrs", "learnings"]:
+            sub_src = memory_src_dir / sub
+            sub_dest = target_dir / "memory" / sub
+            sub_dest.mkdir(parents=True, exist_ok=True)
+            if sub_src.exists():
+                for item in sub_src.iterdir():
+                    if item.is_file():
+                        shutil.copy2(item, sub_dest / item.name)
+        if (memory_src_dir / "README.md").exists():
+            shutil.copy2(memory_src_dir / "README.md", target_dir / "memory" / "README.md")
+
+    # Inyección del Validador de Endpoints y Registro Centralizado
+    stack_dir = SDD_dir / "stack"
+    (target_dir / "stack").mkdir(parents=True, exist_ok=True)
+    if (stack_dir / "validate_endpoints.py").exists():
+        shutil.copy2(stack_dir / "validate_endpoints.py", target_dir / "stack" / "validate_endpoints.py")
+    if (stack_dir / "endpoints_registry_template.json").exists():
+        dest_reg = target_dir / "backend" / "config" / "endpoints_registry.json"
+        if not dest_reg.exists():
+            shutil.copy2(stack_dir / "endpoints_registry_template.json", dest_reg)
 
     # 6. Crear entorno virtual Python (.venv) e instalar requerimientos aislados
     print("[5/5] Creando entorno virtual aislado (.venv) en el proyecto...")
