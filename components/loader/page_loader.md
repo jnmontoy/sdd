@@ -9,9 +9,13 @@ Este documento especifica la familia de cargadores y estados de espera visuales 
 
 ### 1. Variantes Disponibles
 
-1. **`PageLoader` (Carga de Página Completa / Transición de Rutas)**:
-   - Pantalla translúcida o centrada con el logo animado de Jolifoods, spinner esmeralda y mensaje de estado.
-2. **`TableSkeleton` (Placeholder Esquelético para Tablas de Datos)**:
+1. **`JoliCurtain` (Cortinilla Canónica de Hand-Off y Transición JoliVerso)**:
+   - Pantalla completa sobria y limpia (slate/navy profundo en dark, fondo claro perlado en light), sin sombras toscas ni cajas pesadas.
+   - Centro orbital con halo sutil de energía, **tres anillos concéntricos giratorios** (púrpura suave, violeta y cian fino) e isotipo oficial de Jolifoods (`logoJoli.png`).
+   - Título y subtítulo elegantes y configurables para cualquier proyecto (`Accediendo desde JoliVerso`, `Actualizando...`, etc.).
+2. **`PageLoader` (Carga de Página Completa / Transición de Rutas)**:
+   - Carga estándar adaptada con la misma estética limpia o variante compacta.
+3. **`TableSkeleton` (Placeholder Esquelético para Tablas de Datos)**:
    - Fila de cabecera y N filas con barras pulsantes de ancho variable que simulan columnas de texto, badges numéricos y botones de acción.
 3. **`CardSkeleton` (Placeholder Esquelético para Tarjetas / Grid)**:
    - Simula avatar o icono superior, líneas de texto y pie de tarjeta.
