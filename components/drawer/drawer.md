@@ -2,10 +2,10 @@
 ## Ecosistema Jolifoods — Guía de Implementación SDD
 
 > [!CAUTION]
-> **REGLA DE ORO DE EXPERIENCIA DE USUARIO (UX) — JOLIFOODS**:
-> **TODO FORMULARIO DE CREACIÓN O EDICIÓN CRUD DEBE ABRIRSE EN EL SIDEBAR DERECHO (RIGHT DRAWER)**.
-> Queda **TERMINANTEMENTE PROHIBIDO** abrir formularios de captura o edición en modales flotantes centrados o redirigir a páginas separadas (`/crear`, `/editar`), a menos que la persona o el requerimiento lo pida específicamente.
-> El Right Drawer (`.joli-drawer-container` / `.drawer-container`) garantiza que el usuario nunca pierda el contexto visual de la tabla principal mientras crea o edita información.
+> **REGLA DE ORO DE EXPERIENCIA DE USUARIO (UX) — JOLIFOODS & PANDORA ADMIN**:
+> **TODO FORMULARIO DE CREACIÓN O EDICIÓN CRUD (AGREGAR / EDITAR USUARIOS, ROLES, REGISTROS, ETC.) DEBE ABRIRSE OBLIGATORIAMENTE EN EL SIDEBAR LATERAL DERECHO (`RightDrawer` / `.joli-drawer-container`)**.
+> Queda **TERMINANTEMENTE PROHIBIDO** abrir formularios de creación o edición en modales flotantes centrados (`.modal-card-dialog` / `.modal-backdrop-overlay`) o redirigir a páginas separadas (`/crear`, `/editar`), a menos que el usuario lo pida explícitamente.
+> El Right Drawer garantiza que el usuario nunca pierda el contexto visual de la tabla o cards principales mientras agrega o edita información, e incluye en modo edición una franja de Mini-KPIs contextuales (`.drawer-kpi-grid`).
 
 ---
 

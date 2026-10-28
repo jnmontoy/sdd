@@ -16,6 +16,12 @@ Cumple rigurosamente con la **Normativa de Auditoría (Anti-N+1 en backend, pagi
 > 3. **Diseño de Botoneras de Acciones de Solo Iconos (Cero Texto)**:
 >    - **Botonera de Acciones del Toolbar (`.compact-action-box`)**: Botonera segmentada con solo los iconos `UserPlus` (Nuevo Usuario) y `RotateCcw` (Recargar), separados por `.compact-divider`, sin texto.
 >    - **Botonera de Acciones en Filas y Cards (`.row-actions-group`)**: Botonera segmentada con solo los iconos `Edit2` (Editar) y `Power` (Activar/Desactivar), sin texto.
+> 4. **Prohibición Estricta de Modales para Crear o Editar — Uso Obligatorio de Sidebar Derecho (`RightDrawer`)**:
+>    Tanto la acción de **Agregar (Nuevo Colaborador)** como la de **Editar Colaborador** **DEBEN abrirse siempre en un Sidebar al lado derecho (`.joli-drawer-container` / `RightDrawer`)** deslizando desde el borde derecho (`translateX(100%) -> translateX(0)`), y **NUNCA** en un modal flotante centrado. En modo edición, el Sidebar Derecho muestra una fila superior de Mini-KPIs contextuales (`.drawer-kpi-grid`: Documento, Rol Actual y Último Acceso).
+> 5. **Paginador Superior Integrado en Toolbar (`.joli-table-toolbar.pagination-container` — SDD `pagination.md`)**:
+>    El paginador **NUNCA se ubica al pie de la tabla**. Se ubica **ARRIBA DE LA TABLA**, integrado directamente en la barra superior junto a la botonera de acciones, mostrando el selector de tamaño de página (`Mostrar [10 | 20 | 50 | 100]`), el resumen numérico (`Mostrando X a Y de Z Colaboradores`) y los controles de navegación (`<<`, `<`, números de página con elipsis, `>`, `>>`).
+> 6. **Card Contenedora hasta Abajo de la Pantalla (`.joli-table-card` — SDD `data_table.md`)**:
+>    La tarjeta principal de la tabla utiliza `flex: 1; min-height: 420px; display: flex; flex-direction: column; overflow: hidden;` dentro de un layout de altura completa (`height: 100vh; overflow: hidden;`), garantizando que el contenedor llegue hasta el borde inferior visible de la pantalla sin dejar huecos vacíos, mientras `.joli-table-wrapper` administra el scroll interno (`flex: 1; overflow: auto;`).
 
 ---
 

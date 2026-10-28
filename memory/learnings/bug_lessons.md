@@ -13,6 +13,7 @@
 * [BUG-003: Rotura de Layout por Contenedores Centrados o max-w](#bug-003)
 * [BUG-004: Invocación de `.save()` en Bucles Masivos](#bug-004)
 * [BUG-005: Rutas Absolutas de Sistema Operativo Quemadas en Código](#bug-005)
+* [BUG-006: Uso Indebido de Modales Centrados en lugar de Sidebar Derecho (Right Drawer) para Formularios CRUD](#bug-006)
 
 ---
 
@@ -53,3 +54,11 @@
 * **Causa Raíz**: Concatenación de strings con rutas absolutas locales fijas.
 * **Solución Aplicada**: Resolver siempre con `Path(__file__).resolve().parent.parent` (`BASE_DIR`).
 * **Regla Inflexible para la IA (BP-07)**: Prohibido quemar rutas absolutas; toda ruta debe ser 100% relativa a la raíz.
+
+---
+
+### <a id="bug-006"></a> BUG-006: Uso Indebido de Modales Centrados en lugar de Sidebar Derecho (Right Drawer) para Formularios CRUD
+* **Síntoma**: En módulos administrativos (como Administración de Usuarios), las acciones de "Agregar" o "Editar" abren una ventana modal flotante en el centro de la pantalla (`.modal-card-dialog`), tapando la tabla/cards y rompiendo el estándar UX de Jolifoods.
+* **Causa Raíz**: Creación de un modal genérico centrado en lugar de consultar la especificación canónica [`sdd/components/drawer/drawer.md`](../../components/drawer/drawer.md).
+* **Solución Aplicada**: Reemplazar todo modal de creación/edición CRUD por el componente canónico **`RightDrawer` (`.joli-drawer-container`)**, que se desliza desde el borde derecho (`translateX(100%) -> translateX(0)`), conserva el contexto visual de la vista principal, muestra Mini-KPIs contextuales (`.drawer-kpi-grid`) al editar y utiliza controles estilizados con iconos (`.drawer-input-control.has-icon`).
+* **Regla Inflexible para la IA**: **NUNCA** volver a crear modales centrados para formularios de agregar o editar registros. Todo formulario CRUD debe abrirse siempre en un Sidebar lateral derecho (`RightDrawer`).
