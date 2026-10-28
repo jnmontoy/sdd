@@ -14,7 +14,12 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
 
 - **Estado Expandido (Desktop, 260px)**: Muestra ícono, etiqueta de texto, submenús y badges informativos.
 - **Estado Colapsado (Desktop Mini, 76px)**: Oculta etiquetas y expande tooltips flotantes al pasar el cursor sobre los íconos.
-- **Estado Móvil (Drawer deslizable, 0 a 280px)**: Se superpone a la pantalla con un fondo oscurecido (`backdrop overlay`).
+- **Botón Flotante de Apertura / Cierre (`.sidebar-collapse-toggle`)**: 
+  - Ubicado en el borde superior derecho de la barra lateral, centrado sobre la línea divisoria.
+  - Diseño circular con halo turquesa / cyan (`border: 2px solid #22d3ee; box-shadow: 0 0 12px rgba(6, 182, 212, 0.45)`).
+  - Ícono de Lucide React: `ChevronRight` cuando está colapsado para abrir, y `ChevronLeft` cuando está expandido para cerrar.
+  - **Reemplaza obligatoriamente al botón de tres líneas (hamburguesa)** en la navegación principal.
+- **Iconografía Oficial**: Catálogo estándar de **Lucide React** (`User`, `Users`, `Bell`, `Wallet`, `Globe`, `Scale`, `Siren`, `Ticket`, `Banknote`, `Landmark`, `ShieldCheck`).
 
 ---
 
@@ -22,8 +27,24 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
 
 ```html
 <aside class="joli-sidebar" id="mainSidebar" aria-label="Navegación principal">
-  <!-- CABECERA SIDEBAR (SECCIÓN SUPERIOR) -->
+  <!-- BOTÓN CIRCULAR FLOTANTE DE APERTURA / CIERRE (FLECHA CHEVRON) -->
+  <button 
+    type="button" 
+    class="sidebar-collapse-toggle" 
+    aria-label="Alternar barra lateral"
+    title="Alternar barra lateral"
+  >
+    <!-- ChevronRight (colapsado) o ChevronLeft (expandido) -->
+    <svg class="sidebar-toggle-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </button>
+
+  <!-- CABECERA SIDEBAR CON LOGO PANDORA -->
   <div class="joli-sidebar-header">
+    <div class="joli-sidebar-brand">
+      <img src="/logo.png" alt="Pandora" class="joli-sidebar-logo" />
+    </div>
     <span class="joli-sidebar-section-title">MÓDULOS DEL SISTEMA</span>
   </div>
 
@@ -109,7 +130,47 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
   flex-direction: column;
   z-index: 900;
   transition: width var(--transition-normal), transform var(--transition-normal);
-  overflow-x: hidden;
+  overflow-x: visible;
+}
+
+/* BOTÓN FLOTANTE CIRCULAR DE APERTURA / CIERRE */
+.sidebar-collapse-toggle {
+  position: absolute;
+  top: 18px;
+  right: -15px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--color-bg-card, #131924);
+  border: 2px solid #22d3ee;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1001;
+  color: #22d3ee;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sidebar-collapse-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.75);
+}
+
+/* VARIANTE MODO CLARO (SOBRIO Y CORPORATIVO) */
+[data-theme="light"] .sidebar-collapse-toggle {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  color: #475569;
+}
+
+[data-theme="light"] .sidebar-collapse-toggle:hover {
+  background: #ffffff;
+  border-color: #10b981;
+  color: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.22);
 }
 
 /* ESTADO COLAPSADO */

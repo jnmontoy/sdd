@@ -5,6 +5,18 @@ Esta especificación formaliza la pantalla administrativa de **Gestión de Usuar
 
 Cumple rigurosamente con la **Normativa de Auditoría (Anti-N+1 en backend, paginación server-side, validación Zod en cliente)**.
 
+> [!IMPORTANT]
+> **REGLAS DE INTERFAZ Y BOTONERAS EN GESTIÓN DE USUARIOS (PANDORA ADMIN)**:
+> 1. **Botonera Agrupada de los Tres (`.view-switcher`: Tabla + Cards + Buscar — Solo Iconos)**:
+>    En el extremo izquierdo del toolbar se ubica la botonera segmentada de **tres iconos sin texto**:
+>    - **Tabla** (`Table2`): Activa la vista tabular `.joli-data-table`.
+>    - **Cards** (`LayoutGrid`): Activa la cuadrícula de tarjetas `.users-cards-grid` / `.user-profile-card`.
+>    - **Buscar** (`Search`): Al hacer clic en el icono de lupa, anima horizontalmente hacia la derecha el contenedor `.switcher-search-expanded` desplegando el `<input class="switcher-search-input">` de búsqueda en tiempo real.
+> 2. **Grupo de Filtros Expandibles (`.expandable-filter-group`)**: A continuación de la botonera de los tres se ubica el grupo de filtros para `Rol` y `Estado`, que también se despliegan horizontalmente en línea al seleccionarlos, junto al botón dinámico `FilterX` para limpiar filtros.
+> 3. **Diseño de Botoneras de Acciones de Solo Iconos (Cero Texto)**:
+>    - **Botonera de Acciones del Toolbar (`.compact-action-box`)**: Botonera segmentada con solo los iconos `UserPlus` (Nuevo Usuario) y `RotateCcw` (Recargar), separados por `.compact-divider`, sin texto.
+>    - **Botonera de Acciones en Filas y Cards (`.row-actions-group`)**: Botonera segmentada con solo los iconos `Edit2` (Editar) y `Power` (Activar/Desactivar), sin texto.
+
 ---
 
 ## 1. Arquitectura de Endpoints y Modelos (Estabilización de Permisos Desacoplada)

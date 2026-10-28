@@ -2,8 +2,10 @@
 ## Ecosistema Jolifoods — Spec-Driven Development (SDD)
 
 > **REGLA MANDATORIA DE DISEÑO**:
-> Los filtros superiores en los tableros analíticos y operacionales de Jolifoods **NO SON MODALES NI DROPDOWNS DESPLEGABLES VERTICALES**.
-> Pertenecen al estándar unificado de filtros en línea: un grupo segmentado en una sola fila (`.expandable-filter-group`) donde cada filtro **se expande horizontalmente en línea (`inline-flex`) hacia la derecha**, revelando el `<select>` y el botón de cierre `✕` dentro de la misma barra, sin superponer capas flotantes ni abrir ventanas modales.
+> 1. Los filtros superiores en los tableros analíticos y operacionales de Jolifoods **NO SON MODALES NI DROPDOWNS DESPLEGABLES VERTICALES**.
+>    Pertenecen al estándar unificado de filtros en línea: un grupo segmentado en una sola fila (`.expandable-filter-group`) donde cada filtro (ej. `Rol`, `Estado`) **se expande horizontalmente en línea (`inline-flex`) hacia la derecha**, revelando el `<select>` y el botón de cierre `✕` dentro de la misma barra, sin superponer capas flotantes ni abrir ventanas modales.
+> 2. **SEPARACIÓN DEL BUSCADOR EN LA BOTONERA DE LOS TRES (TABLA + CARDS + BUSCAR — SOLO ICONOS)**:
+>    El buscador (`Buscar`) **no se mezcla con los filtros `<select>`**, sino que se agrupa en la **botonera de los tres (`.view-switcher`)** junto a los selectores de vista **Tabla (`Table2`)** y **Cards (`LayoutGrid`)**, mostrando **únicamente los iconos y ningún texto**. Al hacer clic en el icono de **Buscar (`Search`)**, se despliega con animación horizontal hacia la derecha el `<input class="switcher-search-input">` (ver [`../button/icon_action_group.md`](../button/icon_action_group.md)).
 
 ---
 
@@ -39,13 +41,27 @@
 
 ---
 
-### 2. Estructura HTML Canónica (Filtros + Botón Limpiar)
+### 2. Estructura HTML Canónica (Grupo de Tres: Buscar [Solo Icono] + Filtros + Botón Limpiar)
 
 ```html
 <div class="d-flex align-items-center gap-2">
-  <!-- Grupo Segmentado de Filtros Expandibles -->
+  <!-- Grupo Segmentado de Tres: Buscador (Solo Icono) + Filtros Expandibles -->
   <div class="expandable-filter-group">
-    <!-- Item de Filtro Expandible -->
+    <!-- 1. Buscador Expandible hacia la Derecha (SOLO ICONO, SIN TEXTO) -->
+    <div class="expandable-filter-item" id="filterSearch">
+      <button type="button" class="filter-trigger-btn filter-trigger-icon-only" onclick="toggleExpandableFilter('filterSearch')" title="Buscar registros" aria-label="Buscar registros">
+        <i data-lucide="search" class="trigger-icon"></i>
+        <span class="trigger-badge" id="badgeFilterSearch" style="display:none;"></span>
+      </button>
+      <div class="filter-expanded-content">
+        <input type="text" class="filter-expanded-input" id="inputFilterSearch" placeholder="Buscar por cédula, nombre, cargo o correo..." />
+        <button type="button" class="filter-expanded-close" onclick="closeExpandableFilter('filterSearch')" title="Contraer buscador">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. Item de Filtro Expandible (Ej. Rol / Zona) -->
     <div class="expandable-filter-item" id="filterZona">
       <!-- Botón Trigger -->
       <button type="button" class="filter-trigger-btn" onclick="toggleExpandableFilter('filterZona')">

@@ -1,19 +1,50 @@
 # Especificación de Componente: Caja de Acciones Compactas de Iconos Agrupados (`IconActionGroup`)
 ## Ecosistema Jolifoods — Guía de Implementación SDD
 
-> **REGLA DE DISEÑO CORPORATIVO**:
-> En los aplicativos oficiales de Jolifoods, las acciones secundarias de las tablas (Exportar a Excel, Refrescar datos, Agregar registro rápido, Limpiar filtros) **NO se presentan como botones grandes con texto plano suelto** (como "Exportar a Excel" o "+ Agregar").
-> **DEBEN PRESENTARSE AGRUPADAS EN UNA CAJA COMPACTA DE ICONOS DE 26PX A 28PX DE ALTO** (`.compact-action-box` o `.actions-btn-group`), con fondo sutil, divisores verticales y tooltips descriptivos accesibles (`aria-label`).
+> **REGLA DE DISEÑO CORPORATIVO (BOTONERAS DE SOLO ICONOS — CERO TEXTO)**:
+> 1. En los aplicativos oficiales de Jolifoods y Pandora Admin, las botoneras de acciones y selectores de vista en la barra de herramientas **NO se presentan con etiquetas de texto** (queda prohibido incluir textos como `"Tabla"`, `"Cards"`, `"Buscar"`, `"Nuevo Usuario"`, `"Editar"` o `"Desactivar"` dentro de los botones de la botonera).
+> 2. **DEBEN PRESENTARSE EXCLUSIVAMENTE CON EL ICONO** agrupados en botoneras segmentadas (`.view-switcher`, `.compact-action-box` y `.row-actions-group`), con fondo sutil, divisores verticales de `1px` y atributos accesibles (`title` y `aria-label`).
+> 3. **Botonera Agrupada de los Tres: Tabla + Cards + Buscar (`.view-switcher`)**:
+>    Agrupa en un único bloque segmentado de **solo iconos**:
+>    - **Vista en Tabla** (`Table2`)
+>    - **Vista en Cards** (`LayoutGrid`)
+>    - **Buscar** (`Search`): Al hacer clic sobre el icono de búsqueda, ejecuta una animación horizontal hacia la derecha (`.switcher-search-expanded`) dentro de la misma botonera para desplegar el `<input class="switcher-search-input">` y enfocarlo automáticamente.
+> 4. **Acciones de Fila y de Card (`.row-actions-group`)**: Tanto en las filas de `.joli-data-table` como en el pie de cada `.user-profile-card`, los botones de acción (`Edit2`, `Power`, etc.) **solo muestran el icono** sin texto acompañante.
 
 ---
 
-### 1. Estructura Visual Canónica
+### 1. Estructura Visual Canónica (Botonera de los Tres [Tabla + Cards + Buscar] + Caja Compacta de Acciones — Solo Iconos)
 
 ```html
-<div class="compact-action-box">
-  <!-- 1. Acción Crear / Agregar (Icono Plus en Azul) -->
-  <button type="button" class="btn-icon-compact btn-icon-add" title="Nuevo registro (Abrir panel lateral)" aria-label="Nuevo registro">
-    <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+<!-- Botonera Agrupada de los Tres: Tabla + Cards + Buscar con Expansión a la Derecha (Solo Iconos, Cero Texto) -->
+<div class="view-switcher" role="group" aria-label="Vista y búsqueda rápida">
+  <button type="button" class="switcher-btn is-active" title="Vista en Tabla" aria-label="Vista en Tabla">
+    <i data-lucide="table-2" style="width: 15px; height: 15px;"></i>
+  </button>
+  <button type="button" class="switcher-btn" title="Vista en Cards" aria-label="Vista en Cards">
+    <i data-lucide="layout-grid" style="width: 15px; height: 15px;"></i>
+  </button>
+
+  <span class="switcher-divider"></span>
+
+  <div class="switcher-search-item" id="switcherSearch">
+    <button type="button" class="switcher-btn switcher-search-btn" title="Buscar colaborador" aria-label="Buscar colaborador">
+      <i data-lucide="search" style="width: 15px; height: 15px;"></i>
+    </button>
+    <div class="switcher-search-expanded">
+      <input type="text" class="switcher-search-input" placeholder="Buscar por cédula, nombre, cargo o correo..." />
+      <button type="button" class="filter-expanded-close" title="Contraer buscador">
+        <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Botonera Compacta de Acciones (Solo Iconos, Cero Texto) -->
+<div class="compact-action-box" role="toolbar" aria-label="Acciones de tabla">
+  <!-- 1. Acción Crear / Agregar (Icono UserPlus / Plus) -->
+  <button type="button" class="btn-icon-compact btn-icon-add" title="Nuevo registro" aria-label="Nuevo registro">
+    <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i>
   </button>
 
   <span class="compact-divider"></span>
@@ -25,9 +56,9 @@
 
   <span class="compact-divider"></span>
 
-  <!-- 3. Acción Recargar / Refrescar (Icono RefreshCw en Gris) -->
+  <!-- 3. Acción Recargar / Refrescar (Icono RotateCcw / RefreshCw) -->
   <button type="button" class="btn-icon-compact btn-icon-refresh" title="Actualizar datos de la tabla" aria-label="Actualizar datos">
-    <i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i>
+    <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i>
   </button>
 </div>
 ```
