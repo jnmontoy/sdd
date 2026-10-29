@@ -3,6 +3,13 @@
 
 Este componente define el estándar visual para tarjetas de contenido corporativo, paneles de configuración y resúmenes de módulos. Proporciona una estructura de 3 secciones desacopladas (**Header, Body y Footer**) con soporte total para tema claro/oscuro y bordes sutiles con halo cromático.
 
+> [!IMPORTANT]
+> **REGLA DE INTERACCIÓN: NINGUNA TARJETA SE MUEVE AL PASAR EL MOUSE.**
+> Está prohibido el hover que "levanta" la tarjeta (`transform: translateY(...)`, `scale(...)` o cualquier desplazamiento)
+> en `CorporateCard`, tarjetas KPI y cualquier otra tarjeta del ecosistema. El hover solo puede cambiar el color del borde
+> o la sombra. Motivo: el movimiento distrae en pantallas de trabajo con muchas tarjetas y desplaza el contenido bajo el cursor
+> (p. ej. selectores o botones dentro de la tarjeta).
+
 ---
 
 ## 1. Anatomía Visual y Estructura
@@ -72,6 +79,7 @@ export interface CorporateCardProps {
   width: 100%;
 }
 
+/* Solo el borde cambia: sin transform (ver la regla de interacción al inicio) */
 .corp-card:hover {
   border-color: var(--color-border-hover, rgba(16, 185, 129, 0.3));
 }

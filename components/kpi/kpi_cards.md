@@ -150,8 +150,8 @@ export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false }) => {
   transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
+/* Sin transform: ninguna tarjeta se mueve al pasar el mouse (regla en card/corporate_card.md) */
 .joli-kpi-card:hover {
-  transform: translateY(-2px);
   border-color: var(--color-text-muted);
   box-shadow: var(--shadow-md);
 }

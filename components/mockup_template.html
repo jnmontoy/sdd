@@ -577,7 +577,8 @@
       transition: all 200ms ease;
     }
 
-    .joli-kpi-card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.2); }
+    /* Sin transform: ninguna tarjeta se mueve al pasar el mouse (regla en card/corporate_card.md) */
+    .joli-kpi-card:hover { border-color: rgba(255, 255, 255, 0.2); }
     .joli-kpi-card.active-filter { border-color: #10b981; background: rgba(16, 185, 129, 0.08); }
     .joli-kpi-label { font-size: 0.74rem; color: var(--text-muted); font-weight: 500; }
     .joli-kpi-value { font-size: 1.38rem; font-weight: 800; color: var(--text-primary); margin: 0.2rem 0; }
