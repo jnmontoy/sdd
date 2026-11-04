@@ -1,99 +1,99 @@
-# Protocolo del Ciclo de Vida del Software (SDLC) y Mejora Continua
-## Ecosistema Corporativo Jolifoods / Greenyard — Metodología SDD
+# Protocolo 12: ciclo de vida del software y mejora continua
 
-Este protocolo rige las **fases del ciclo de vida de cualquier programa informático** dentro de la organización, guiando tanto a ingenieros técnicos como a perfiles Senior y Tech Leads a orientar permanentemente el desarrollo hacia la **mejora continua basada en datos de uso real**.
+Fases del ciclo de vida de una aplicación (SDLC, *Software Development Life Cycle*) y cómo usar datos de uso real para decidir qué mejorar.
+
+Las palabras **DEBE / DEBERÍA / PUEDE** siguen la RFC 2119.
+
+> **Estado de implementación**: normativo. El componente [`platform_usage_dashboard.md`](../components/dashboard/platform_usage_dashboard.md) y el modelo [`model/telemetria/`](../model/telemetria/spec_model_telemetria.md) especifican la telemetría de uso; no hay instrumentación lista en `stack/`.
 
 ---
 
-## 1. Filosofía de Ingeniería: El Ciclo de Vida Guiado por Adopción (Data-Driven SDLC)
+## 1. Principio: una aplicación no termina en el primer despliegue
 
-Ningún sistema de software se considera "terminado" tras el primer despliegue. El software es un organismo vivo que atraviesa **7 fases secuenciales e iterativas**:
+Una aplicación en producción DEBERÍA revisarse periódicamente con datos de uso, porque las necesidades del negocio cambian y el uso real suele diferir de lo que se supuso al diseñarla.
 
 ```mermaid
 graph TD
-    F1[1. Descubrimiento & Requerimientos] --> F2[2. Especificación SDD & Mocks]
-    F2 --> F3[3. Construcción, Testing & Quality Gates]
-    F3 --> F4[4. Despliegue Automatizado CI/CD]
-    F4 --> F5[5. Operación & Telemetría de Uso]
-    F5 --> F6[6. Análisis de Adopción & Encuestas In-App]
-    F6 --> F7[7. Programación de Ciclos de Mejora]
+    F1[1. Descubrimiento] --> F2[2. Especificación y prototipo]
+    F2 --> F3[3. Construcción y pruebas]
+    F3 --> F4[4. Despliegue]
+    F4 --> F5[5. Operación y telemetría]
+    F5 --> F6[6. Análisis de uso y retroalimentación]
+    F6 --> F7[7. Planeación de mejoras]
     F7 --> F1
 ```
 
 ---
 
-## 2. Las 7 Fases del Ciclo de Vida de un Programa Informático
+## 2. Fases
 
-### Fase 1: Descubrimiento, Alineación de Negocio e Ideación (Discovery)
-- **Objetivo**: Comprender el dolor operativo del usuario sin asumir soluciones técnicas a ciegas.
-- **Entregables**: Cuestionario de negocio (Paso 0 del SDD), definición de problemas clave y valor esperado.
-
-### Fase 2: Especificación Formal y Prototipado Interactivo (Spec & Prototyping)
-- **Objetivo**: Diseñar los contratos de datos (OpenAPI/Pydantic), modelos relacionales y prototipos visuales interactivos (`mock/`).
-- **Validación**: Aprobación de las pantallas por los usuarios operativos antes de codificar la lógica backend.
-
-### Fase 3: Construcción, Hardening y Blindaje de Calidad (Development & QA)
-- **Objetivo**: Implementación técnica bajo el estándar SDD (Django + FastAPI ASGI, componentes UI auditados, aislamiento en `.venv`).
-- **Control de Calidad**: Validación obligatoria de los protocolos:
-  - Protocolo 00 (OWASP 35/35, Anti-N+1, 100% Horizontal).
-  - Protocolo 11 (Pruebas unitarias, endpoints con `validate_endpoints.py`, cobertura > 80%).
-
-### Fase 4: Despliegue y Liberación Progresiva (Deployment & Release)
-- **Objetivo**: Puesta en producción automatizada mediante contenedores Docker multi-etapa y migraciones *Zero-Downtime* (Protocolo 08).
-- **Estrategia**: Liberación por grupos de usuarios (Canary o Blue/Green) con monitoreo en tiempo real.
-
-### Fase 5: Operación, Observabilidad y Telemetría de Uso (Telemetry & Operations)
-- **Objetivo**: Medir la estabilidad y el comportamiento de la plataforma en producción.
-- **Herramientas**: Healthchecks profundo vs superficial, `X-Correlation-ID` (Protocolo 07) y **Dashboard de Uso de Plataforma**.
-
-### Fase 6: Análisis de Adopción y Escucha Activa al Usuario (User Feedback & Usage Analytics)
-- **Objetivo**: Descubrir qué módulos se usan masivamente y cuáles han sido abandonados o generan confusión.
-- **Mecanismos**:
-  1. **Telemetría de Eventos**: Frecuencia de clics, accesos por módulo, generación de reportes y descargas Excel.
-  2. **Micro-Encuestas In-App**: Preguntar directamente en la interfaz:
-     - *"¿Cuál es la función que más utilizas en tu jornada?"*
-     - *"¿Qué proceso te toma demasiado tiempo o resulta confuso?"*
-     - *"¿Qué botón o funcionalidad nueva necesitas para agilizar tu trabajo?"*
-
-### Fase 7: Planificación y Programación de Ciclos de Mejora (Continuous Improvement)
-- **Objetivo**: Convertir la retroalimentación y la telemetría en sprints de desarrollo evolutivo.
-- **Priorización RICE**:
-  $$\text{Score} = \frac{\text{Reach (Alcance)} \times \text{Impact (Impacto)} \times \text{Confidence (Confianza)}}{\text{Effort (Esfuerzo)}}$$
+| Fase | Objetivo | Entregables / controles | Referencia |
+|---|---|---|---|
+| 1. Descubrimiento | Entender el problema operativo sin presuponer la solución. Identificar a todas las áreas afectadas, no solo a quien pide. | Preguntas del paso 0, problema y valor esperado, áreas impactadas. | `SPEC_GUIDE.md` §1.1 |
+| 2. Especificación y prototipo | Contratos de datos, modelos y prototipo navegable. | Aprobación de pantallas por usuarios operativos antes de programar el backend. | Protocolo 05, `mock/` |
+| 3. Construcción y pruebas | Implementar con el stack del SDD. | BP-01 a BP-22 (normativa 00); pruebas del protocolo 11; validador de endpoints. | Protocolos 00, 11, 14 |
+| 4. Despliegue | Poner en producción con riesgo controlado. | Imágenes Docker multi-etapa, migraciones del protocolo 08, puertas de calidad del 06. Liberación gradual (*canary* o *blue/green*) PUEDE usarse si la infraestructura lo permite. | Protocolos 06, 08 |
+| 5. Operación | Medir estabilidad. | Sondas de salud, identificador de correlación, SLO. | Protocolo 07 |
+| 6. Análisis de uso | Saber qué módulos se usan, cuáles se abandonan y qué confunde. | Telemetría de eventos y micro-encuestas. | §4 |
+| 7. Planeación de mejoras | Convertir datos en backlog priorizado. | Priorización RICE. | §5 |
 
 ---
 
-## 3. Matriz de Roles: Responsabilidades del Perfil Técnico vs. Perfil Senior
+## 3. Roles
 
-| Dimensión | Rol Técnico (Junior / Mid Developer) | Rol Senior / Tech Lead / Arquitecto |
+| Tema | Perfil técnico (desarrollo) | Perfil sénior (líder técnico / arquitectura) |
 | :--- | :--- | :--- |
-| **Monitoreo de Uso** | Revisa errores 4xx/5xx y endpoints con alta latencia reportados por el Dashboard. | Analiza patrones de adopción (DAU/MAU) y módulos con abandono para proponer rediseños de UX. |
-| **Gestión de Feedback** | Clasifica sugerencias de usuarios y resuelve bugs o fricciones reportadas en encuestas. | Diseña las preguntas estratégicas de las micro-encuestas y programa los ciclos de mejora en el roadmap. |
-| **Ciclos de Mejora** | Ejecuta refactorizaciones de código, acelera consultas con `.select_related()` y optimiza componentes. | Evalúa el retorno de inversión técnica, reduce deuda técnica estructural y coordina con stakeholders. |
-| **Gobernanza SDD** | Aplica los componentes y protocolos canónicos sin reinventar la rueda ni crear CSS aislado. | Audita la conformidad del equipo, actualiza los blueprints del SDD e impulsa la cultura de calidad cero-bugs. |
+| Monitoreo | Revisa errores 4xx/5xx y endpoints lentos. | Analiza adopción (DAU/MAU: usuarios activos diarios / mensuales) y abandono por módulo. |
+| Retroalimentación | Clasifica sugerencias y corrige fricciones reportadas. | Define las preguntas de las encuestas y el plan de mejoras. |
+| Mejoras | Optimiza consultas (`select_related`), componentes y rendimiento. | Evalúa costo/beneficio, deuda técnica y coordina con las áreas de negocio. |
+| Gobierno del SDD | Usa componentes y protocolos existentes. | Revisa la adopción y propone cambios al SDD con evidencia. |
 
 ---
 
-## 4. Estándar de Micro-Encuestas In-App para Detección de Mejoras
+## 4. Telemetría de uso y micro-encuestas
 
-Toda plataforma del ecosistema que active el módulo de analítica de producto debe desplegar el componente de captura de feedback no invasivo:
+La telemetría de uso y las encuestas tratan datos de personas; por eso:
+* DEBEN informarse al usuario (aviso de privacidad) y limitarse a la finalidad de mejorar la aplicación (Ley 1581 de 2012).
+* DEBERÍAN analizarse de forma agregada; el identificador del usuario se guarda seudonimizado (p. ej. hash con sal) salvo que se necesite contactar a la persona y ella lo acepte.
+* La encuesta DEBE ser opcional y descartable.
+
+Contrato de referencia de una respuesta de encuesta:
 
 ```typescript
 export interface UserFeedbackSurvey {
-  userId: string;
-  userRole: string;
-  mostUsedFeature: string;      // ej. "Filtros tipo Excel en Cartera"
-  leastUsedFeature?: string;    // ej. "Visor PDF"
-  painPoints: string;           // ej. "La carga de evidencias tarda en redes móviles lentas"
-  suggestedImprovement: string; // ej. "Permitir comprimir fotos antes de subirlas"
-  satisfactionScore: number;    // 1 a 5 estrellas
-  submittedAtIso: string;
+  respondentId: string;          // identificador seudonimizado, no el documento ni el correo
+  userRole: string;              // rol o perfil, para analizar por tipo de usuario
+  module: string;                // módulo desde donde se respondió
+  mostUsedFeature: string;       // ej. "Filtros tipo Excel en la tabla de pedidos"
+  leastUsedFeature?: string;     // ej. "Visor PDF"
+  painPoints: string;            // ej. "La carga de evidencias tarda en redes móviles lentas"
+  suggestedImprovement: string;  // ej. "Comprimir fotos antes de subirlas"
+  satisfactionScore: 1 | 2 | 3 | 4 | 5;
+  submittedAtIso: string;        // ISO 8601 en UTC
 }
 ```
 
+Preguntas sugeridas: "¿Qué función usas más en tu jornada?", "¿Qué proceso te toma demasiado tiempo o te confunde?", "¿Qué necesitarías para trabajar más rápido?".
+
 ---
 
-## 5. Calendario y Cadencia de los Ciclos de Mejora
+## 5. Priorización RICE
 
-1. **Revisión Mensual de Telemetría**: El primer lunes de cada mes, el equipo técnico extrae las métricas del Dashboard de Uso.
-2. **Depuración de Funcionalidades Muertas**: Toda opción o pantalla que tenga menos del **2% de uso en 90 días** debe evaluarse para rediseño, simplificación o eliminación (reducir superficie de mantenimiento).
-3. **Sprint de Optimización y Ergonomía**: Al menos **1 de cada 4 sprints** debe reservarse exclusivamente para mejoras de usabilidad, ergonomía y rendimiento solicitadas por los usuarios reales.
+Para ordenar el backlog de mejoras se PUEDE usar RICE (método de Intercom):
+
+$$\text{Puntaje} = \frac{\text{Alcance} \times \text{Impacto} \times \text{Confianza}}{\text{Esfuerzo}}$$
+
+* **Alcance** (*Reach*): usuarios o transacciones afectadas por periodo.
+* **Impacto**: escala acordada (p. ej. 0,25 – 3).
+* **Confianza**: qué tan seguros estamos de las estimaciones (%).
+* **Esfuerzo**: persona-semanas.
+
+RICE ordena, no decide: las mejoras que afectan a varias áreas o tienen riesgo regulatorio se discuten con esas áreas aunque su puntaje sea bajo.
+
+---
+
+## 6. Cadencia sugerida
+
+1. **Revisión mensual** de métricas de uso y errores.
+2. **Funcionalidades poco usadas**: lo que tenga uso muy bajo (referencia: < 2 % de los usuarios activos en 90 días) DEBERÍA revisarse para simplificar, rediseñar o retirar. Antes de retirar, confirmar con el área dueña: una función poco usada puede ser crítica (p. ej. un cierre anual).
+3. **Capacidad para mejoras**: reservar una parte de cada ciclo (p. ej. 1 de cada 4 sprints o un porcentaje fijo) para usabilidad, rendimiento y deuda técnica.

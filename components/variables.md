@@ -1,44 +1,116 @@
 # Especificación del Sistema de Variables: `variables.css`
-## Sistema Central de Diseño — Ecosistema Greenyard / Jolifoods SDD
+## Sistema central de diseño — SDD Joli Foods
 
-El archivo `variables.css` es la **fuente única e inmutable de verdad tipográfica, cromática y de tematización** del ecosistema Jolifoods. Gobierna todos los textos, superficies, bordes, estados y sombras del proyecto, definiendo el comportamiento reactivo de **Modo Noche (Dark Mode)** y **Modo Día (Light Mode)** mediante variables CSS nativas sin dependencias externas.
+`variables.css` es la **fuente única de tokens** (variables CSS con nombre) de tipografía, color, superficies, bordes, sombras y tema del ecosistema. Define el comportamiento de **Modo Noche** (por defecto) y **Modo Día** con variables CSS nativas, sin dependencias externas.
+
+> **Sincronía:** la sección 3 de este documento reproduce `variables.css` completo. Si cambia un token, se DEBE actualizar el `.css` y copiarlo aquí en el mismo cambio.
+
+> **Pendiente de decisión de negocio (no modificar sin aprobación):** la paleta actual usa verde esmeralda (`--brand-primary: #10b981`) y la fuente `Inter`. La identidad de marca de Joli Foods es morado, amarillo, azul y naranja con tipografías Gotham y Arvo. Cambiar la marca es una decisión pendiente; mientras tanto, los componentes DEBEN consumir los tokens (`var(--brand-primary)`) para que el cambio futuro se haga en un solo lugar.
 
 ---
 
-## 1. Mecanismo de Conmutación Día / Noche
+## 1. Conmutación Día / Noche
 
-- **Modo Noche (Por defecto)**: Activo en `:root`, `[data-theme='dark']` y `[data-bs-theme='dark']` con `color-scheme: dark`.
-- **Modo Día**: Se activa dinámicamente mediante el atributo `[data-theme='light']` y `[data-bs-theme='light']` en la etiqueta `<html>`.
+- **Modo Noche (por defecto):** activo en `:root`, `[data-theme='dark']` y `[data-bs-theme='dark']` con `color-scheme: dark`.
+- **Modo Día:** se activa con `[data-theme='light']` y `[data-bs-theme='light']` en `<html>`.
+- Se DEBEN actualizar ambos atributos a la vez (`data-theme` para los componentes propios y `data-bs-theme` para Bootstrap).
 
 ```html
-<!-- Modo Noche (Oficial) -->
+<!-- Modo Noche -->
 <html lang="es" data-theme="dark" data-bs-theme="dark">
 
-<!-- Modo Día (Oficial) -->
+<!-- Modo Día -->
 <html lang="es" data-theme="light" data-bs-theme="light">
 ```
 
-### Función Javascript Estándar para Conmutación
-```javascript
-function toggleTheme() {
+### Función de conmutación con preferencia persistida
+
+La clave de almacenamiento DEBE llevar el identificador de la app (varias apps pueden compartir dominio). Ver `STORAGE_KEYS` en `src/config/storageKeys.ts`.
+
+```typescript
+// src/utils/theme.ts
+import { STORAGE_KEYS } from '@/config/storageKeys'; // theme: `${APP}:theme`
+
+export type Theme = 'dark' | 'light';
+
+export function applyTheme(theme: Theme): void {
   const html = document.documentElement;
-  const current = html.getAttribute("data-theme") || html.getAttribute("data-bs-theme") || "dark";
-  const next = current === "dark" ? "light" : "dark";
-  html.setAttribute("data-theme", next);
-  html.setAttribute("data-bs-theme", next);
-  html.style.colorScheme = next;
-  // Actualizar icono o estado de UI
+  html.setAttribute('data-theme', theme);
+  html.setAttribute('data-bs-theme', theme);
+  html.style.colorScheme = theme;
+  try {
+    localStorage.setItem(STORAGE_KEYS.theme, theme); // preferencia no sensible
+  } catch {
+    // Modo privado o almacenamiento bloqueado: el tema aplica solo en esta sesión.
+  }
+}
+
+export function toggleTheme(): Theme {
+  const current = (document.documentElement.getAttribute('data-theme') as Theme) || 'dark';
+  const next: Theme = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  return next;
 }
 ```
 
 ---
 
-## 2. Hoja de Estilos Completa en CSS Puro (`variables.css`)
+## 2. Catálogo de tokens
+
+| Grupo | Tokens | Cambia con el tema |
+| :--- | :--- | :--- |
+| Tipografía | `--font-family`, `--font-family-mono`, `--font-size-2xs` … `--font-size-4xl`, `--font-weight-*`, `--line-height-*` | No |
+| Espaciado | `--space-1` (4px) … `--space-6` (24px), `--space-8` (32px) | No |
+| Radios / layout | `--radius-sm` … `--radius-2xl`, `--radius-full`, `--topbar-height` | No |
+| Movimiento y capas | `--transition-fast/base/slow`, `--z-base` … `--z-toast` | No |
+| Marca y estados | `--brand-primary`, `--brand-primary-hover`, `--brand-primary-light`, `--brand-glow`, `--status-success/error/warning/info` y sus `-bg` | No |
+| Acentos categóricos | `--accent-blue`, `--accent-cyan`, `--accent-indigo`, `--accent-violet`, `--accent-excel`, `--accent-excel-hover` | No |
+| Superficies fijas | `--surface-paper`, `--ink-signature`, `--overlay-scrim`, `--overlay-surface`, `--overlay-border`, `--overlay-control-hover`, `--text-on-overlay` | No (van sobre video, PDF o papel) |
+| Series de gráficas | `--chart-primary`, `--chart-secondary`, `--chart-warning`, `--chart-danger`, `--chart-accent`, `--chart-purple` | No |
+| Superficies | `--bg-viewport`, `--bg-card`, `--bg-elevated`, `--bg-active`, `--bg-hover`, `--bg-input`, `--bg-input-focus`, `--bg-btn-secondary(-hover)` | Sí |
+| Texto | `--text-primary`, `--text-secondary`, `--text-muted`, `--text-tertiary`, `--text-on-brand` | Sí |
+| Bordes | `--border-subtle`, `--border-strong`, `--border-card-accent`, `--border-focus`, `--border-error` | Sí |
+| Sombras / vidrio | `--glass-*`, `--shadow-card`, `--shadow-popover`, `--shadow-modal`, `--shadow-input-focus`, `--shadow-error-focus` | Sí |
+| Alertas y halos | `--alert-error-*`, `--orb-color-*` | Sí |
+| Gráficas (ejes) | `--chart-grid`, `--chart-text`, `--chart-tooltip-bg`, `--chart-tooltip-border`, `--chart-tooltip-text`, `--chart-tooltip-label` | Sí |
+| Formularios | `--input-height`, `--input-bg`, `--input-border`, `--input-border-hover`, `--input-focus-border`, `--input-focus-ring`, `--input-text`, `--input-placeholder`, `--label-color` | Sí |
+
+**Fondos translúcidos de un acento o estado:** en lugar de crear un token por cada opacidad, use `color-mix()` (soportado por los navegadores actuales):
+
+```css
+.icono-info { color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 12%, transparent); }
+```
+
+### Alias de compatibilidad (obsoletos)
+
+La sección 3b de `variables.css` mapea nombres heredados a los tokens canónicos para que las especificaciones y proyectos anteriores no se queden sin color. El código nuevo NO DEBERÍA usarlos.
+
+| Alias heredado | Token canónico |
+| :--- | :--- |
+| `--primary`, `--color-primary`, `--accent-color` | `--brand-primary` |
+| `--color-primary-light` / `--color-primary-dark` | `--brand-primary-light` / `--brand-primary-hover` |
+| `--color-danger`, `--error` / `--color-warning` | `--status-error` / `--status-warning` |
+| `--color-text-primary`, `--color-text-main` / `--color-text-secondary` / `--color-text-muted` | `--text-primary` / `--text-secondary` / `--text-muted` |
+| `--bg-base`, `--color-bg-base`, `--color-bg-body`, `--color-bg-surface-dim` | `--bg-viewport` |
+| `--bg-surface`, `--color-bg-card`, `--color-bg-surface` | `--bg-card` |
+| `--color-bg-surface-elevated`, `--bg-secondary`, `--bg-muted` / `--bg-tertiary` | `--bg-elevated` / `--bg-active` |
+| `--color-bg-card-hover` / `--color-bg-input` | `--bg-hover` / `--bg-input` |
+| `--color-border`, `--color-border-subtle`, `--border-default` / `--color-border-hover` | `--border-subtle` / `--border-strong` |
+| `--focus-ring` | `--shadow-input-focus` |
+| `--weight-*` / `--text-xs` … `--text-2xl` | `--font-weight-*` / `--font-size-*` |
+| `--shadow-sm` / `--shadow-md` / `--shadow-xl` | `--shadow-card` / `--shadow-popover` / `--shadow-modal` |
+| `--radius-pill` / `--border-radius-sm/md/lg` | `--radius-full` / `--radius-sm/md/lg` |
+| `--transition-normal` / `--topheader-height` | `--transition-base` / `--topbar-height` |
+
+---
+
+## 3. Hoja de estilos completa (`variables.css`)
 
 ```css
 /* ==========================================================================
-   SISTEMA DE VARIABLES DE DISEÑO (CSS PURO) — GREENYARD / JOLIFOODS SDD
-   Control Central de Textos, Superficies y Tematización Día/Noche
+   SISTEMA DE VARIABLES DE DISEÑO (CSS PURO) — SDD JOLI FOODS
+   Fuente única de tokens: textos, superficies, estados y tema Día/Noche.
+   La especificación y el catálogo de tokens están en variables.md.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -107,10 +179,48 @@ function toggleTheme() {
   --status-error-bg: rgba(244, 63, 94, 0.15);
   --status-warning-bg: rgba(245, 158, 11, 0.15);
   --status-info-bg: rgba(14, 165, 233, 0.15);
+
+  /* --- Escala de espaciado --- */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+
+  /* --- Acentos categóricos (iconos de KPI, series de gráficas, categorías) ---
+     Uso: color de icono/serie. Para fondos translúcidos use
+     color-mix(in srgb, var(--accent-*) 12%, transparent). */
+  --accent-blue: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --accent-indigo: #6366f1;
+  --accent-violet: #8b5cf6;
+  --accent-excel: #107c41;        /* Botón "Exportar a Excel" (color reconocible de la herramienta) */
+  --accent-excel-hover: #0e6835;
+
+  /* --- Superficies que NO cambian con el tema ---
+     Papel de documentos (PDF, firma) y capas sobre video/cámara o visores. */
+  --surface-paper: #ffffff;
+  --ink-signature: #0f172a;       /* Trazo de firma: debe verse sobre papel blanco impreso */
+  --overlay-scrim: rgba(15, 23, 42, 0.72);     /* Fondo de modales y cortinas sobre video */
+  --overlay-surface: rgba(15, 23, 42, 0.85);   /* Píldoras/controles flotantes sobre video o PDF */
+  --overlay-border: rgba(255, 255, 255, 0.12);
+  --overlay-control-hover: rgba(255, 255, 255, 0.2);
+  --text-on-overlay: #f8fafc;
+
+  /* --- Series de gráficas (colores de datos) --- */
+  --chart-primary: var(--brand-primary);
+  --chart-secondary: var(--accent-blue);
+  --chart-warning: var(--status-warning);
+  --chart-danger: var(--status-error);
+  --chart-accent: var(--accent-cyan);
+  --chart-purple: var(--accent-violet);
 }
 
 /* --------------------------------------------------------------------------
    2. TEMA MODO NOCHE (DARK MODE - POR DEFECTO)
+   Soporte simultáneo para :root, [data-theme='dark'] y [data-bs-theme='dark']
    -------------------------------------------------------------------------- */
 :root,
 [data-theme='dark'],
@@ -162,6 +272,14 @@ function toggleTheme() {
   --alert-error-border: rgba(244, 63, 94, 0.3);
   --alert-error-text: #fecdd3;
 
+  /* Gráficas: rejilla, ejes y tooltip */
+  --chart-grid: rgba(51, 65, 85, 0.5);
+  --chart-text: #94a3b8;
+  --chart-tooltip-bg: rgba(30, 41, 59, 0.95);
+  --chart-tooltip-border: rgba(255, 255, 255, 0.1);
+  --chart-tooltip-text: #f8fafc;
+  --chart-tooltip-label: #94a3b8;
+
   /* --- Aliases Canónicos de Compatibilidad --- */
   --background: var(--bg-viewport);
   --surface: var(--bg-viewport);
@@ -169,10 +287,22 @@ function toggleTheme() {
   --surface-elevated: var(--bg-elevated);
   --surface-active: var(--bg-active);
   --border-color: var(--border-subtle);
+
+  /* Controles de formulario e inputs */
+  --input-height: 38px;
+  --input-bg: var(--bg-card);
+  --input-border: var(--border-subtle);
+  --input-border-hover: var(--border-strong);
+  --input-focus-border: var(--brand-primary);
+  --input-focus-ring: rgba(16, 185, 129, 0.25);
+  --input-text: var(--text-primary);
+  --input-placeholder: var(--text-muted);
+  --label-color: var(--text-secondary);
 }
 
 /* --------------------------------------------------------------------------
    3. TEMA MODO DÍA (LIGHT MODE)
+   Soporte simultáneo para [data-theme='light'] y [data-bs-theme='light']
    -------------------------------------------------------------------------- */
 [data-theme='light'],
 [data-bs-theme='light'] {
@@ -223,6 +353,14 @@ function toggleTheme() {
   --alert-error-border: #fca5a5;
   --alert-error-text: #991b1b;
 
+  /* Gráficas: rejilla, ejes y tooltip */
+  --chart-grid: rgba(203, 213, 225, 0.8);
+  --chart-text: #64748b;
+  --chart-tooltip-bg: rgba(15, 23, 42, 0.92);
+  --chart-tooltip-border: rgba(255, 255, 255, 0.15);
+  --chart-tooltip-text: #f8fafc;
+  --chart-tooltip-label: #cbd5e1;
+
   /* --- Aliases Canónicos de Compatibilidad --- */
   --background: var(--bg-viewport);
   --surface: var(--bg-viewport);
@@ -231,7 +369,7 @@ function toggleTheme() {
   --surface-active: var(--bg-active);
   --border-color: var(--border-subtle);
 
-  /* Controles de Formulario e Inputs (Estándar bi/cartera) */
+  /* Controles de formulario e inputs */
   --input-height: 38px;
   --input-bg: #ffffff;
   --input-border: #cbd5e1;
@@ -242,20 +380,272 @@ function toggleTheme() {
   --input-placeholder: #94a3b8;
   --label-color: #475569;
 }
+
+/* --------------------------------------------------------------------------
+   3b. ALIAS DE COMPATIBILIDAD (OBSOLETOS)
+   Nombres heredados que aparecen en especificaciones y proyectos anteriores.
+   Se resuelven contra los tokens canónicos para que nada quede sin color.
+   El código nuevo NO DEBERÍA usarlos: use el token canónico de la derecha.
+   Se declaran sobre cada contenedor con tema para que se recalculen si el
+   atributo data-theme se aplica en un elemento distinto de <html>.
+   -------------------------------------------------------------------------- */
+:root,
+[data-theme],
+[data-bs-theme] {
+  /* Marca y estados */
+  --primary: var(--brand-primary);
+  --color-primary: var(--brand-primary);
+  --color-primary-light: var(--brand-primary-light);
+  --color-primary-dark: var(--brand-primary-hover);
+  --accent-color: var(--brand-primary);
+  --color-danger: var(--status-error);
+  --color-warning: var(--status-warning);
+  --error: var(--status-error);
+
+  /* Texto */
+  --color-text-primary: var(--text-primary);
+  --color-text-main: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  /* Superficies */
+  --bg-base: var(--bg-viewport);
+  --color-bg-base: var(--bg-viewport);
+  --color-bg-body: var(--bg-viewport);
+  --color-bg-surface-dim: var(--bg-viewport);
+  --bg-surface: var(--bg-card);
+  --color-bg-card: var(--bg-card);
+  --color-bg-surface: var(--bg-card);
+  --color-bg-surface-elevated: var(--bg-elevated);
+  --bg-secondary: var(--bg-elevated);
+  --bg-muted: var(--bg-elevated);
+  --bg-tertiary: var(--bg-active);
+  --color-bg-card-hover: var(--bg-hover);
+  --color-bg-input: var(--bg-input);
+
+  /* Bordes y foco */
+  --color-border: var(--border-subtle);
+  --color-border-subtle: var(--border-subtle);
+  --border-default: var(--border-subtle);
+  --color-border-hover: var(--border-strong);
+  --focus-ring: var(--shadow-input-focus);
+
+  /* Tipografía */
+  --weight-regular: var(--font-weight-regular);
+  --weight-medium: var(--font-weight-medium);
+  --weight-semibold: var(--font-weight-semibold);
+  --weight-bold: var(--font-weight-bold);
+  --weight-extrabold: var(--font-weight-extrabold);
+  --text-xs: var(--font-size-xs);
+  --text-sm: var(--font-size-sm);
+  --text-base: var(--font-size-base);
+  --text-lg: var(--font-size-lg);
+  --text-xl: var(--font-size-xl);
+  --text-2xl: var(--font-size-2xl);
+
+  /* Sombras, radios, tiempos y layout */
+  --shadow-sm: var(--shadow-card);
+  --shadow-md: var(--shadow-popover);
+  --shadow-xl: var(--shadow-modal);
+  --radius-pill: var(--radius-full);
+  --border-radius-sm: var(--radius-sm);
+  --border-radius-md: var(--radius-md);
+  --border-radius-lg: var(--radius-lg);
+  --transition-normal: var(--transition-base);
+  --topheader-height: var(--topbar-height);
+}
+
+/* ==========================================================================
+   4. CLASES DE UTILIDAD PARA CONTROLES DE FORMULARIO (MODALES Y DRAWERS)
+   Garantiza que ningún input, select o textarea quede con estilo nativo
+   ========================================================================== */
+.form-field,
+.drawer-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1.1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-label,
+.drawer-field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--label-color, var(--text-secondary));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  user-select: none;
+  margin-bottom: 0.25rem;
+}
+
+.input-control,
+.form-input-control,
+.drawer-input-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: var(--input-bg, var(--bg-card));
+  border: 1px solid var(--input-border, var(--border-subtle));
+  border-radius: var(--radius-md, 8px);
+  min-height: var(--input-height, 38px);
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast, 150ms ease), box-shadow var(--transition-fast, 150ms ease), background-color var(--transition-fast, 150ms ease);
+}
+
+.input-control:hover:not(:focus-within),
+.form-input-control:hover:not(:focus-within),
+.drawer-input-control:hover:not(:focus-within) {
+  border-color: var(--input-border-hover, var(--border-strong));
+}
+
+.input-control:focus-within,
+.form-input-control:focus-within,
+.drawer-input-control:focus-within {
+  border-color: var(--input-focus-border, var(--brand-primary));
+  box-shadow: 0 0 0 3px var(--input-focus-ring, rgba(16, 185, 129, 0.2));
+}
+
+.form-control,
+.drawer-field-input,
+.input-control input,
+.input-control select,
+.input-control textarea {
+  width: 100%;
+  height: 100%;
+  min-height: calc(var(--input-height, 38px) - 2px);
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 0.45rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.84rem;
+  color: var(--input-text, var(--text-primary)) !important;
+  box-sizing: border-box;
+}
+
+.input-control.has-icon .form-control,
+.input-control.has-icon input,
+.drawer-input-control.has-icon .drawer-field-input {
+  padding-left: 2.35rem;
+}
+
+.input-control .input-icon,
+.drawer-input-control .drawer-input-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  flex-shrink: 0;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.input-control:focus-within .input-icon,
+.drawer-input-control:focus-within .drawer-input-icon {
+  color: var(--input-focus-border, var(--brand-primary));
+  transform: scale(1.05);
+}
+
+.form-control::placeholder,
+.drawer-field-input::placeholder,
+.input-control input::placeholder {
+  color: var(--input-placeholder, var(--text-muted));
+  opacity: 0.75;
+}
+
+/* ==========================================================================
+   5. CONTROLES PARA DIÁLOGOS Y MODALES DE CONFIRMACIÓN (CONFIRM MODAL)
+   Estilos corporativos para campo de justificación de auditoría obligatorio
+   ========================================================================== */
+.joli-modal-justification-box {
+  width: 100%;
+  margin: 0.5rem 0 1.35rem 0;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.joli-modal-justification-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--label-color, var(--text-secondary));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+  user-select: none;
+}
+
+.joli-modal-justification-counter {
+  font-size: 0.7rem;
+  font-family: var(--font-family-mono, monospace);
+  color: var(--text-muted);
+  transition: color var(--transition-fast, 150ms ease);
+}
+
+.joli-modal-justification-counter.is-valid {
+  color: var(--status-success);
+  font-weight: 700;
+}
+
+.joli-modal-textarea {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  min-height: 84px;
+  max-height: 160px;
+  background: var(--input-bg, var(--bg-card)) !important;
+  border: 1px solid var(--input-border, var(--border-subtle)) !important;
+  border-radius: var(--radius-md, 8px) !important;
+  padding: 0.65rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.84rem;
+  color: var(--input-text, var(--text-primary)) !important;
+  line-height: 1.45;
+  resize: vertical;
+  outline: none !important;
+  transition: border-color var(--transition-fast, 150ms ease), box-shadow var(--transition-fast, 150ms ease);
+}
+
+.joli-modal-textarea:focus {
+  border-color: var(--brand-primary) !important;
+  box-shadow: 0 0 0 3px var(--input-focus-ring, rgba(16, 185, 129, 0.25)) !important;
+}
+
+.joli-modal-textarea::placeholder {
+  color: var(--input-placeholder, var(--text-muted));
+  opacity: 0.75;
+}
+
+.joli-modal-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 ```
 
 ---
 
-## 3. Regla Estricta de Conformidad de Variables CSS (SDD Core Mandate)
+## 4. Reglas de conformidad
 
-> **Mandato Arquitectónico**:
-> 1. **Prohibido Inventar Variables Ad-Hoc**: Ningún componente, vista o mock puede declarar nombres de variables CSS inventadas al margen de las descritas en esta especificación.
-> 2. **Prohibido Hardcodear Colores**: Queda terminantemente prohibido utilizar códigos de color directos (ej. `#16162a`, `#ffffff`, `rgba(0,0,0,...)`) en propiedades de `background`, `color`, `border` o `box-shadow` de componentes estructurales. Todo elemento debe vincularse a su token correspondiente (`var(--bg-card)`, `var(--text-primary)`, `var(--border-subtle)`, etc.).
-> 3. **Conmutación Universal Dual**: Al alternar entre Modo Noche y Modo Día, se deben actualizar simultáneamente `data-theme` y `data-bs-theme` para sincronizar componentes nativos Jolifoods y librerías externas sin desalineaciones cromáticas.
-> 4. **Respeto a Sombras y Elevaciones**: En Modo Día, las sombras deben ser sutiles y los bordes claramente contrastados (`--border-subtle: #e2e8f0`); en Modo Noche, las superficies se elevan mediante opacidades oscuras y halos sutiles.
-> 5. **Estilo Obligatorio en Controles de Formulario**: Queda estrictamente prohibido renderizar `<input>`, `<select>` o `<textarea>` con estilos nativos del navegador. Todo campo dentro de modales, drawers o vistas debe utilizar el envoltorio `.form-field` / `.drawer-form-field`, etiqueta `.form-label` (uppercase 0.72rem, `--text-secondary`) y contenedor `.input-control` / `.drawer-input-control` con altura de 38px, fondo `var(--input-bg)`, borde `var(--input-border)` y halo de foco de acento corporativo.
-> 6. **Taxonomía Estricta de Colores de Texto**:
->    - **Datos Principales, Códigos y Títulos**: Usan siempre `var(--text-primary)` (`#f8fafc` noche / `#0f172a` día). Prohibido colorear códigos de filas con azul o verde arbitrario.
->    - **Subtítulos y Encabezados de Columna**: Usan `var(--text-secondary)` (`#cbd5e1` noche / `#334155` día).
->    - **Placeholders y Ayudas**: Usan `var(--text-muted)` (`#94a3b8` noche / `#64748b` día).
->    - **Color Verde / Rojo / Ámbar**: Exclusivo para estados semánticos en badges (`.badge-status-*`) o indicadores de cambio positivo/negativo, jamás en textos planos genéricos.
+1. **Tokens en lugar de colores fijos.** El CSS de los componentes DEBE usar `var(--token)` en `background`, `color`, `border` y `box-shadow`; NO DEBE quemar hexadecimales ni `rgba()` de color.
+   - **Por qué:** un color fijo no cambia con el tema (rompe el Modo Día o el Noche) y obliga a buscar y reemplazar en todo el código si cambia la marca.
+   - **Excepciones:** este archivo; los SVG de marca; la plantilla autocontenida de mock si replica los tokens en un único bloque `:root`; y el color que exige una API de Canvas (`strokeStyle`, `fillStyle`), que DEBERÍA leerse de un token con `getComputedStyle`.
+2. **No inventar variables.** Un componente NO DEBERÍA declarar variables de color propias. Si falta un token, se agrega aquí (en ambos temas si depende del tema) y se documenta en este archivo.
+   - **Por qué:** los tokens dispersos producen paletas paralelas que no respetan el tema.
+3. **Conmutación dual.** Al cambiar de tema se DEBEN actualizar `data-theme` y `data-bs-theme` a la vez.
+   - **Por qué:** Bootstrap lee `data-bs-theme`; los componentes propios leen `data-theme`. Si solo cambia uno, quedan colores mezclados.
+4. **Controles de formulario con estilo.** Los `<input>`, `<select>` y `<textarea>` DEBERÍAN usar `.form-field` / `.drawer-form-field`, etiqueta `.form-label` asociada con `htmlFor`, y contenedor `.input-control` / `.drawer-input-control`.
+   - **Por qué:** el estilo nativo del navegador no respeta el tema oscuro y varía entre navegadores.
+5. **Jerarquía de texto.**
+   - Datos principales, códigos y títulos: `var(--text-primary)`.
+   - Subtítulos y encabezados de columna: `var(--text-secondary)`.
+   - Ayudas y textos secundarios: `var(--text-muted)`.
+   - Verde, rojo y ámbar se reservan para estados (badges, indicadores de variación), no para texto genérico.
+   - **Por qué:** el color comunica estado; usarlo como decoración le resta significado y puede bajar el contraste.
+6. **Contraste.** Toda combinación texto/fondo DEBERÍA cumplir WCAG 2.1 AA (4.5:1 en texto normal) en ambos temas. Verifíquelo al agregar o cambiar un token.

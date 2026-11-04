@@ -1,92 +1,130 @@
 {
-  "project_name": "jolifoods_template",
-  "version": "1.0.0",
+  "project_name": "plantilla_sdd",
+  "version": "2.0.0",
   "base_path_django": "/api/v1",
   "base_path_fastapi": "/fast/v1",
+  "auth": {
+    "login_path": "/api/v1/auth/login/",
+    "username_field": "numero_documento",
+    "password_field": "password",
+    "token_field": "access"
+  },
   "endpoints": [
     {
-      "name": "Health Liveness",
-      "module": "diagnostics",
+      "name": "Salud: vida",
+      "module": "diagnostico",
       "path": "/health/live",
       "method": "GET",
       "expected_status": 200,
       "auth_required": false,
-      "max_latency_ms": 100,
-      "description": "Verifica que el proceso ASGI esté vivo y respondiendo."
+      "max_latency_ms": 200,
+      "description": "El proceso ASGI responde. No consulta dependencias."
     },
     {
-      "name": "Health Readiness",
-      "module": "diagnostics",
+      "name": "Salud: disponibilidad",
+      "module": "diagnostico",
       "path": "/health/ready",
       "method": "GET",
       "expected_status": 200,
       "auth_required": false,
-      "max_latency_ms": 250,
-      "description": "Verifica conectividad con PostgreSQL, Redis y Celery."
+      "max_latency_ms": 500,
+      "description": "PostgreSQL y Redis responden. Devuelve 503 si alguno falla."
     },
     {
-      "name": "Login Autenticación",
+      "name": "Salud: capa FastAPI",
+      "module": "diagnostico",
+      "path": "/fast/v1/health",
+      "method": "GET",
+      "expected_status": 200,
+      "auth_required": false,
+      "max_latency_ms": 200,
+      "description": "La sub-aplicación FastAPI montada bajo /fast responde."
+    },
+    {
+      "name": "Login rechaza cuerpo vacío",
       "module": "auth",
       "path": "/api/v1/auth/login/",
       "method": "POST",
-      "expected_status": 200,
+      "payload": {},
+      "expected_status": 400,
       "auth_required": false,
-      "description": "Inicio de sesión de usuarios y emisión de JWT / Cookies HttpOnly."
+      "description": "Validación de entrada del login. El login exitoso lo prueba el flujo --login-user."
     },
     {
-      "name": "Refresco de Token",
+      "name": "Refresco de token",
       "module": "auth",
       "path": "/api/v1/auth/refresh/",
       "method": "POST",
       "expected_status": 200,
       "auth_required": false,
-      "description": "Renovación de token de acceso mediante refresh token."
+      "mutates": true,
+      "description": "Rota el refresh token leído de la cookie HttpOnly y entrega un access token nuevo. Exige X-CSRFToken."
     },
     {
-      "name": "Listado de Usuarios",
+      "name": "Perfil de la sesión",
+      "module": "auth",
+      "path": "/api/v1/auth/me/",
+      "method": "GET",
+      "expected_status": 200,
+      "auth_required": true,
+      "description": "Datos del usuario autenticado."
+    },
+    {
+      "name": "Permisos de la sesión",
+      "module": "roles",
+      "path": "/api/v1/mis-permisos/",
+      "method": "GET",
+      "expected_status": 200,
+      "auth_required": true,
+      "description": "Permisos compilados del usuario (BP-19)."
+    },
+    {
+      "name": "Listado de usuarios",
       "module": "usuarios",
       "path": "/api/v1/usuarios/",
       "method": "GET",
       "expected_status": 200,
       "auth_required": true,
-      "description": "CRUD de colaboradores con paginación server-side y select_related."
+      "description": "Listado paginado del lado del servidor."
     },
     {
-      "name": "Roles y Permisos RBAC",
+      "name": "Detalle de usuario",
+      "module": "usuarios",
+      "path": "/api/v1/usuarios/{id}/",
+      "example_path": "/api/v1/usuarios/1/",
+      "method": "GET",
+      "expected_status": [200, 404],
+      "auth_required": true,
+      "description": "Las rutas con parámetros se prueban con example_path."
+    },
+    {
+      "name": "Roles",
       "module": "roles",
       "path": "/api/v1/roles/",
       "method": "GET",
       "expected_status": 200,
       "auth_required": true,
-      "description": "Matriz de control de acceso y permisos por módulo."
+      "description": "Administración de roles y permisos."
     },
     {
-      "name": "Bitácora de Auditoría",
+      "name": "Bitácora de auditoría",
       "module": "auditoria",
       "path": "/api/v1/auditoria/",
       "method": "GET",
       "expected_status": 200,
       "auth_required": true,
-      "description": "Trazabilidad de eventos críticos del sistema."
+      "description": "Consulta de eventos auditados (solo lectura)."
     },
     {
-      "name": "FastAPI Métricas de Salud",
-      "module": "fastapi_engine",
-      "path": "/fast/v1/health",
-      "method": "GET",
-      "expected_status": 200,
-      "auth_required": false,
-      "max_latency_ms": 45,
-      "description": "Endpoint asíncrono de microsegundos en FastAPI."
-    },
-    {
-      "name": "Telemetría de Adopción y Feedback",
+      "name": "Telemetría: enviar opinión",
       "module": "telemetria",
       "path": "/api/v1/telemetria/feedback/",
       "method": "POST",
+      "payload": {"calificacion": 5, "comentario": "Prueba automatizada"},
       "expected_status": 201,
       "auth_required": true,
-      "description": "Recepción de micro-encuestas y sugerencias de mejora continua."
+      "mutates": true,
+      "description": "Registra una micro-encuesta. Crea datos: solo se ejecuta con --incluir-mutaciones."
     }
   ]
 }

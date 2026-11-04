@@ -80,7 +80,7 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
 ====================================================================================================
                               OPCIONES DE MODALES Y DIÁLOGOS
 ====================================================================================================
- [1] Diálogo de Confirmación Segura (ConfirmModal - Cero confirm nativo)
+ [1] Diálogo de Confirmación Segura (ConfirmModal - en lugar de confirm() nativo)
      -> Estructura: Modal renderizado vía portal, fondo difuminado (backdrop-filter: blur),
         icono con halo cromático (danger, warning, primary), spinner asíncrono y opción emphasizeCancel.
      -> Código y CSS listos en: .sdd/components/modal/confirm_modal.md
@@ -106,13 +106,13 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
 
 ```text
 ====================================================================================================
-              OPCIONES DE PANELES LATERALES (DRAWER / SLIDE-OVER) — OBLIGATORIO CRUD
+              OPCIONES DE PANELES LATERALES (DRAWER / SLIDE-OVER) — CONVENCIÓN PARA CRUD
 ====================================================================================================
- [!] REGLA DE ORO DE EXPERIENCIA DE USUARIO:
-     -> Toda creación (+ Nuevo) o edición (Editar) de cualquier CRUD debe realizarse desde el Right Drawer.
-     -> Queda prohibido generar modales o redirigir a páginas separadas salvo solicitud específica del usuario.
+ [!] CONVENCIÓN (DEBERÍA):
+     -> Crear (+ Nuevo) y editar se hacen en el Right Drawer: mantiene visible la tabla de contexto.
+     -> Modal o página separada solo si el usuario lo pide o queda registrado en un ADR.
 
- [1] Drawer de Formulario y Edición CRUD (Estándar Oficial - Size: 'md' - 560px)
+ [1] Drawer de Formulario y Edición CRUD (Predeterminado - Size: 'md' - 600px)
      -> Estructura: Deslizamiento lateral derecho (.joli-drawer-container), backdrop blur,
         cuerpo scrollable para inputs, y pie fijo con botones 'Guardar' y 'Cancelar'.
      -> Código y CSS listos en: .sdd/components/drawer/drawer.md (Variante 2)
@@ -138,7 +138,7 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
 ====================================================================================================
                            OPCIONES DE SELECTORES Y DROPDOWNS
 ====================================================================================================
- [1] Searchable SelectFilter Simple (Reemplazo obligatorio del select nativo)
+ [1] Searchable SelectFilter Simple (reemplazo recomendado del select nativo)
      -> Estructura: Desplegable accesible con campo de texto con filtro en vivo, navegación
         completa por teclado (flechas y Enter), badge de selección y mensaje de 'Sin resultados'.
      -> Código y CSS listos en: .sdd/components/dropdown/select_filter.md
@@ -160,7 +160,7 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
 ====================================================================================================
                            OPCIONES DE NOTIFICACIONES Y ALERTAS
 ====================================================================================================
- [1] Panel Desplegable de Multi-Notificaciones en TopHeader (Estándar Tiendita / Vibra)
+ [1] Panel Desplegable de Multi-Notificaciones en TopHeader 
      -> Estructura: Campana interactiva con badge de conteo (.bell-badge-count) que despliega
         popover con pestañas segmentadas (ej. Solicitudes, Stock Crítico, Novedades), badges
         por categoría, lista de alertas con avatar/icono, severidad (rojo/ámbar/azul/verde),
@@ -218,7 +218,7 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
 ====================================================================================================
                        OPCIONES DE BOTONES DE ACCIÓN (TOOLBAR)
 ====================================================================================================
- [1] Caja Compacta de Iconos Agrupados (Estándar Oficial Jolifoods - Sin Texto)
+ [1] Caja Compacta de Iconos Agrupados (predeterminada - solo iconos con aria-label)
      -> Estructura: Contenedor .compact-action-box con altura de 28px, bordes sutiles y divisores
         verticales de 1px. Botones de solo iconos con tooltip:
         - [+] Nuevo Registro (Abre Right Drawer)
@@ -231,9 +231,9 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
         - [Ojo] Ver / Editar detalle en Right Drawer (.joli-drawer-container)
         - [Llave] Restablecer clave o acción secundaria
         - [Papelera Roja] ConfirmModal destructivo con justificación de 10+ caracteres
-     -> REGLA: Si hay más de un botón en opciones, NUNCA deben estar sueltos ni separados por márgenes;
+     -> CONVENCIÓN: con 2 o más botones en la fila, se agrupan (no sueltos ni separados por márgenes);
         deben agruparse con `btn-group btn-group-sm` para unificar bordes redondeados y divisores limpios.
-     -> Tipografía: Códigos y números con fuente monoespaciada neutra (PROHIBIDO texto verde en códigos).
+     -> Tipografía: Códigos y números con fuente monoespaciada neutra (sin color verde en códigos).
      -> Código y CSS listos en: .sdd/components/button/icon_action_group.md (Variante 2) y .sdd/components/data_table/data_table.md
 ====================================================================================================
 ```
@@ -270,9 +270,9 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
 ====================================================================================================
                        OPCIONES DE LAYOUT Y NAVEGACIÓN (100% HORIZONTAL)
 ====================================================================================================
- [!] REGLA DE ORO DE MAQUETACIÓN: PROHIBIDO CENTRAR EL FRONTEND
-     -> NINGÚN desarrollo debe estar centrado ni encogido en medio de la pantalla (prohibido max-w-xl mx-auto).
-     -> TODO debe expandirse a lo largo de la pantalla en horizontal (100% width) de extremo a extremo.
+ [!] CONVENCIÓN DE MAQUETACIÓN (DEBERÍA): ANCHO COMPLETO
+     -> Las vistas de trabajo no se encogen en una columna central (evitar max-w-xl mx-auto); excepciones: modales y tarjeta de login.
+     -> Por qué: tablas y tableros aprovechan todo el ancho del monitor.
      -> Normativa completa en: .sdd/components/layout/layout_rules.md
 
  [1] Layout Estándar Full-Width Horizontal (Predeterminado Oficial - CERO Sidebar)
@@ -336,7 +336,7 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
 ====================================================================================================
                OPCIONES DE CAPTURA BIOMÉTRICA FACIAL (FACIAL SCANNER)
 ====================================================================================================
- [1] Kiosco o Terminal con Guía Oval y Cortinilla SVG (Estándar Contenedores / Porterías)
+ [1] Kiosco o Terminal con Guía Oval y Cortinilla SVG 
      -> Estructura: Visor de cámara WebRTC en vivo con overlay SVG transparente recortado en óvalo,
         indicadores visuales de estado (Centrar Rostro, Distancia Correcta, Iluminación Óptima),
         animación de barrido de haz láser verde y disparador automático o por botón.
@@ -623,7 +623,7 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
 ====================================================================================================
  [1] Zona Drag & Drop con Hash SHA-256 Previo
      -> Incluye: Cálculo de hash en el navegador para deduplicación instantánea, filtrado por
-        magic bytes contra malware, barras individuales de progreso y aborto con AbortController.
+        firma de archivo (magic bytes; no sustituye un antivirus), barras individuales de progreso y aborto con AbortController.
      -> Destino canónico: backend/media/ con volumen persistente Docker.
      -> Código y CSS listos en: .sdd/components/upload/file_uploader_pro.md
 ====================================================================================================

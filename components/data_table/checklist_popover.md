@@ -1,209 +1,237 @@
-﻿# Componente UI: Filtro de Columnas Tipo Excel (Checklist Popover)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
-### Patrón Canónico de Referencia: Módulo BI Cartera
+﻿# Componente UI: Filtro de Columnas Tipo Excel (`ChecklistPopover`)
+## Spec-Driven Development (SDD)
 
-El **Checklist Popover** es el componente de filtrado avanzado por columna para tablas de datos en el ecosistema Jolifoods. Emula el comportamiento interactivo de **Microsoft Excel**, permitiendo a los usuarios buscar valores únicos, seleccionar/deseleccionar mediante casillas de verificación, ordenar la columna y filtrar con un solo clic.
+> **Origen:** patrón tomado de bi (módulo de cartera). Aquí se describe de forma genérica.
 
----
-
-## 1. Características Técnicas
-
-1. **Ordenamiento Rápido Integrado**: Botones para ordenar ascendente o descendente (`ASC` / `DESC`) según el tipo de dato (`text`, `number`, `date`).
-2. **Buscador en Tiempo Real**: Input con icono de lupa para filtrar rápidamente la lista de valores de la columna.
-3. **Casilla "Seleccionar Todo" (Tri-Estado)**:
-   - Marcado: Todos los valores visibles seleccionados.
-   - Indeterminado (`-`): Algunos valores seleccionados.
-   - Desmarcado: Ningún valor seleccionado.
-4. **Conteo de Ocurrencias por Valor**: Muestra entre paréntesis cuántas veces aparece cada valor en el conjunto de datos `(count)`.
-5. **Botón Rápido "Solo"**: Al pasar el cursor sobre una opción, aparece un botón "Solo" que desmarca todo lo demás y selecciona únicamente esa opción.
-6. **Acciones de Filtro**: Botón "Limpiar Filtro" y botón "Aplicar".
+El **Checklist Popover** es el filtro avanzado por columna de [`DataTable`](./data_table.md). Emula el filtro de Microsoft Excel: buscar valores únicos, marcar/desmarcar con casillas, ordenar la columna y quedarse con un solo valor con un clic.
 
 ---
 
-## 2. Código JSX / React 19 Canónico (`ChecklistPopover.tsx`)
+## 1. Características
+
+1. **Ordenamiento integrado:** ascendente / descendente (`ASC` / `DESC`) con textos según el tipo de dato (`text`, `number`, `date`).
+2. **Buscador de valores** dentro de la lista.
+3. **"Seleccionar todo" tri-estado:** marcado (todos los visibles), indeterminado (algunos), desmarcado (ninguno).
+4. **Conteo de ocurrencias** por valor `(count)`.
+5. **Botón "Solo":** deja seleccionado únicamente ese valor. Visible al pasar el cursor **o al enfocar la fila con teclado**.
+6. **Acciones:** "Limpiar" (quita el filtro de la columna), "Cancelar" y "Aplicar". `Escape` cierra sin aplicar.
+
+### Origen de los valores (importante con paginación en servidor)
+
+- Si la tabla pagina en el servidor, `items` solo contiene la página actual y los valores/conteos serían **incompletos**. En ese caso la vista DEBERÍA pasar `options` con los valores distintos y sus conteos calculados por el backend (p. ej. `GET /api/v1/<recurso>/valores-filtro/?columna=estado`).
+- Si la tabla tiene todos los datos en memoria, PUEDE omitirse `options` y se derivan de `items`.
+
+---
+
+## 2. Código JSX / React de referencia (`ChecklistPopover.tsx`)
 
 ```tsx
-import React, { useState, useMemo } from 'react';
-import { 
-  ArrowUp, 
-  ArrowDown, 
-  FilterX, 
-  Search, 
-  X, 
-  Check 
-} from 'lucide-react';
-import '../../styles/variables.css';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowDown, ArrowUp, FilterX, Search, X } from 'lucide-react';
 
-export interface ChecklistPopoverProps {
+export interface ChecklistOption {
+  value: string;
+  label: string;
+  count: number;
+}
+
+export interface ChecklistPopoverProps<T> {
   colKey: string;
   colLabel: string;
   dataType?: 'text' | 'number' | 'date';
-  items: any[];
+  /** Filas disponibles en memoria (se usan si no llegan `options`). */
+  items?: T[];
+  /** Valores distintos calculados por el servidor (recomendado con paginación en servidor). */
+  options?: ChecklistOption[];
   activeValues: string[] | undefined;
-  onApply: (vals: string[] | null) => void;
+  /** Lista vacía = sin filtro en esta columna. */
+  onApply: (values: string[]) => void;
   onSort: (field: string, order: 'ASC' | 'DESC') => void;
   currentSortField?: string;
   currentSortOrder?: 'ASC' | 'DESC';
   onClose: () => void;
-  formatValue?: (val: any) => string;
+  formatValue?: (value: unknown) => string;
 }
 
-export const ChecklistPopover: React.FC<ChecklistPopoverProps> = ({
+function deriveOptions<T>(
+  items: T[],
+  colKey: string,
+  formatValue?: (value: unknown) => string,
+): ChecklistOption[] {
+  const map = new Map<string, ChecklistOption>();
+  for (const item of items) {
+    const raw = (item as Record<string, unknown>)[colKey];
+    const value = raw === null || raw === undefined ? '' : String(raw);
+    const existing = map.get(value);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      const label = formatValue ? formatValue(raw) : value === '' ? '(Vacío)' : value;
+      map.set(value, { value, label, count: 1 });
+    }
+  }
+  return Array.from(map.values());
+}
+
+export function ChecklistPopover<T>({
   colKey,
   colLabel,
   dataType = 'text',
-  items,
+  items = [],
+  options,
   activeValues,
   onApply,
   onSort,
   currentSortField,
   currentSortOrder,
   onClose,
-  formatValue
-}) => {
+  formatValue,
+}: ChecklistPopoverProps<T>) {
   const [search, setSearch] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
-  // 1. Mapeo de frecuencias de valores únicos
-  const valueMap = useMemo(() => {
-    const map = new Map<string, { label: string; count: number }>();
-    items.forEach((item) => {
-      const rawVal = item[colKey];
-      const strVal = rawVal === null || rawVal === undefined ? '' : String(rawVal);
-      if (!map.has(strVal)) {
-        const displayLabel = formatValue ? formatValue(rawVal) : strVal === '' ? '(Vacío)' : strVal;
-        map.set(strVal, { label: displayLabel, count: 1 });
-      } else {
-        map.get(strVal)!.count += 1;
-      }
+  // 1. Opciones únicas ordenadas
+  const sortedOptions = useMemo(() => {
+    const base = options ?? deriveOptions(items, colKey, formatValue);
+    return [...base].sort((a, b) => {
+      const numA = Number(a.value);
+      const numB = Number(b.value);
+      if (a.value !== '' && b.value !== '' && !Number.isNaN(numA) && !Number.isNaN(numB)) return numA - numB;
+      return a.label.localeCompare(b.label, 'es', { numeric: true });
     });
-    return map;
-  }, [items, colKey, formatValue]);
+  }, [options, items, colKey, formatValue]);
 
-  // 2. Ordenar las opciones
-  const sortedEntries = useMemo(() => {
-    return Array.from(valueMap.entries()).sort((a, b) => {
-      const numA = Number(a[0]);
-      const numB = Number(b[0]);
-      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-      return a[1].label.localeCompare(b[1].label, undefined, { numeric: true });
-    });
-  }, [valueMap]);
+  const allValues = useMemo(() => sortedOptions.map((o) => o.value), [sortedOptions]);
 
-  const allKeys = useMemo(() => sortedEntries.map(([val]) => val), [sortedEntries]);
+  // 2. Selección local (se confirma con "Aplicar")
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(activeValues && activeValues.length > 0 ? activeValues : allValues),
+  );
 
-  // 3. Selección local
-  const [localSelected, setLocalSelected] = useState<Set<string>>(() => {
-    if (activeValues && activeValues.length > 0) {
-      return new Set(activeValues);
-    }
-    return new Set(allKeys);
-  });
+  // 3. Filtrado por búsqueda
+  const visibleOptions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return sortedOptions;
+    return sortedOptions.filter((o) => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q));
+  }, [sortedOptions, search]);
 
-  // 4. Filtrado por búsqueda
-  const filteredEntries = useMemo(() => {
-    if (!search.trim()) return sortedEntries;
-    const q = search.toLowerCase();
-    return sortedEntries.filter(([rawVal, meta]) =>
-      meta.label.toLowerCase().includes(q) || rawVal.toLowerCase().includes(q)
-    );
-  }, [sortedEntries, search]);
+  const visibleValues = visibleOptions.map((o) => o.value);
+  const allVisibleSelected = visibleValues.length > 0 && visibleValues.every((v) => selected.has(v));
+  const someVisibleSelected = !allVisibleSelected && visibleValues.some((v) => selected.has(v));
 
-  const visibleKeys = useMemo(() => filteredEntries.map(([val]) => val), [filteredEntries]);
-  const isAllVisibleSelected = visibleKeys.length > 0 && visibleKeys.every((k) => localSelected.has(k));
-  const isSomeVisibleSelected = visibleKeys.some((k) => localSelected.has(k)) && !isAllVisibleSelected;
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = someVisibleSelected;
+  }, [someVisibleSelected]);
 
-  const handleToggleSelectAll = (checked: boolean) => {
-    setLocalSelected((prev) => {
+  // 4. Foco inicial y cierre con Escape
+  useEffect(() => {
+    searchRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
+  const toggleAllVisible = (checked: boolean) => {
+    setSelected((prev) => {
       const next = new Set(prev);
-      if (checked) {
-        visibleKeys.forEach((k) => next.add(k));
-      } else {
-        visibleKeys.forEach((k) => next.delete(k));
-      }
+      visibleValues.forEach((v) => (checked ? next.add(v) : next.delete(v)));
       return next;
     });
   };
 
-  const handleToggleItem = (val: string) => {
-    setLocalSelected((prev) => {
+  const toggleValue = (value: string) => {
+    setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(val)) next.delete(val);
-      else next.add(val);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
       return next;
     });
-  };
-
-  const handleSelectOnly = (val: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setLocalSelected(new Set([val]));
   };
 
   const handleApply = () => {
-    if (localSelected.size === allKeys.length || localSelected.size === 0) {
-      onApply(null);
-    } else {
-      onApply(Array.from(localSelected));
-    }
+    // Todo o nada seleccionado equivale a "sin filtro"
+    const isNoFilter = selected.size === 0 || selected.size === allValues.length;
+    onApply(isNoFilter ? [] : Array.from(selected));
+    onClose();
+  };
+
+  const handleClearFilter = () => {
+    onApply([]);
     onClose();
   };
 
   const isSortedAsc = currentSortField === colKey && currentSortOrder === 'ASC';
   const isSortedDesc = currentSortField === colKey && currentSortOrder === 'DESC';
+  const ascLabel = dataType === 'number' ? 'Ordenar de menor a mayor' : dataType === 'date' ? 'Ordenar de más antiguo a más reciente' : 'Ordenar de A a Z';
+  const descLabel = dataType === 'number' ? 'Ordenar de mayor a menor' : dataType === 'date' ? 'Ordenar de más reciente a más antiguo' : 'Ordenar de Z a A';
 
   return (
-    <div className="joli-excel-popover" onClick={(e) => e.stopPropagation()}>
-      {/* 1. SECCIÓN DE ORDENAMIENTO */}
+    <div
+      className="joli-excel-popover"
+      role="dialog"
+      aria-label={`Filtro de ${colLabel}`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* 1. Ordenamiento */}
       <div className="joli-popover-sort-section">
         <button
           type="button"
           className={`joli-popover-sort-btn ${isSortedAsc ? 'active' : ''}`}
+          aria-pressed={isSortedAsc}
           onClick={() => onSort(colKey, 'ASC')}
         >
-          <ArrowUp size={14} className="text-primary me-2" />
-          <span>{dataType === 'number' ? 'Ordenar de Menor a Mayor' : 'Ordenar de A a Z'}</span>
+          <ArrowUp size={14} className="me-2" aria-hidden="true" />
+          <span>{ascLabel}</span>
         </button>
         <button
           type="button"
           className={`joli-popover-sort-btn ${isSortedDesc ? 'active' : ''}`}
+          aria-pressed={isSortedDesc}
           onClick={() => onSort(colKey, 'DESC')}
         >
-          <ArrowDown size={14} className="text-primary me-2" />
-          <span>{dataType === 'number' ? 'Ordenar de Mayor a Menor' : 'Ordenar de Z a A'}</span>
+          <ArrowDown size={14} className="me-2" aria-hidden="true" />
+          <span>{descLabel}</span>
         </button>
       </div>
 
       <div className="joli-popover-divider" />
 
-      {/* 2. BUSCADOR DE VALORES */}
+      {/* 2. Buscador */}
       <div className="joli-popover-search">
-        <Search size={14} className="joli-popover-search-icon" />
+        <Search size={14} className="joli-popover-search-icon" aria-hidden="true" />
         <input
-          type="text"
+          ref={searchRef}
+          type="search"
           className="joli-popover-search-input"
           placeholder={`Buscar en ${colLabel}...`}
+          aria-label={`Buscar valores de ${colLabel}`}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          autoFocus
         />
         {search && (
-          <button type="button" className="joli-popover-clear-btn" onClick={() => setSearch('')}>
-            <X size={12} />
+          <button
+            type="button"
+            className="joli-popover-clear-btn"
+            onClick={() => setSearch('')}
+            aria-label="Limpiar búsqueda"
+          >
+            <X size={12} aria-hidden="true" />
           </button>
         )}
       </div>
 
-      {/* 3. CASILLA SELECCIONAR TODO */}
+      {/* 3. Seleccionar todo */}
       <div className="joli-popover-select-all">
         <label className="joli-popover-checkbox-label">
           <input
+            ref={selectAllRef}
             type="checkbox"
             className="joli-checkbox"
-            checked={isAllVisibleSelected}
-            ref={(input) => {
-              if (input) input.indeterminate = isSomeVisibleSelected;
-            }}
-            onChange={(e) => handleToggleSelectAll(e.target.checked)}
+            checked={allVisibleSelected}
+            onChange={(e) => toggleAllVisible(e.target.checked)}
           />
           <span className="fw-semibold">
             {search ? '(Seleccionar todos los resultados)' : '(Seleccionar todo)'}
@@ -211,51 +239,42 @@ export const ChecklistPopover: React.FC<ChecklistPopoverProps> = ({
         </label>
       </div>
 
-      {/* 4. LISTA DE VALORES ÚNICOS CON CONTEO */}
-      <div className="joli-popover-list">
-        {filteredEntries.length === 0 ? (
-          <div className="joli-popover-empty">No se encontraron valores</div>
+      {/* 4. Valores únicos con conteo */}
+      <ul className="joli-popover-list" aria-label={`Valores de ${colLabel}`}>
+        {visibleOptions.length === 0 ? (
+          <li className="joli-popover-empty">No se encontraron valores</li>
         ) : (
-          filteredEntries.map(([rawVal, meta]) => {
-            const isChecked = localSelected.has(rawVal);
-            return (
-              <div key={rawVal} className="joli-popover-item" onClick={() => handleToggleItem(rawVal)}>
-                <label className="joli-popover-checkbox-label" onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    className="joli-checkbox"
-                    checked={isChecked}
-                    onChange={() => handleToggleItem(rawVal)}
-                  />
-                  <span className="joli-popover-text" title={meta.label}>
-                    {meta.label}
-                  </span>
-                </label>
-                <div className="d-flex align-items-center gap-2 ms-auto">
-                  <span className="joli-popover-count">({meta.count})</span>
-                  <button
-                    type="button"
-                    className="joli-popover-only-btn"
-                    onClick={(e) => handleSelectOnly(rawVal, e)}
-                  >
-                    Solo
-                  </button>
-                </div>
-              </div>
-            );
-          })
+          visibleOptions.map((option) => (
+            <li key={option.value} className="joli-popover-item">
+              <label className="joli-popover-checkbox-label">
+                <input
+                  type="checkbox"
+                  className="joli-checkbox"
+                  checked={selected.has(option.value)}
+                  onChange={() => toggleValue(option.value)}
+                />
+                <span className="joli-popover-text" title={option.label}>{option.label}</span>
+              </label>
+              <span className="joli-popover-count" aria-label={`${option.count} registros`}>
+                ({option.count})
+              </span>
+              <button
+                type="button"
+                className="joli-popover-only-btn"
+                onClick={() => setSelected(new Set([option.value]))}
+                aria-label={`Seleccionar solo ${option.label}`}
+              >
+                Solo
+              </button>
+            </li>
+          ))
         )}
-      </div>
+      </ul>
 
-      {/* 5. PIE DE ACCIONES */}
+      {/* 5. Acciones */}
       <div className="joli-popover-footer">
-        <button
-          type="button"
-          className="joli-popover-action-btn text-danger"
-          onClick={handleClearFilter}
-          title="Restablecer filtro en esta columna"
-        >
-          <FilterX size={14} className="me-1" />
+        <button type="button" className="joli-popover-action-btn" onClick={handleClearFilter}>
+          <FilterX size={14} className="me-1" aria-hidden="true" />
           <span>Limpiar</span>
         </button>
         <div className="d-flex gap-2">
@@ -269,35 +288,33 @@ export const ChecklistPopover: React.FC<ChecklistPopoverProps> = ({
       </div>
     </div>
   );
-};
+}
 ```
 
 ---
 
-## 3. Estilos CSS Canónicos (`variables.css`)
+## 3. Estilos CSS (`checklist_popover.css`)
+
+La posición la da el contenedor `.th-filter-popover-container` de `DataTable`; el popover no se posiciona por sí mismo.
 
 ```css
 .joli-excel-popover {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
   width: 280px;
-  background-color: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
-  z-index: 1050;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: joliPopoverFadeIn var(--transition-fast) ease-out;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-popover);
+  animation: joliPopoverFadeIn var(--transition-fast);
 }
 
 .joli-popover-sort-section {
-  padding: 6px;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 6px;
 }
 
 .joli-popover-sort-btn {
@@ -305,35 +322,35 @@ export const ChecklistPopover: React.FC<ChecklistPopoverProps> = ({
   align-items: center;
   width: 100%;
   padding: 6px 10px;
-  font-size: var(--text-xs);
-  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
   background: transparent;
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .joli-popover-sort-btn:hover {
-  background-color: var(--color-bg-card-hover);
-  color: var(--color-text-primary);
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .joli-popover-sort-btn.active {
-  background-color: rgba(16, 185, 129, 0.12);
-  color: var(--color-primary);
-  font-weight: var(--weight-bold);
+  background-color: var(--status-success-bg);
+  color: var(--brand-primary);
+  font-weight: var(--font-weight-bold);
 }
 
 .joli-popover-divider {
   height: 1px;
-  background-color: var(--color-border);
+  background-color: var(--border-subtle);
 }
 
 .joli-popover-search {
   position: relative;
   padding: 8px 10px;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .joli-popover-search-icon {
@@ -341,23 +358,24 @@ export const ChecklistPopover: React.FC<ChecklistPopoverProps> = ({
   left: 18px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--color-text-muted);
+  color: var(--text-muted);
 }
 
 .joli-popover-search-input {
   width: 100%;
   height: 32px;
   padding: 0 24px 0 28px;
-  background-color: var(--color-bg-input);
-  border: 1px solid var(--color-border);
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  font-size: var(--text-xs);
-  outline: none;
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
 }
 
 .joli-popover-search-input:focus {
-  border-color: var(--color-primary);
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-input-focus);
 }
 
 .joli-popover-clear-btn {
@@ -367,88 +385,94 @@ export const ChecklistPopover: React.FC<ChecklistPopoverProps> = ({
   transform: translateY(-50%);
   background: transparent;
   border: none;
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   cursor: pointer;
 }
 
 .joli-popover-select-all {
   padding: 8px 12px;
-  border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-bg-base);
-  font-size: var(--text-xs);
+  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--bg-elevated);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
 }
 
 .joli-popover-checkbox-label {
   display: flex;
   align-items: center;
   gap: 8px;
-  cursor: pointer;
-  margin: 0;
   flex: 1;
   min-width: 0;
+  margin: 0;
+  cursor: pointer;
 }
 
 .joli-checkbox {
   width: 15px;
   height: 15px;
-  accent-color: var(--color-primary);
+  accent-color: var(--brand-primary);
   cursor: pointer;
 }
 
 .joli-popover-list {
   max-height: 180px;
-  overflow-y: auto;
+  margin: 0;
   padding: 4px 0;
+  overflow-y: auto;
+  list-style: none;
 }
 
 .joli-popover-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   padding: 5px 12px;
-  font-size: var(--text-xs);
-  color: var(--color-text-primary);
-  cursor: pointer;
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
   transition: background-color var(--transition-fast);
 }
 
-.joli-popover-item:hover {
-  background-color: var(--color-bg-card-hover);
+.joli-popover-item:hover,
+.joli-popover-item:focus-within {
+  background-color: var(--bg-hover);
 }
 
 .joli-popover-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   max-width: 140px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .joli-popover-count {
-  font-size: 10px;
-  color: var(--color-text-muted);
+  margin-left: auto;
+  font-size: var(--font-size-2xs);
+  color: var(--text-muted);
 }
 
+/* Oculto visualmente pero accesible: aparece con hover o foco de teclado */
 .joli-popover-only-btn {
-  display: none;
+  opacity: 0;
   padding: 1px 6px;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--color-primary);
-  background-color: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-primary);
+  background-color: var(--status-success-bg);
+  border: 1px solid var(--border-card-accent);
   border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
-.joli-popover-item:hover .joli-popover-only-btn {
-  display: inline-block;
+.joli-popover-item:hover .joli-popover-only-btn,
+.joli-popover-item:focus-within .joli-popover-only-btn {
+  opacity: 1;
 }
 
 .joli-popover-empty {
   padding: 16px;
   text-align: center;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
 }
 
 .joli-popover-footer {
@@ -456,38 +480,44 @@ export const ChecklistPopover: React.FC<ChecklistPopoverProps> = ({
   align-items: center;
   justify-content: space-between;
   padding: 8px 10px;
-  border-top: 1px solid var(--color-border);
-  background-color: var(--color-bg-base);
+  border-top: 1px solid var(--border-subtle);
+  background-color: var(--bg-elevated);
 }
 
 .joli-popover-action-btn {
-  background: transparent;
-  border: none;
-  font-size: var(--text-xs);
-  cursor: pointer;
   display: flex;
   align-items: center;
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-xs);
+  color: var(--status-error);
+  cursor: pointer;
 }
 
 .joli-popover-cancel-btn {
   padding: 4px 10px;
-  font-size: var(--text-xs);
+  font-size: var(--font-size-xs);
   background: transparent;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .joli-popover-apply-btn {
   padding: 4px 12px;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  background-color: var(--color-primary);
-  color: #ffffff;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  background-color: var(--brand-primary);
+  color: var(--text-on-brand);
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
+}
+
+.joli-excel-popover button:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
 }
 
 @keyframes joliPopoverFadeIn {

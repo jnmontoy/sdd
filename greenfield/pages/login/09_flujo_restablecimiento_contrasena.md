@@ -1,143 +1,99 @@
-﻿# 09. Flujo Completo de Restablecimiento de Contraseña
-## Módulo de Login / Autenticación — SDD Jolifoods (`GY-SPEC-AUTH-RESET`)
+﻿# 09. Flujo de Restablecimiento de Contraseña
+## Módulo de Login / Autenticación — SDD Joli Foods (`SPEC-AUTH-RESET`)
 
-Este documento especifica de extremo a extremo la arquitectura, contratos de API, pantallas y reglas de seguridad para el **Restablecimiento y Recuperación de Contraseña** cuando un usuario ha olvidado sus credenciales.
+Arquitectura, contratos y reglas de seguridad para recuperar una contraseña olvidada. Modelo de datos: [`../../../model/login/spec_model_restablecimiento.md`](../../../model/login/spec_model_restablecimiento.md). Componentes de interfaz: [`recovery_form.md`](../../../components/login/recovery_form.md) y [`email_recovery_template.md`](../../../components/login/email_recovery_template.md).
 
 ---
 
-## 1. Diagrama de Secuencia del Flujo de Restablecimiento
+## 1. Secuencia
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor U as Colaborador
-    participant UI as Interfaz Login / Recovery Form
-    participant API as Backend Auth API
-    participant DB as Base de Datos
-    participant MAIL as Servicio de Correo Corporativo (SMTP/Graph)
+    participant UI as Frontend
+    participant API as Backend /api/v1/auth/password-reset/*
+    participant DB as PostgreSQL
+    participant MAIL as Servicio de correo
 
-    U->>UI: Clic en "¿Olvidaste tu contraseña?"
-    UI->>UI: Muestra formulario de solicitud de recuperación
-    U->>UI: Digita su Cédula o Correo corporativo
-    UI->>API: POST /api/auth/password-reset/request/ {identificador}
-    
-    API->>API: Verifica tasa de peticiones (Rate Limit: máx 3 por hora por IP/cuenta)
-    API->>DB: Busca usuario por documento o correo
-    
-    alt Usuario NO existe o está inactivo
-        API-->>UI: 200 OK (Mensaje neutro anti-enumeración)
-        UI-->>U: "Si los datos corresponden a un usuario activo, recibirás un enlace en tu correo."
-    else Usuario Existe y Activo
-        API->>API: Genera token criptográfico efímero de 32 bytes (base64url)
-        API->>API: Calcula SHA256(token)
-        API->>DB: Invalida tokens previos y guarda SHA256(token) con expiración de 15 min
-        API->>MAIL: Envía correo institucional con enlace único: /restablecer-clave?token=XYZ
-        API-->>UI: 200 OK (Mensaje neutro idéntico)
-        UI-->>U: "Revisa tu bandeja de entrada y correo no deseado."
+    U->>UI: "¿Olvidaste tu contraseña?" → digita documento o correo
+    UI->>API: POST request/ {identificador}
+    API->>API: Límite: 3 por hora por identificador y 10 por hora por IP
+    API->>DB: Busca usuario activo
+    alt No existe, inactivo, exige SSO o límite excedido
+        API-->>UI: 202 (mensaje neutro)
+    else Usuario válido
+        API->>API: token = secrets.token_urlsafe(32)
+        API->>DB: transaction.atomic(): invalida tokens previos sin usar y guarda SHA-256(token) con expiración de 15 min
+        API->>MAIL: Encola correo con enlace https://<host>/restablecer-clave#token=<token>
+        API-->>UI: 202 (mismo mensaje neutro)
     end
 
-    U->>MAIL: Abre correo institucional y pulsa en "Restablecer mi Contraseña"
-    MAIL->>UI: Abre pantalla /restablecer-clave?token=XYZ
-    UI->>API: POST /api/auth/password-reset/validate/ {token}
-    
-    alt Token Expirado o Ya Usado
-        API-->>UI: 400 Bad Request ("El enlace ha expirado o ya fue utilizado")
-        UI-->>U: Alerta de enlace vencido con botón para solicitar uno nuevo
-    else Token Válido
-        API-->>UI: 200 OK ("Token válido")
-        UI-->>U: Despliega formulario de nueva contraseña (clave + confirmación)
-        U->>UI: Digita nueva contraseña segura (mínimo 8 caracteres, mayúscula, número)
-        UI->>API: POST /api/auth/password-reset/confirm/ {token, new_password}
-        API->>API: Valida complejidad de la contraseña
-        API->>DB: Actualiza hash de contraseña del usuario
-        API->>DB: Marca token como is_used = true
-        API->>DB: Revoca todas las sesiones activas del usuario (is_activa = false)
-        API->>MAIL: Envía notificación de seguridad: "Tu contraseña ha sido modificada"
-        API-->>UI: 200 OK ("Contraseña actualizada exitosamente")
-        UI-->>U: Mensaje de éxito y redirección automática al Login
+    U->>UI: Abre el enlace
+    UI->>UI: Lee el token del fragmento (#) y limpia la URL con history.replaceState
+    UI->>API: POST validate/ {token}
+    alt Inválido, usado o vencido
+        API-->>UI: 400 TOKEN_EXPIRED_OR_INVALID
+    else Vigente
+        API-->>UI: 200 {valid: true}
+        U->>UI: Nueva contraseña + confirmación
+        UI->>API: POST confirm/ {token, new_password, confirm_password}
+        API->>DB: transaction.atomic() + select_for_update del token
+        API->>API: validate_password() (AUTH_PASSWORD_VALIDATORS)
+        API->>DB: set_password(), token.usado_en = now(), revoca todas las sesiones y refresh tokens
+        API->>MAIL: Notificación "Tu contraseña fue cambiada" (fecha, IP aproximada)
+        API-->>UI: 200
+        UI-->>U: Mensaje de éxito y enlace al login
     end
 ```
 
----
-
-## 2. Contratos de API del Flujo de Restablecimiento
-
-### 2.1. Solicitud de Enlace (`POST /api/auth/password-reset/request/`)
-
-#### Request Body
-```json
-{
-  "identificador": "1037645123"
-}
-```
-*(El identificador puede ser el número de cédula o el correo electrónico corporativo).*
-
-#### Response 200 OK (Protección Anti-Enumeración)
-> **REGLA DE SEGURIDAD**: La respuesta debe ser exactamente igual independientemente de si el usuario existe o no, para impedir que atacantes deduzcan qué personas están registradas.
-
-```json
-{
-  "success": true,
-  "message": "Si los datos ingresados corresponden a una cuenta activa en Jolifoods, recibirás un enlace en tu correo corporativo en los próximos minutos."
-}
-```
+**Por qué el token va en el fragmento `#`:** el fragmento no se envía al servidor en la petición GET de la página, así que no queda en logs de Nginx ni en la cabecera `Referer` (BP-18, excepción de enlace de un solo uso).
 
 ---
 
-### 2.2. Validación de Token (`POST /api/auth/password-reset/validate/`)
+## 2. Contratos
 
-Verifica que el enlace no haya expirado antes de mostrar los campos de entrada de la nueva contraseña.
-
-#### Request Body
+### 2.1. `POST /api/v1/auth/password-reset/request/`
 ```json
-{
-  "token": "a8f3b2c1d4e5f6..."
-}
+{ "identificador": "1000000001" }
 ```
+`identificador` acepta documento o correo.
 
-#### Response 200 OK
+**202 Accepted — siempre el mismo cuerpo, exista o no la cuenta:**
 ```json
-{
-  "valid": true,
-  "email_enmascarado": "j***a@jolifoods.com"
-}
+{ "message": "Si los datos corresponden a una cuenta activa, recibirás un enlace en tu correo en los próximos minutos." }
 ```
+El envío del correo DEBERÍA hacerse en segundo plano (tarea Celery o similar) para que el tiempo de respuesta no revele si la cuenta existe.
 
-#### Response 400 Bad Request (Expirado o Consumido)
+### 2.2. `POST /api/v1/auth/password-reset/validate/`
 ```json
-{
-  "valid": false,
-  "error_code": "TOKEN_EXPIRED_OR_INVALID",
-  "message": "El enlace de recuperación es inválido o ha caducado. Por favor genera una nueva solicitud."
-}
+{ "token": "<token del enlace>" }
 ```
+- **200:** `{ "valid": true }` — no devuelve correo ni nombre (el portador del enlace aún no ha demostrado nada más).
+- **400:** `{ "valid": false, "error_code": "TOKEN_EXPIRED_OR_INVALID", "message": "El enlace es inválido o venció. Solicita uno nuevo." }`
+
+### 2.3. `POST /api/v1/auth/password-reset/confirm/`
+```json
+{ "token": "<token del enlace>", "new_password": "<NUEVA_CONTRASEÑA>", "confirm_password": "<NUEVA_CONTRASEÑA>" }
+```
+- **200:** `{ "message": "Tu contraseña fue actualizada. Inicia sesión con la nueva contraseña." }`
+- **400:** `TOKEN_EXPIRED_OR_INVALID`, `PASSWORD_MISMATCH` o `PASSWORD_POLICY` (con la lista de reglas incumplidas).
 
 ---
 
-### 2.3. Confirmación de Nueva Contraseña (`POST /api/auth/password-reset/confirm/`)
+## 3. Reglas de Seguridad (DEBE)
 
-#### Request Body
-```json
-{
-  "token": "a8f3b2c1d4e5f6...",
-  "new_password": "NuevaPasswordSegura!2026",
-  "confirm_password": "NuevaPasswordSegura!2026"
-}
-```
-
-#### Response 200 OK
-```json
-{
-  "success": true,
-  "message": "Tu contraseña ha sido actualizada satisfactoriamente. Por favor inicia sesión con tu nueva credencial."
-}
-```
-
----
-
-## 3. Políticas de Seguridad Mandatorias
-
-1. **Tiempo de Vida del Token**: Máximo **15 minutos**.
-2. **One-Time Token**: Un token consumido jamás puede volver a ser utilizado.
-3. **Cierre de Sesiones Previas**: El cambio de contraseña invalida de forma inmediata todos los Access Tokens y Refresh Tokens emitidos previamente para ese usuario, impidiendo que un atacante que hubiera robado una sesión antigua continúe conectado.
-4. **Notificación de Confirmación**: Se debe despachar de inmediato un correo informando que la contraseña fue cambiada, con la IP y dispositivo donde ocurrió el cambio.
+| # | Regla | Por qué |
+| :--- | :--- | :--- |
+| 1 | Token de **32 bytes** de `secrets.token_urlsafe`. | Imposible de adivinar por fuerza bruta. |
+| 2 | En base de datos solo se guarda **SHA-256 del token**; la búsqueda se hace por hash. | Una fuga de la BD no permite usar los enlaces. |
+| 3 | **Vigencia de 15 minutos** (`PASSWORD_RESET_MINUTES`). | Reduce la ventana de abuso de un correo interceptado. |
+| 4 | **Un solo uso:** se marca `usado_en` dentro de `transaction.atomic()` con `select_for_update()`. | Evita doble consumo concurrente. |
+| 5 | **Un solo token vigente** por usuario: una nueva solicitud invalida las anteriores. | Los enlaces viejos dejan de servir. |
+| 6 | **Respuesta idéntica** (cuerpo, código y tiempo aproximado) exista o no la cuenta. | Evita la enumeración de usuarios. |
+| 7 | **Límite de tasa:** 3 solicitudes/hora por identificador, 10/hora por IP; 10 intentos de `validate`/`confirm` por IP cada 15 min. | Frena abuso del correo y adivinación de tokens. |
+| 8 | Al confirmar: `validate_password()` y `set_password()` (hasher de Django). | Política de claves única y hash estándar. |
+| 9 | Al confirmar: **invalidar todas las sesiones** (`OutstandingToken` del usuario a lista negra y `SesionUsuario.is_activa = False`). | Expulsa a quien tuviera una sesión robada. |
+| 10 | Notificar el cambio por correo. | El titular detecta cambios no autorizados. |
+| 11 | Cuentas con rol `exige_sso` NO usan este flujo (su clave se gestiona en Entra ID). | Evita una puerta trasera a cuentas privilegiadas. |
+| 12 | Registrar `PASSWORD_RESET_REQUESTED` y `PASSWORD_RESET_COMPLETED` en la bitácora, sin el token. | Trazabilidad. |

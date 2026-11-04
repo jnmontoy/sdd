@@ -1,73 +1,73 @@
-﻿# Especificación de Modelos: `SesionUsuario` y `AuditoriaAcceso`
-## Módulo de Login e Identidad — SDD Jolifoods (`DATA-SPEC-SESSION-002`)
+﻿# Especificación de Modelos: `SesionUsuario`, `RegistroAuditoriaAcceso` y lista negra de tokens
+## Módulo de Login e Identidad — SDD Joli Foods (`DATA-SPEC-SESSION-002`)
 
-Este documento define la especificación técnica de las entidades encargadas de gestionar las sesiones activas, la auditoría inmutable de accesos y la revocación de tokens JWT.
+Sesiones activas, bitácora de accesos (solo-inserción) y revocación de refresh tokens.
 
 ---
 
-## 1. Entidad: `SesionUsuario` (Control de Sesiones Activas)
+## 1. `SesionUsuario`
 
-Gestiona la concurrencia, ubicación y ciclo de vida de los tokens emitidos.
+Una fila por inicio de sesión. Permite listar y cerrar sesiones desde el perfil y revocarlas todas al cambiar la contraseña.
 
-### Diccionario de Campos
-| Campo | Tipo de Dato | Nulo / Obligatorio | Restricciones | Descripción |
+| Campo | Tipo (PostgreSQL) | Nulo | Restricciones | Descripción |
 | :--- | :--- | :--- | :--- | :--- |
-| **`id`** | `UUID` | Obligatorio (PK) | Default: `gen_random_uuid()` | Identificador universal único de la sesión. |
-| **`usuario_id`** | `BIGINT` | Obligatorio (FK) | `ON DELETE CASCADE` | Colaborador al que pertenece la sesión. |
-| **`jti`** | `VARCHAR(64)` | Obligatorio | **UNIQUE**, Indexado | Identificador único del JWT (*JWT ID Claim*). |
-| **`ip_origen`** | `VARCHAR(45)` | Obligatorio | Admite IPv4 e IPv6 | Dirección IP desde donde se autenticó. |
-| **`user_agent`** | `TEXT` | Obligatorio | Información de navegador y SO | Cadena completa del navegador para análisis forense. |
-| **`dispositivo`** | `VARCHAR(50)` | Opcional | Valores: `Desktop`, `Mobile`, `Tablet`, `Kiosk` | Detección normalizada del dispositivo. |
-| **`fecha_inicio`** | `TIMESTAMP` | Obligatorio | Default: `now()` | Momento en que se aprobó el inicio de sesión. |
-| **`fecha_expiracion`** | `TIMESTAMP` | Obligatorio | Calculado según política | Momento exacto en que expira el refresh token. |
-| **`is_activa`** | `BOOLEAN` | Obligatorio | Default: `true`, Indexado | `false` si el usuario hizo logout o fue cerrada remotamente. |
-| **`fecha_cierre`** | `TIMESTAMP` | Opcional (Nullable) | Registrado al hacer logout | Momento voluntario de cierre de sesión. |
+| `id` | `UUID` | No | PK, default `gen_random_uuid()` | Identificador de la sesión. |
+| `usuario_id` | `BIGINT` | No | FK `usuarios(id)` `ON DELETE CASCADE` | Titular. |
+| `refresh_jti` | `VARCHAR(64)` | No | **UNIQUE** | `jti` del refresh token vigente; se actualiza en cada rotación. |
+| `ip_origen` | `INET` | No | | IP del inicio de sesión. |
+| `user_agent` | `VARCHAR(512)` | No | Truncado a 512 | Navegador y sistema operativo. |
+| `dispositivo` | `VARCHAR(10)` | Sí | `Desktop`, `Mobile`, `Tablet`, `Kiosk` | Tipo de dispositivo detectado. |
+| `fecha_inicio` | `TIMESTAMPTZ` | No | default `now()` | Inicio. |
+| `fecha_expiracion` | `TIMESTAMPTZ` | No | | Vencimiento del refresh vigente. |
+| `is_activa` | `BOOLEAN` | No | default `true` | `false` tras logout, revocación o cambio de clave. |
+| `fecha_cierre` | `TIMESTAMPTZ` | Sí | | Momento del cierre. |
+
+Índice: `(usuario_id, is_activa)`.
 
 ---
 
-## 2. Entidad: `RegistroAuditoriaAcceso` (Bitácora Inmutable)
+## 2. `RegistroAuditoriaAcceso` (solo-inserción)
 
-Registra de forma inmutable cada intento de acceso a la plataforma, ya sea exitoso o fallido, para auditorías de seguridad informática.
+Cada intento de acceso, exitoso o fallido.
 
-### Diccionario de Campos
-| Campo | Tipo de Dato | Nulo / Obligatorio | Descripción |
+| Campo | Tipo (PostgreSQL) | Nulo | Descripción |
 | :--- | :--- | :--- | :--- |
-| **`id`** | `BIGINT` | Obligatorio (PK) | Auto-incremental. |
-| **`documento_ingresado`** | `VARCHAR(50)` | Obligatorio | Cédula o identificador digitado en el formulario. |
-| **`usuario_id`** | `BIGINT` | Opcional (Nullable) | ForeignKey al usuario si existía en la base de datos. |
-| **`evento`** | `VARCHAR(30)` | Obligatorio | Tipo de evento (ver catálogo de eventos abajo). |
-| **`resultado`** | `VARCHAR(15)` | Obligatorio | `SUCCESS`, `FAILURE`, `BLOCKED`. |
-| **`motivo_fallo`** | `VARCHAR(150)` | Opcional | Causa del rechazo (ej. `BAD_PASSWORD`, `INACTIVE_ACCOUNT`, `RATE_LIMIT_EXCEEDED`). |
-| **`ip_origen`** | `VARCHAR(45)` | Obligatorio | IP del cliente. |
-| **`user_agent`** | `TEXT` | Obligatorio | User agent de la solicitud. |
-| **`fecha_evento`** | `TIMESTAMP` | Obligatorio | Default: `CURRENT_TIMESTAMP`. |
-| **`tiempo_respuesta_ms`** | `INTEGER` | Opcional | Latencia de validación en milisegundos. |
+| `id` | `BIGSERIAL` | No | PK. |
+| `documento_ingresado` | `VARCHAR(20)` | No | Documento digitado (ya validado como dígitos; nunca la contraseña). |
+| `usuario_id` | `BIGINT` | Sí | FK `usuarios(id)` `ON DELETE SET NULL`; nulo si el documento no existe. |
+| `evento` | `VARCHAR(40)` | No | Ver catálogo. |
+| `resultado` | `VARCHAR(10)` | No | `SUCCESS`, `FAILURE`, `BLOCKED`. |
+| `motivo_fallo` | `VARCHAR(150)` | Sí | Código del motivo (`BAD_PASSWORD`, `INACTIVE_ACCOUNT`, `RATE_LIMIT_EXCEEDED`…). |
+| `ip_origen` | `INET` | No | IP del cliente (resuelta según proxies de confianza). |
+| `user_agent` | `VARCHAR(512)` | No | Truncado a 512. |
+| `fecha_evento` | `TIMESTAMPTZ` | No | default `now()`. |
+| `tiempo_respuesta_ms` | `INTEGER` | Sí | Latencia de la verificación. |
 
-### Catálogo Canónico de Eventos de Auditoría
-- `LOGIN_SUCCESS_CREDENTIALS`: Inicio de sesión exitoso por cédula + contraseña.
-- `LOGIN_SUCCESS_SSO`: Inicio de sesión exitoso por Microsoft 365 Azure AD.
-- `LOGIN_SUCCESS_KIOSK`: Inicio de sesión operativo por cédula en quiosco.
-- `LOGIN_FAILED_BAD_PASSWORD`: Contraseña errónea para un usuario existente.
-- `LOGIN_FAILED_NOT_FOUND`: Número de documento no registrado en el sistema.
-- `LOGIN_BLOCKED_INACTIVE`: Intento de ingreso de cuenta desactivada por RRHH.
-- `LOGIN_BLOCKED_RATE_LIMIT`: Solicitud rechazada por exceder tasa de intentos.
-- `LOGOUT_VOLUNTARY`: Cierre de sesión ejecutado por el colaborador.
-- `SESSION_TIMEOUT_EXPIRED`: Sesión caducada por inactividad.
+Índices: `fecha_evento DESC`, `documento_ingresado`, `ip_origen`, `(usuario_id, fecha_evento DESC)`.
+
+### Solo-inserción (DEBE)
+- **Aplicación:** el modelo rechaza `save()` sobre una fila existente y `delete()`; el admin de Django la expone en solo lectura.
+- **Base de datos:** el rol con el que corre la aplicación NO DEBE tener `UPDATE` ni `DELETE` sobre la tabla (ver DDL en [`esquema_sql_canonico.md`](./esquema_sql_canonico.md)). La depuración por retención la ejecuta un rol de mantenimiento distinto.
+- **Por qué:** una bitácora que la propia aplicación puede editar no sirve como evidencia ante un incidente.
+
+### Catálogo de eventos (fuente única)
+`LOGIN_SUCCESS_CREDENTIALS`, `LOGIN_SUCCESS_SSO`, `LOGIN_SUCCESS_KIOSK`, `LOGIN_FAILED_BAD_PASSWORD`, `LOGIN_FAILED_NOT_FOUND`, `LOGIN_BLOCKED_INACTIVE`, `LOGIN_BLOCKED_SSO_REQUIRED`, `LOGIN_BLOCKED_RATE_LIMIT`, `TOKEN_REFRESH_REUSED`, `LOGOUT_VOLUNTARY`, `SESSION_EXPIRED`, `SESSION_REVOKED`, `PASSWORD_RESET_REQUESTED`, `PASSWORD_RESET_COMPLETED`, `PASSWORD_CHANGED`.
 
 ---
 
-## 3. Entidad: `TokenListaNegra` (Revocación Instantánea)
+## 3. Lista negra de refresh tokens
 
-Utilizada para invalidar tokens de refresco (*Refresh Tokens*) en casos de logout o revocación administrativa inmediata.
+En Django se usa la app **`rest_framework_simplejwt.token_blacklist`** (tablas `token_blacklist_outstandingtoken` y `token_blacklist_blacklistedtoken`), activada con `ROTATE_REFRESH_TOKENS` y `BLACKLIST_AFTER_ROTATION`. NO se define un modelo propio. Una tarea diaria DEBERÍA ejecutar `manage.py flushexpiredtokens`.
+
+Para backends que no usen SimpleJWT, la tabla equivalente es:
 
 ```sql
 CREATE TABLE tokens_lista_negra (
-    id BIGSERIAL PRIMARY KEY,
-    jti VARCHAR(64) UNIQUE NOT NULL,
-    usuario_id BIGINT REFERENCES usuarios(id) ON DELETE CASCADE,
-    fecha_revocacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    expira_original TIMESTAMP WITH TIME ZONE NOT NULL
+    id               BIGSERIAL PRIMARY KEY,
+    jti              VARCHAR(64) NOT NULL UNIQUE,
+    usuario_id       BIGINT REFERENCES usuarios(id) ON DELETE CASCADE,
+    fecha_revocacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expira_original  TIMESTAMPTZ NOT NULL
 );
-
-CREATE INDEX idx_tokens_blacklist_jti ON tokens_lista_negra(jti);
+-- La restricción UNIQUE ya indexa jti.
 ```

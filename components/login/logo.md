@@ -1,19 +1,19 @@
-# Componente: Logo e Identidad Visual Jolifoods (`UI-COMP-LOGIN-LOGO`)
+# Componente: Logo e Identidad Visual Joli Foods (`UI-COMP-LOGIN-LOGO`)
 ## Ubicación SDD: `.sdd/components/login/logo.md`
 
-Este documento especifica la integración oficial de la marca e identidad gráfica corporativa de **Jolifoods**, así como los activos visuales y la regla obligatoria de parametrización del nombre del proyecto en títulos y navegadores.
+Este documento especifica la integración oficial de la marca e identidad gráfica corporativa de **Joli Foods**, así como los activos visuales y la regla de parametrización del nombre del proyecto en títulos y navegadores.
 
 ---
 
-## 1. Regla Mandatoria para la IA: Preguntar el Nombre del Proyecto
+## 1. Regla: parametrizar el nombre del proyecto
 
-> **REGLA OBLIGATORIA DE GENERACIÓN (SDD)**:
-> Cuando un desarrollador o agente de Inteligencia Artificial proceda a estructurar un nuevo proyecto a partir de este `.sdd`, **DEBE PREGUNTAR OBLIGATORIAMENTE AL USUARIO EL NOMBRE DEL PROYECTO** (ejemplo: *"¿Cuál es el nombre del proyecto o módulo que deseas crear? (ej. Tiendita, Porterías, Control Operativo, etc.)"*).
+- **Regla:** al generar un proyecto nuevo a partir de este `.sdd`, el desarrollador o agente de IA DEBE preguntar el nombre del proyecto o módulo (p. ej. *"¿Cuál es el nombre del proyecto o módulo que deseas crear? (ej. Control Operativo, Registro de Visitantes)"*) y NO DEBE inventarlo.
+- **Por qué:** el nombre aparece en el título del navegador, el login y la barra superior; un nombre inventado o heredado de otra app confunde al usuario y a soporte.
 
 ### Con el nombre provisto por el usuario, la IA debe generar:
 1. **El `<title>` del documento HTML (`index.html`)**:
    ```html
-   <title>[Nombre del Proyecto] | Jolifoods</title>
+   <title>[Nombre del Proyecto] | Joli Foods</title>
    ```
 2. **El Favicon del navegador**:
    ```html
@@ -22,17 +22,17 @@ Este documento especifica la integración oficial de la marca e identidad gráfi
    ```
 3. **El encabezado visual del formulario de Login**:
    - Título H1: `[Nombre del Proyecto]`
-   - Subtítulo: `Jolifoods • Acceso Seguro Corporativo`
+   - Subtítulo: `Joli Foods • Acceso seguro`
 
 ---
 
 ## 2. Activos Oficiales de Marca en el SDD (`.sdd/assets/`)
 
-Los archivos vectoriales y rasterizados oficiales de Jolifoods se encuentran centralizados en:
+Los archivos vectoriales y rasterizados oficiales de Joli Foods se encuentran centralizados en:
 
 ```
 .sdd/
-└── assets/                                 # Activos globales de marca Jolifoods
+└── assets/                                 # Activos globales de marca Joli Foods
     ├── Jolifoods.svg                       # Isotipo optimizado para UI y Favicon (2.5 KB)
     ├── Joli.svg                            # Isotipo oficial de alta resolución (102 KB)
     ├── logoJoli.png                        # Logo rasterizado transparente (2.4 KB)
@@ -49,7 +49,7 @@ Los archivos vectoriales y rasterizados oficiales de Jolifoods se encuentran cen
   <div class="login-logo-badge">
     <img 
       src="./assets/Jolifoods.svg" 
-      alt="Jolifoods Logo" 
+      alt="Joli Foods" 
       class="login-logo-img"
       onerror="this.onerror=null; this.src='./assets/logoJoli.png';"
     />
@@ -59,7 +59,7 @@ Los archivos vectoriales y rasterizados oficiales de Jolifoods se encuentran cen
   <div class="login-logo-text-group">
     <!-- El nombre del proyecto se inyecta aquí -->
     <h1 class="login-logo-title">[Nombre del Proyecto]</h1>
-    <p class="login-logo-subtitle">Jolifoods • Acceso Seguro</p>
+    <p class="login-logo-subtitle">Joli Foods • Acceso seguro</p>
   </div>
 </header>
 ```
@@ -70,7 +70,7 @@ Los archivos vectoriales y rasterizados oficiales de Jolifoods se encuentran cen
 
 ```css
 /* ==========================================================================
-   COMPONENTE: LOGO JOLIFOODS (CSS PURO)
+   COMPONENTE: LOGO JOLI FOODS (CSS PURO)
    ========================================================================== */
 
 .login-logo-wrapper {
@@ -90,18 +90,18 @@ Los archivos vectoriales y rasterizados oficiales de Jolifoods se encuentran cen
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  border-radius: var(--radius-xl, 1.25rem);
+  background-color: var(--status-success-bg);
+  border: 1px solid var(--border-card-accent);
+  border-radius: var(--radius-xl);
   margin-bottom: 1rem;
-  box-shadow: 0 0 25px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 25px var(--brand-glow);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
   overflow: hidden;
 }
 
 .login-logo-badge:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 0 35px rgba(16, 185, 129, 0.55);
+  box-shadow: 0 0 35px var(--brand-glow);
 }
 
 .login-logo-img {
@@ -120,20 +120,20 @@ Los archivos vectoriales y rasterizados oficiales de Jolifoods se encuentran cen
 
 .login-logo-title {
   margin: 0;
-  font-family: var(--font-family, system-ui, sans-serif);
-  font-size: var(--font-size-2xl, 1.75rem);
-  font-weight: var(--font-weight-extrabold, 800);
+  font-family: var(--font-family);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-extrabold);
   letter-spacing: -0.025em;
-  color: var(--text-primary, #f8fafc);
-  line-height: var(--line-height-tight, 1.2);
+  color: var(--text-primary);
+  line-height: var(--line-height-tight);
 }
 
 .login-logo-subtitle {
   margin: 0.375rem 0 0 0;
-  font-family: var(--font-family, system-ui, sans-serif);
-  font-size: var(--font-size-xs, 0.8125rem);
-  font-weight: var(--font-weight-medium, 500);
-  color: var(--text-secondary, #94a3b8);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -141,7 +141,7 @@ Los archivos vectoriales y rasterizados oficiales de Jolifoods se encuentran cen
 
 ---
 
-## 4. Provisión de Assets en Prototipos Autónomos No-Code (`mock/`)
+## 5. Provisión de Assets en Prototipos Autónomos No-Code (`mock/`)
 
 Cuando se genera un prototipo modular dentro de `mock/<nombre_modulo>/`, los activos de marca de `.sdd/assets/` deben replicarse en la subcarpeta local `mock/<nombre_modulo>/assets/`:
 
@@ -157,5 +157,5 @@ mock/<nombre_modulo>/
     └── logoJoli.png          <- Imagen de respaldo ante error de carga
 ```
 
-De esta manera, el enlace `<img src="./assets/Jolifoods.svg" onerror="this.onerror=null; this.src='./assets/logoJoli.png';">` funciona de forma 100% portable y offline en cualquier computadora o navegador sin requerir servidores locales.
+De esta manera, el enlace `<img src="./assets/Jolifoods.svg" onerror="this.onerror=null; this.src='./assets/logoJoli.png';">` funciona sin conexión y sin servidor local, abriendo el HTML directamente en el navegador.
 

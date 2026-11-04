@@ -1,243 +1,209 @@
-# Especificación de Página: Configuración y Parámetros del Sistema
-## Ecosistema Jolifoods — Parametrización Global y Políticas de Seguridad
+# Especificación de Página: Configuración del Sistema
+## Joli Foods — Parametrización Global y Políticas de Seguridad
 
-Esta especificación detalla la interfaz y contratos de backend para la gestión de parámetros institucionales, políticas de seguridad de sesión, configuración SMTP y control de mantenimiento de la plataforma.
-
----
-
-### 1. Requisitos de Negocio
-1. **Acceso Exclusivo**: Restringido estrictamente a usuarios con rol `ADMINISTRADOR` o `SUPERADMIN`.
-2. **Pestañas de Configuración**:
-   - **General**: Nombre del sistema, razón social, correo de contacto y logotipo corporativo.
-   - **Seguridad**:
-     - Tiempo de caducidad por inactividad de sesión (15, 30, 60, 120 minutos).
-     - Intentos fallidos permitidos antes de bloqueo de cuenta (3 a 10 intentos).
-     - Duración del bloqueo temporal (minutos).
-     - Forzar caracteres especiales en contraseñas.
-   - **Notificaciones / Correo**: Servidor SMTP, puerto, usuario, TLS y prueba de envío instantáneo.
-   - **Mantenimiento**: Interruptor de "Modo Mantenimiento" con mensaje personalizado para usuarios regulares.
-3. **Auditoría Obligatoria**: Cualquier cambio en la configuración genera un evento de severidad alta en la bitácora (`CONFIGURACION_MODIFICADA`).
+Interfaz y contratos para administrar parámetros institucionales, políticas de sesión, prueba del canal de correo y modo mantenimiento.
 
 ---
 
-### 2. Implementación TypeScript Canónica (`ConfiguracionPage.tsx`)
+## 1. Requisitos
+
+1. **Acceso por permiso:** ver requiere `configuracion.ver`; guardar requiere `configuracion.editar` (BP-19). No se valida por nombre de rol.
+2. **Pestañas:**
+   - **General:** nombre visible de la aplicación, correo de contacto y logotipo (archivo validado según [`model/archivos`](../../../model/archivos/spec_model_archivos_media.md)).
+   - **Seguridad:** cierre por inactividad (15–120 min), intentos fallidos antes de bloqueo (3–10) y duración del bloqueo (15–60 min).
+   - **Correo:** muestra el servidor y puerto configurados (solo lectura) y permite **enviar un correo de prueba**.
+   - **Mantenimiento:** modo mantenimiento con mensaje para usuarios sin permiso `configuracion.editar`.
+3. **Secretos fuera de la interfaz (DEBE):** usuario y contraseña SMTP, claves de firma y credenciales de Azure se configuran por variables de entorno o gestor de secretos, nunca en la base de datos ni en esta pantalla. **Por qué:** una pantalla web que lee o escribe secretos los expone a cualquier XSS o cuenta administrativa comprometida.
+4. **Límites en el servidor (DEBE):** el backend rechaza valores fuera de rango (p. ej. 0 intentos o 24 h de inactividad). **Por qué:** la configuración no debe poder desactivar los controles de seguridad.
+5. **Política de contraseñas:** no se configura aquí; la definen `AUTH_PASSWORD_VALIDATORS` en código (ver login, BR-01).
+6. **Bitácora:** cada cambio registra `CONFIG_UPDATED` con `payload_antes`/`payload_despues` en [`RegistroBitacoraAuditoria`](../../../model/auditoria/spec_model_bitacora.md).
+
+### Contrato
+| Método y ruta | Descripción |
+| :--- | :--- |
+| `GET /api/v1/configuracion/` | Devuelve `{ general, seguridad, correo: { host, puerto, tls }, mantenimiento }`. |
+| `PATCH /api/v1/configuracion/` | Actualiza las secciones enviadas. 400 con detalle por campo si un valor está fuera de rango. |
+| `POST /api/v1/configuracion/correo/prueba/` | Envía un correo de prueba al correo del usuario autenticado. Límite: 3 por hora. |
+
+---
+
+## 2. Implementación (`ConfiguracionPage.tsx`)
 
 ```tsx
-import React, { useState } from 'react';
-import { 
-  Settings, 
-  ShieldAlert, 
-  Mail, 
-  Tool, 
-  Save, 
-  CheckCircle2, 
-  Send,
-  AlertTriangle 
-} from 'lucide-react';
-import { showToast } from '../../components/ui/ToastNotification';
-import { ConfirmModal } from '../../components/ui/ConfirmModal';
+import { useEffect, useId, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Settings, ShieldAlert, Mail, Wrench, Save, Send } from 'lucide-react';
+import { apiClient } from '../services/apiClient';
+import { ENDPOINTS } from '../services/endpoints';
+import { useAuth } from '../context/AuthContext';
+import { showToast } from '../components/ToastNotification';
+import { ConfirmModal } from '../components/modal/ConfirmModal';
 
-export const ConfiguracionPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'general' | 'seguridad' | 'smtp' | 'mantenimiento'>('general');
-  const [isSaving, setIsSaving] = useState(false);
+const schema = z.object({
+  general: z.object({
+    nombre_aplicacion: z.string().trim().min(3).max(80),
+    correo_contacto: z.string().email('Correo inválido.'),
+  }),
+  seguridad: z.object({
+    inactividad_minutos: z.coerce.number().int().min(15).max(120),
+    intentos_bloqueo: z.coerce.number().int().min(3).max(10),
+    bloqueo_minutos: z.coerce.number().int().min(15).max(60),
+  }),
+  mantenimiento: z.object({
+    activo: z.boolean(),
+    mensaje: z.string().max(300),
+  }),
+});
+type ConfigForm = z.infer<typeof schema>;
+interface ConfigResponse extends ConfigForm { correo: { host: string; puerto: number; tls: boolean } }
+
+type Tab = 'general' | 'seguridad' | 'correo' | 'mantenimiento';
+const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
+  { id: 'general', label: 'General', icon: <Settings size={15} aria-hidden="true" /> },
+  { id: 'seguridad', label: 'Seguridad y sesiones', icon: <ShieldAlert size={15} aria-hidden="true" /> },
+  { id: 'correo', label: 'Correo', icon: <Mail size={15} aria-hidden="true" /> },
+  { id: 'mantenimiento', label: 'Mantenimiento', icon: <Wrench size={15} aria-hidden="true" /> },
+];
+
+export function ConfiguracionPage() {
+  const { hasPermission } = useAuth();
+  const puedeEditar = hasPermission('configuracion.editar');
+  const baseId = useId();
+  const [tab, setTab] = useState<Tab>('general');
+  const [correo, setCorreo] = useState<ConfigResponse['correo'] | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-  // Estados del formulario
-  const [nombreSistema, setNombreSistema] = useState('Greenyard / Jolifoods Portal');
-  const [tiempoInactividad, setTiempoInactividad] = useState('30');
-  const [intentosBloqueo, setIntentosBloqueo] = useState('5');
-  const [smtpHost, setSmtpHost] = useState('smtp.office365.com');
-  const [smtpPort, setSmtpPort] = useState('587');
-  const [modoMantenimiento, setModoMantenimiento] = useState(false);
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting, isDirty } } =
+    useForm<ConfigForm>({ resolver: zodResolver(schema) });
 
-  const handleSave = async () => {
-    setIsSaving(true);
+  useEffect(() => {
+    const controller = new AbortController();
+    apiClient
+      .get<ConfigResponse>(ENDPOINTS.CONFIGURACION.GENERAL, { signal: controller.signal })
+      .then(({ data }) => { reset(data); setCorreo(data.correo); })
+      .catch(() => { if (!controller.signal.aborted) showToast.error('No fue posible cargar la configuración.'); });
+    return () => controller.abort();
+  }, [reset]);
+
+  const guardar = handleSubmit(async (values) => {
     try {
-      await new Promise((r) => setTimeout(r, 600));
-      showToast.success('Configuración guardada correctamente', {
-        description: 'Las directivas de seguridad y parámetros del sistema se han actualizado.'
-      });
-      setIsConfirmOpen(false);
+      const { data } = await apiClient.patch<ConfigResponse>(ENDPOINTS.CONFIGURACION.GENERAL, values);
+      reset(data);
+      showToast.success('Configuración guardada.');
     } catch {
-      showToast.error('Error al guardar la configuración');
+      showToast.error('No fue posible guardar. Revisa los valores.');
     } finally {
-      setIsSaving(false);
+      setIsConfirmOpen(false);
+    }
+  });
+
+  const enviarPrueba = async () => {
+    try {
+      await apiClient.post(ENDPOINTS.CONFIGURACION.CORREO_PRUEBA);
+      showToast.success('Correo de prueba enviado a tu buzón.');
+    } catch {
+      showToast.error('No fue posible enviar el correo de prueba.');
     }
   };
 
+  const campo = (id: string, label: string, input: JSX.Element, error?: string) => (
+    <div className="col-12 col-md-6">
+      <label htmlFor={id} className="form-label fw-semibold">{label}</label>
+      {input}
+      {error && <div className="invalid-feedback d-block">{error}</div>}
+    </div>
+  );
+
   return (
-    <div className="joli-page-container">
-      <div className="joli-page-header">
+    <div className="joli-page-container w-100">
+      <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
         <div>
-          <h2 className="joli-page-title">Configuración del Sistema</h2>
-          <p className="joli-page-subtitle">Ajuste los parámetros operativos, políticas de seguridad y canales de comunicación.</p>
+          <h1 className="joli-page-title">Configuración del sistema</h1>
+          <p className="text-muted small mb-0">Parámetros operativos, políticas de sesión y canal de correo.</p>
         </div>
-        <button
-          type="button"
-          className="joli-btn-primary"
-          onClick={() => setIsConfirmOpen(true)}
-          disabled={isSaving}
-        >
-          <Save size={16} className="me-1" />
-          <span>Guardar Cambios</span>
-        </button>
+        {puedeEditar && (
+          <button type="button" className="btn btn-primary d-inline-flex align-items-center gap-2"
+                  onClick={() => setIsConfirmOpen(true)} disabled={isSubmitting || !isDirty}>
+            <Save size={16} aria-hidden="true" /><span>Guardar cambios</span>
+          </button>
+        )}
       </div>
 
-      {/* Pestañas de Navegación */}
-      <ul className="nav nav-tabs mb-4">
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'general' ? 'active' : ''}`}
-            onClick={() => setActiveTab('general')}
-          >
-            <Settings size={15} className="me-1" />
-            <span>General</span>
+      <div className="nav nav-tabs mb-4" role="tablist" aria-label="Secciones de configuración">
+        {TABS.map((t) => (
+          <button key={t.id} type="button" role="tab" id={`${baseId}-tab-${t.id}`}
+                  aria-selected={tab === t.id} aria-controls={`${baseId}-panel-${t.id}`}
+                  className={`nav-link d-inline-flex align-items-center gap-1 ${tab === t.id ? 'active' : ''}`}
+                  onClick={() => setTab(t.id)}>
+            {t.icon}<span>{t.label}</span>
           </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'seguridad' ? 'active' : ''}`}
-            onClick={() => setActiveTab('seguridad')}
-          >
-            <ShieldAlert size={15} className="me-1" />
-            <span>Seguridad & Sesiones</span>
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'smtp' ? 'active' : ''}`}
-            onClick={() => setActiveTab('smtp')}
-          >
-            <Mail size={15} className="me-1" />
-            <span>Servidor SMTP</span>
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'mantenimiento' ? 'active' : ''}`}
-            onClick={() => setActiveTab('mantenimiento')}
-          >
-            <Tool size={15} className="me-1" />
-            <span>Mantenimiento</span>
-          </button>
-        </li>
-      </ul>
+        ))}
+      </div>
 
-      {/* Contenido por Pestaña */}
-      <div className="joli-card p-4">
-        {activeTab === 'general' && (
-          <div className="row g-3">
-            <div className="col-md-6">
-              <label className="form-label fw-semibold">Nombre de la Aplicación</label>
-              <input
-                type="text"
-                className="form-control"
-                value={nombreSistema}
-                onChange={(e) => setNombreSistema(e.target.value)}
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label fw-semibold">Entidad Corporativa</label>
-              <input type="text" className="form-control" value="Jolifoods S.A.S." disabled />
-            </div>
+      <form className="joli-panel-card p-4" onSubmit={(e) => e.preventDefault()} noValidate>
+        <fieldset disabled={!puedeEditar} className="border-0 p-0 m-0">
+          <div role="tabpanel" id={`${baseId}-panel-general`} aria-labelledby={`${baseId}-tab-general`} hidden={tab !== 'general'} className="row g-3">
+            {campo('cfg-nombre', 'Nombre de la aplicación',
+              <input id="cfg-nombre" className="form-control input-control" {...register('general.nombre_aplicacion')} />,
+              errors.general?.nombre_aplicacion?.message)}
+            {campo('cfg-contacto', 'Correo de contacto',
+              <input id="cfg-contacto" type="email" className="form-control input-control" {...register('general.correo_contacto')} />,
+              errors.general?.correo_contacto?.message)}
           </div>
-        )}
 
-        {activeTab === 'seguridad' && (
-          <div className="row g-3">
-            <div className="col-md-6">
-              <label className="form-label fw-semibold">Tiempo Máximo de Inactividad</label>
-              <select
-                className="form-select"
-                value={tiempoInactividad}
-                onChange={(e) => setTiempoInactividad(e.target.value)}
-              >
-                <option value="15">15 minutos</option>
-                <option value="30">30 minutos (Recomendado)</option>
-                <option value="60">60 minutos</option>
-                <option value="120">2 horas</option>
-              </select>
-            </div>
-            <div className="col-md-6">
-              <label className="form-label fw-semibold">Intentos Fallidos antes de Bloqueo</label>
-              <select
-                className="form-select"
-                value={intentosBloqueo}
-                onChange={(e) => setIntentosBloqueo(e.target.value)}
-              >
-                <option value="3">3 intentos</option>
-                <option value="5">5 intentos (Recomendado)</option>
-                <option value="10">10 intentos</option>
-              </select>
-            </div>
+          <div role="tabpanel" id={`${baseId}-panel-seguridad`} aria-labelledby={`${baseId}-tab-seguridad`} hidden={tab !== 'seguridad'} className="row g-3">
+            {campo('cfg-inactividad', 'Cierre por inactividad (minutos, 15–120)',
+              <input id="cfg-inactividad" type="number" min={15} max={120} className="form-control input-control" {...register('seguridad.inactividad_minutos')} />,
+              errors.seguridad?.inactividad_minutos?.message)}
+            {campo('cfg-intentos', 'Intentos fallidos antes de bloqueo (3–10)',
+              <input id="cfg-intentos" type="number" min={3} max={10} className="form-control input-control" {...register('seguridad.intentos_bloqueo')} />,
+              errors.seguridad?.intentos_bloqueo?.message)}
+            {campo('cfg-bloqueo', 'Duración del bloqueo (minutos, 15–60)',
+              <input id="cfg-bloqueo" type="number" min={15} max={60} className="form-control input-control" {...register('seguridad.bloqueo_minutos')} />,
+              errors.seguridad?.bloqueo_minutos?.message)}
           </div>
-        )}
 
-        {activeTab === 'smtp' && (
-          <div className="row g-3">
-            <div className="col-md-8">
-              <label className="form-label fw-semibold">Servidor Host SMTP</label>
-              <input
-                type="text"
-                className="form-control"
-                value={smtpHost}
-                onChange={(e) => setSmtpHost(e.target.value)}
-              />
-            </div>
-            <div className="col-md-4">
-              <label className="form-label fw-semibold">Puerto</label>
-              <input
-                type="text"
-                className="form-control"
-                value={smtpPort}
-                onChange={(e) => setSmtpPort(e.target.value)}
-              />
-            </div>
-            <div className="col-12 mt-3">
-              <button
-                type="button"
-                className="joli-btn-outline"
-                onClick={() => showToast.info('Mensaje de prueba enviado al buzón del administrador.')}
-              >
-                <Send size={14} className="me-1" />
-                <span>Enviar Correo de Prueba</span>
-              </button>
-            </div>
+          <div role="tabpanel" id={`${baseId}-panel-correo`} aria-labelledby={`${baseId}-tab-correo`} hidden={tab !== 'correo'}>
+            <dl className="row mb-3">
+              <dt className="col-sm-3">Servidor</dt><dd className="col-sm-9">{correo?.host ?? '—'}</dd>
+              <dt className="col-sm-3">Puerto</dt><dd className="col-sm-9">{correo?.puerto ?? '—'}</dd>
+              <dt className="col-sm-3">TLS</dt><dd className="col-sm-9">{correo?.tls ? 'Sí' : 'No'}</dd>
+            </dl>
+            <p className="text-muted small">Las credenciales del servidor de correo se configuran por variables de entorno.</p>
+            <button type="button" className="btn btn-outline-secondary d-inline-flex align-items-center gap-2" onClick={enviarPrueba}>
+              <Send size={14} aria-hidden="true" /><span>Enviar correo de prueba</span>
+            </button>
           </div>
-        )}
 
-        {activeTab === 'mantenimiento' && (
-          <div>
+          <div role="tabpanel" id={`${baseId}-panel-mantenimiento`} aria-labelledby={`${baseId}-tab-mantenimiento`} hidden={tab !== 'mantenimiento'}>
             <div className="form-check form-switch mb-3">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                id="modoMantenimientoSwitch"
-                checked={modoMantenimiento}
-                onChange={(e) => setModoMantenimiento(e.target.checked)}
-              />
-              <label className="form-check-label fw-bold" htmlFor="modoMantenimientoSwitch">
-                Activar Modo Mantenimiento
-              </label>
+              <input id="cfg-mant" className="form-check-input" type="checkbox" {...register('mantenimiento.activo')} />
+              <label className="form-check-label fw-semibold" htmlFor="cfg-mant">Activar modo mantenimiento</label>
             </div>
-            <p className="text-muted small">
-              Cuando el modo mantenimiento está habilitado, los usuarios no administradores verán una pantalla de servicio temporal y no podrán realizar operaciones de escritura.
+            <label htmlFor="cfg-mant-msg" className="form-label fw-semibold">Mensaje para los usuarios</label>
+            <textarea id="cfg-mant-msg" rows={3} className="form-control input-control" {...register('mantenimiento.mensaje')} />
+            <p className="text-muted small mt-2">
+              Con el modo activo, los usuarios sin permiso de configuración ven una pantalla de servicio temporal y no pueden escribir datos.
             </p>
           </div>
-        )}
-      </div>
+        </fieldset>
+      </form>
 
       <ConfirmModal
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
-        onConfirm={handleSave}
+        onConfirm={guardar}
+        type="warning"
+        isLoading={isSubmitting}
         title="¿Guardar cambios de configuración?"
-        description="Las modificaciones a las políticas de seguridad y parámetros del sistema se aplicarán de inmediato para todos los usuarios conectados."
-        confirmText="Confirmar y Guardar"
-        variant="primary"
-        isLoading={isSaving}
+        message="Las políticas de seguridad y los parámetros se aplican de inmediato a todos los usuarios."
+        confirmText="Guardar"
       />
     </div>
   );
-};
+}
 ```
+
+`ENDPOINTS.CONFIGURACION.GENERAL` (`/api/v1/configuracion/`) y `ENDPOINTS.CONFIGURACION.CORREO_PRUEBA` DEBEN agregarse al registro de endpoints.

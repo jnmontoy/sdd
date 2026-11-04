@@ -1,7 +1,7 @@
 ﻿# Especificación SDD: Módulo de Bitácora de Auditoría y Trazabilidad
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
+## Joli Foods — Spec-Driven Development (SDD)
 
-Este directorio define el estándar para el registro, consulta y exportación inmutable de la bitácora de eventos del sistema.
+Este directorio define el estándar para el registro (solo-inserción), consulta y exportación de la bitácora de eventos del sistema.
 
 ---
 
@@ -15,6 +15,6 @@ Este directorio define el estándar para el registro, consulta y exportación in
 
 ## 2. Componentes UI Integrados
 
-- **Data Table**: [`../../components/data_table/data_table.md`](../../../components/data_table/data_table.md)
-- **Modal Dialog**: [`../../components/modal/modal_dialog.md`](../../../components/modal/modal_dialog.md)
-- **Badges de Estado**: [`../../components/badge/badge_status.md`](../../../components/badge/badge_status.md)
+- **Data Table**: [`components/data_table/data_table.md`](../../../components/data_table/data_table.md)
+- **Modal Dialog**: [`components/modal/modal_dialog.md`](../../../components/modal/modal_dialog.md)
+- **Badges de Estado**: [`components/badge/badge_status.md`](../../../components/badge/badge_status.md)

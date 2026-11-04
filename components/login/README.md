@@ -7,7 +7,7 @@ Cada componente está especificado con:
 1. **Estructura HTML / JSX declarativa**.
 2. **Hoja de estilos en CSS Puro (Vanilla CSS)** con variables nativas, sin suponer frameworks ni preprocesadores.
 3. **Contrato estricto de propiedades (TypeScript)**.
-4. **Estados de interacción y accesibilidad (WCAG 2.1 AA)**.
+4. **Estados de interacción y criterios de accesibilidad (objetivo WCAG 2.1 AA)**.
 
 ---
 
@@ -20,43 +20,17 @@ Cada componente está especificado con:
 | **[`input_field.md`](./input_field.md)** | **Inputs & Password Toggle** | Campo de documento con icono y campo de contraseña con botón para ver/ocultar clave. |
 | **[`button_primary.md`](./button_primary.md)** | **Botón Submit & Loader** | Botón de acción principal con spinner rotativo y gradiente esmeralda en CSS puro. |
 | **[`button_microsoft.md`](./button_microsoft.md)** | **Botón Microsoft SSO** | Botón institucional con los 4 colores oficiales y estados interactivos en CSS puro. |
-| **[`feedback_alerts.md`](./feedback_alerts.md)** | **Alertas & Feedback** | Banners de error con animación shake y modal de sesión expirada en CSS puro. |
+| **[`feedback_alerts.md`](./feedback_alerts.md)** | **Alertas & Feedback** | Banners de error con animación shake y estilos del aviso de sesión expirada (el componente React vive en `modal/session_expiration_modal.md`). |
 | **[`recovery_form.md`](./recovery_form.md)** | **Restablecimiento de Contraseña** | Formularios de solicitud y confirmación de nueva clave en CSS puro. |
 | **[`login_form.md`](./login_form.md)** | **Formulario Ensamblado** | Integración completa de todos los componentes en una vista operativa funcional. |
+| **[`email_recovery_template.md`](./email_recovery_template.md)** | **Correo de Recuperación** | Plantilla HTML de correo con enlace de un solo uso para restablecer la contraseña. |
 
 ---
 
-## Variables Globales de CSS Puro Requeridas (`tokens.css`)
+## Variables CSS requeridas
 
-Todos los componentes de este directorio consumen este conjunto de variables CSS nativas:
+Todos los componentes de este directorio consumen exclusivamente los tokens de [`../variables.css`](../variables.css) (`--bg-viewport`, `--bg-card`, `--brand-primary`, `--text-primary`, `--alert-error-*`, `--orb-color-*`, etc.), con soporte Noche/Día por `data-theme`. No se define una paleta paralela `--login-*`.
 
-```css
-:root {
-  /* Fondos y Superficies */
-  --login-bg-root: #0b0f19;
-  --login-bg-card: rgba(15, 23, 42, 0.75);
-  --login-bg-input: rgba(15, 23, 42, 0.6);
-  --login-bg-input-focus: rgba(15, 23, 42, 0.95);
-  
-  /* Marca e Identidad */
-  --login-brand-primary: #10b981;
-  --login-brand-hover: #059669;
-  --login-brand-accent: #34d399;
-  --login-brand-glow: rgba(16, 185, 129, 0.35);
-  
-  /* Textos */
-  --login-text-primary: #f8fafc;
-  --login-text-secondary: #94a3b8;
-  --login-text-muted: #64748b;
-  
-  /* Estados */
-  --login-status-error: #f43f5e;
-  --login-status-error-bg: rgba(244, 63, 94, 0.1);
-  --login-status-warning: #f59e0b;
-  
-  /* Bordes */
-  --login-border-subtle: rgba(255, 255, 255, 0.08);
-  --login-border-focus: #10b981;
-  --login-border-error: #f43f5e;
-}
-```
+## Comportamiento de sesión
+
+El login no guarda tokens: llama a `login()` de [`AuthContext`](../context/auth_context.md), que deja el access token en memoria y el refresh token en una cookie `HttpOnly` fijada por el backend. El aviso de sesión vencida es [`SessionExpirationModal`](../modal/session_expiration_modal.md).

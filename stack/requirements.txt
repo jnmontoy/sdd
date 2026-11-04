@@ -1,50 +1,45 @@
 # ==============================================================================
-# REQUIREMENTS CANÓNICO CONSOLIDADO — ECOSISTEMA JOLIFOODS
+# Dependencias de PRODUCCIÓN del backend (plantilla SDD)
 # ==============================================================================
-# Reúne todas las dependencias estándar utilizadas en los proyectos del ecosistema
-# para evitar descargas o búsquedas adicionales al inicializar un nuevo proyecto.
+# Base común de los proyectos. Quite lo que el proyecto no use: cada dependencia
+# extra es superficie de ataque y trabajo de actualización.
+# Rangos con techo de versión mayor para evitar rupturas por actualizaciones;
+# en el proyecto, congele versiones exactas con un archivo de bloqueo
+# (pip freeze > requirements.lock o pip-tools).
+# Herramientas de prueba y análisis: requirements-dev.txt
 
-# --- FRAMEWORKS Y SERVIDORES ASGI/WSGI ---
-Django>=5.1.0,<6.0.0
-djangorestframework>=3.15.0
-djangorestframework_simplejwt>=5.4.0
-fastapi>=0.115.0
-uvicorn[standard]>=0.30.0
-gunicorn>=23.0.0
-asgiref>=3.8.1
+# --- Frameworks y servidor ASGI ---
+Django>=5.1,<6.0
+djangorestframework>=3.15,<4.0
+djangorestframework-simplejwt>=5.4,<6.0
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
+asgiref>=3.8,<4.0
 
-# --- BASES DE DATOS Y CONECTORES ---
-psycopg2-binary>=2.9.9
-PyMySQL>=1.1.1
-sqlparse>=0.5.1
+# --- Base de datos ---
+psycopg2-binary>=2.9.9,<3.0         # PostgreSQL (motor por defecto)
+# PyMySQL>=1.1,<2.0                 # Solo si el proyecto se conecta a MySQL/MariaDB
 
-# --- CACHÉ, SESIONES Y RATE LIMITING ---
-redis>=5.1.0
-django-redis>=5.4.0
+# --- Caché, limitación de tasa y tareas ---
+redis>=5.1,<6.0
+django-redis>=5.4,<6.0
+celery>=5.4,<6.0
 
-# --- TAREAS ASÍNCRONAS Y COLA ---
-celery>=5.4.0
+# --- Seguridad e identidad ---
+django-cors-headers>=4.4,<5.0
+argon2-cffi>=23.1                    # Hasher recomendado: PASSWORD_HASHERS con Argon2PasswordHasher primero
+msal>=1.31,<2.0                      # Solo si hay SSO con Microsoft 365 / Entra ID
 
-# --- SEGURIDAD, CRIPTOGRAFÍA Y AUTENTICACIÓN ---
-cryptography>=43.0.0
-bcrypt>=4.2.0
-PyJWT>=2.9.0
-msal>=1.31.0                         # Microsoft 365 / Azure AD SSO
-django-cors-headers>=4.4.0
+# --- Validación y serialización (FastAPI) ---
+pydantic>=2.8,<3.0
+pydantic-settings>=2.5,<3.0
+# orjson ya no es necesario: FastAPI serializa con Pydantic cuando el endpoint declara su tipo de respuesta.
 
-# --- SERIALIZACIÓN, RENDIMIENTO Y VALIDACIÓN (ULTRA-RÁPIDO JSON / ANTI-N+1) ---
-pydantic>=2.8.0
-pydantic-settings>=2.5.0
-orjson>=3.10.0                       # Serializador C ultra rápido para respuestas JSON en FastAPI
-msgpack>=1.1.0
-
-# --- UTILIDADES, RED Y ARCHIVOS ---
-requests>=2.32.3
-httpx>=0.27.2
-python-dotenv>=1.0.1
-python-dateutil>=2.9.0
+# --- Utilidades ---
+httpx>=0.27,<1.0                     # Cliente HTTP (sincrónico y asíncrono)
+python-dotenv>=1.0,<2.0
 tzdata>=2024.1
-Pillow>=10.4.0                       # Procesamiento de imágenes y avatares
-fpdf2>=2.8.0                         # Generación de reportes PDF
-weasyprint>=62.0                     # Conversión HTML/CSS a PDF institucional
-openpyxl>=3.1.5                      # Procesamiento de hojas de cálculo Excel
+Pillow>=10.4                         # Imágenes y avatares
+openpyxl>=3.1,<4.0                   # Excel
+fpdf2>=2.8,<3.0                      # PDF generados por código
+# weasyprint>=62,<63                 # PDF desde HTML. Requiere librerías del sistema (ver Dockerfile.backend)

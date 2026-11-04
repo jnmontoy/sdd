@@ -1,20 +1,22 @@
-﻿# Especificación SDD: Módulo de Layout Maestro (App Shell)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
+﻿# Especificación SDD: Layout Maestro (App Shell)
+## Joli Foods — Spec-Driven Development (SDD)
 
-Este directorio define el estándar para la envolvente de la aplicación (**App Shell**) que contiene todas las pantallas operativas y de negocio una vez el usuario ha iniciado sesión.
-
----
-
-## 1. Documentos del Módulo
-
-| Documento | Enlace | Contenido |
-| :--- | :--- | :--- |
-| **01. Especificación del Layout** | [`01_layout_maestro_especificacion.md`](./01_layout_maestro_especificacion.md) | Topología visual, integración de Navbar, Sidebar, gestión del tema Noche/Día y expiración de sesión. |
+Estándar de la envolvente de la aplicación (**App Shell**) que contiene todas las pantallas tras iniciar sesión.
 
 ---
 
-## 2. Componentes UI Vinculados
+## 1. Documentos
 
-- **Top Navbar**: [`../../components/layout/navbar.md`](../../../components/layout/navbar.md)
-- **Sidebar Colapsable**: [`../../components/layout/sidebar.md`](../../../components/layout/sidebar.md)
-- **Variables Globales**: [`../../components/variables.css`](../../../components/variables.css)
+| Documento | Contenido |
+| :--- | :--- |
+| [`01_layout_maestro_especificacion.md`](./01_layout_maestro_especificacion.md) | Topología, regla de ancho completo (DEBERÍA), tema noche/día con claves por aplicación y sesión vencida. |
+
+---
+
+## 2. Componentes Vinculados
+
+- Barra superior: [`navbar.md`](../../../components/layout/navbar.md)
+- Menú lateral: [`sidebar.md`](../../../components/layout/sidebar.md)
+- Menú de perfil de usuario: [`user_profile_dropdown.md`](../../../components/layout/user_profile_dropdown.md)
+- Contexto de autenticación: [`auth_context.md`](../../../components/context/auth_context.md)
+- Variables globales: [`variables.css`](../../../components/variables.css)

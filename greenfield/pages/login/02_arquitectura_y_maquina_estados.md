@@ -1,177 +1,167 @@
 ﻿# 02. Arquitectura de Sistema y Máquinas de Estado
-## Módulo de Login / Autenticación — SDD Greenyard (`GY-SPEC-AUTH-001`)
+## Módulo de Login / Autenticación — SDD Joli Foods (`SPEC-AUTH-001`)
 
 ---
 
-## 1. Topología Arquitectónica del Sistema
+## 1. Topología
 
-El sistema de autenticación de Greenyard opera bajo un modelo de desacoplamiento entre el cliente frontend (SPA en React / Vite) y la capa de servicios backend (Django REST Framework / Python) conectada a la infraestructura corporativa de identidad (Microsoft Azure AD / Entra ID).
+El frontend es una SPA (*Single Page Application*) en React + Vite. El backend es Django REST Framework (rutas `/api/v1/...`), con FastAPI montado en el mismo ASGI para rutas `/fast/v1/...` y las sondas `/health/live` y `/health/ready`. La identidad federada la provee Microsoft Entra ID.
 
 ```mermaid
 flowchart TD
-    subgraph CLIENTE["Frontend (React / Single Page Application)"]
-        UI["Vista Login / GreenyardLoginForm"]
-        ZOD["Validador de Esquemas (Zod)"]
-        CTX["Contexto de Auth (AuthContext)"]
-        INTER["Interceptor Axios / Fetch"]
-        COOKIE_STORE["Almacén de Cookies / Storage"]
+    subgraph CLIENTE["Frontend (React SPA)"]
+        UI["LoginPage / LoginForm"]
+        ZOD["Validación Zod"]
+        CTX["AuthContext (access token en memoria)"]
+        HTTP["Cliente HTTP (interceptor 401 + cola de refresh)"]
     end
 
-    subgraph GATEWAY["Capa de Red y Seguridad"]
-        NGINX["Nginx Reverse Proxy / SSL Termination"]
-        RATE["Rate Limiter (Redis / Cache Jail)"]
+    subgraph RED["Red"]
+        NGINX["Nginx (TLS, HSTS)"]
     end
 
-    subgraph BACKEND["Capa Backend (Django REST Framework)"]
-        AUTH_VIEW["Controlador de Auth (Views)"]
-        AUTH_BACKEND["Custom Auth Backend (Hashers)"]
-        AUDIT["Middleware de Auditoría (RegistroActividad)"]
-        JWT_SVC["Servicio SimpleJWT / RefreshTokens"]
+    subgraph BACKEND["Backend Django REST Framework"]
+        VIEWS["Vistas /api/v1/auth/*"]
+        RATE["Limitador de intentos (Redis)"]
+        HASH["Hasher de Django (Argon2id / PBKDF2)"]
+        JWT["SimpleJWT + token_blacklist"]
+        AUD["Bitácora de accesos (solo inserción)"]
     end
 
-    subgraph IDP["Identidad Externa & Persistencia"]
-        MS_AZURE["Microsoft Entra ID (Azure AD OAuth2)"]
-        PG_DB["Base de Datos PostgreSQL (Usuarios & Roles)"]
+    subgraph DATOS["Identidad y persistencia"]
+        ENTRA["Microsoft Entra ID (OIDC)"]
+        PG["PostgreSQL"]
+        REDIS["Redis"]
     end
 
-    UI --> ZOD
-    ZOD --> CTX
-    CTX --> INTER
-    INTER --> NGINX
-    NGINX --> RATE
-    RATE --> AUTH_VIEW
-    AUTH_VIEW --> AUTH_BACKEND
-    AUTH_VIEW --> AUDIT
-    AUTH_VIEW --> JWT_SVC
-    AUTH_VIEW -.->|Verificación SSO| MS_AZURE
-    AUTH_BACKEND --> PG_DB
-    AUTH_VIEW -->|Set-Cookie HttpOnly| COOKIE_STORE
+    UI --> ZOD --> CTX --> HTTP --> NGINX --> VIEWS
+    VIEWS --> RATE --> REDIS
+    VIEWS --> HASH
+    VIEWS --> JWT --> PG
+    VIEWS --> AUD --> PG
+    VIEWS -.->|Authorization Code + PKCE| ENTRA
+    VIEWS -->|"Body: access token / Set-Cookie: refresh HttpOnly"| HTTP
 ```
 
 ---
 
-## 2. Diagramas de Secuencia de Autenticación
+## 2. Diagramas de Secuencia
 
-### 2.1. Flujo Canónico con Credenciales (Cédula + Contraseña)
+### 2.1. Documento + contraseña
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor U as Usuario
-    participant UI as Formulario Login (React)
-    participant API as Backend Auth API (Django)
-    participant SEC as Motor de Seguridad (RateLimit & Hash)
-    participant DB as Base de Datos
+    participant UI as LoginForm (React)
+    participant API as POST /api/v1/auth/login/
+    participant RL as Limitador (Redis)
+    participant DB as PostgreSQL
 
-    U->>UI: Digita Documento y Contraseña
-    UI->>UI: Valida formato con esquema Zod
-    alt Formato Inválido
-        UI-->>U: Muestra errores en línea (ej. solo números)
-    else Formato Válido
-        UI->>UI: Activa estado isSubmitting (Spinner)
-        UI->>API: POST /api/auth/login/ {documento, password}
-        API->>SEC: Verifica tasa de intentos por IP (Jail)
-        alt IP Bloqueada
-            SEC-->>UI: 429 Too Many Requests (Retry-After)
-            UI-->>U: Notificación de bloqueo temporal
-        else IP Confiable
-            API->>DB: Consulta usuario por número de documento
-            alt Usuario No Existe
-                API-->>UI: 401 Unauthorized ("Credenciales inválidas")
-                UI-->>U: Notificación de error
-            else Usuario Existe
-                API->>SEC: Compara hash de contraseña (PBKDF2/Bcrypt)
-                alt Contraseña Incorrecta
-                    SEC->>DB: Registra intento fallido
-                    API-->>UI: 401 Unauthorized ("Credenciales inválidas")
-                    UI-->>U: Notificación de error
-                else Contraseña Válida
-                    API->>DB: Valida estado activo (is_active = True)
-                    alt Usuario Inactivo
-                        API-->>UI: 403 Forbidden ("Cuenta inactiva")
-                        UI-->>U: Alerta de contacto con soporte
-                    else Usuario Activo
-                        API->>API: Genera par de tokens JWT (Access / Refresh)
-                        API->>DB: Registra acceso exitoso e IP
-                        API-->>UI: 200 OK + Set-Cookie: HttpOnly jwt + Payload Usuario
-                        UI->>UI: Actualiza estado global (AuthContext)
-                        UI->>UI: Ejecuta animación de éxito (fade-out)
-                        UI-->>U: Redirecciona al Dashboard corporativo
-                    end
-                end
+    U->>UI: Digita documento y contraseña
+    UI->>UI: Valida con Zod
+    alt Formato inválido
+        UI-->>U: Errores en línea
+    else Formato válido
+        UI->>API: {numero_documento, password} (withCredentials)
+        API->>RL: ¿Documento o IP bloqueados?
+        alt Bloqueado
+            API-->>UI: 429 + Retry-After
+        else Permitido
+            API->>DB: Busca usuario por documento
+            Note over API: Si no existe, ejecuta el hasher sobre una clave ficticia<br/>para igualar el tiempo de respuesta
+            alt No existe o contraseña errada
+                API->>RL: Incrementa contadores (documento e IP)
+                API->>DB: Inserta evento de bitácora
+                API-->>UI: 401 INVALID_CREDENTIALS (mismo cuerpo en ambos casos)
+            else Rol exige SSO
+                API-->>UI: 403 SSO_REQUIRED
+            else Usuario inactivo
+                API-->>UI: 403 USER_INACTIVE
+            else Válido
+                API->>RL: Reinicia contadores del documento
+                API->>DB: Crea SesionUsuario, actualiza last_login, inserta bitácora
+                API-->>UI: 200 {access, expires_in, user} + Set-Cookie refresh (HttpOnly)
+                UI->>UI: AuthContext guarda access en memoria
+                UI-->>U: Redirige a ?redirect= o al tablero
             end
         end
     end
 ```
 
----
-
-### 2.2. Flujo Institucional Single Sign-On (Microsoft 365 Azure AD)
+### 2.2. Microsoft SSO (sin tokens en la URL)
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor U as Colaborador
-    participant UI as Login Page (Greenyard)
-    participant MS as Microsoft Login (login.microsoftonline.com)
-    participant API as Backend /api/auth/microsoft/
-    participant DB as Base de Datos
+    participant UI as LoginPage
+    participant API as Backend /api/v1/auth/microsoft/*
+    participant MS as Microsoft Entra ID
+    participant DB as PostgreSQL
 
     U->>UI: Clic en "Iniciar sesión con Microsoft 365"
-    UI->>MS: Redirección con ClientID, Scope y RedirectURI
-    MS->>U: Despliega login corporativo / MFA institucional
-    U->>MS: Aprueba acceso con credenciales Office 365
-    MS->>UI: Redirecciona a /auth/callback?code=AUTH_CODE
-    UI->>API: POST /api/auth/microsoft/callback/ {code}
-    API->>MS: Intercambia code por id_token y access_token de Graph
-    MS-->>API: Retorna perfil (email @jolifoods.com, nombres, oid)
-    API->>DB: Sincroniza o busca colaborador por email/oid
-    API->>API: Emite JWT de sesión Greenyard
-    API-->>UI: 200 OK con Set-Cookie HttpOnly y datos de sesión
-    UI-->>U: Notificación toast "¡Bienvenido!" y redirección
+    UI->>API: Navega a GET /api/v1/auth/microsoft/login/
+    API->>API: Genera state + code_verifier (PKCE), los guarda en sesión de servidor
+    API-->>U: 302 a login.microsoftonline.com
+    U->>MS: Autenticación + MFA
+    MS-->>API: 302 a GET /api/v1/auth/microsoft/callback/?code=...&state=...
+    API->>API: Valida state, intercambia code por id_token, valida firma, aud, iss y nonce
+    API->>DB: Busca colaborador por oid/email (no crea administradores automáticamente)
+    API-->>U: 302 a /auth/callback del frontend + Set-Cookie refresh (HttpOnly)
+    UI->>API: POST /api/v1/auth/refresh/ (cookie + X-CSRFToken)
+    API-->>UI: 200 {access, expires_in}
+    UI-->>U: Redirige al tablero
 ```
+
+**Por qué:** el `code` de OAuth lo consume el backend; al frontend solo llega la cookie HttpOnly. Ningún token viaja en la URL (BP-18).
 
 ---
 
-## 3. Máquina de Estados Finitos (FSM) de la Interfaz
+## 3. Máquina de Estados de la Interfaz
 
 ```mermaid
 stateDiagram-v2
-    [*] --> UNMOUNTED
-    UNMOUNTED --> IDLE : Componente montado (Precarga si hay "Recuérdame")
-    
-    IDLE --> TYPING : Usuario modifica campos
-    TYPING --> IDLE : Usuario deja de tipear
-    
-    IDLE --> VALIDATING_LOCAL : Usuario presiona "Iniciar Sesión"
-    VALIDATING_LOCAL --> FIELD_ERROR : Validación Zod falla (mensajes en rojo)
-    FIELD_ERROR --> TYPING : Usuario corrige campos
-    
-    VALIDATING_LOCAL --> SUBMITTING : Formato válido -> Deshabilita inputs + Spinner
-    
-    SUBMITTING --> AUTH_SUCCESS : HTTP 200 OK (Tokens recibidos)
-    SUBMITTING --> AUTH_FAILED : HTTP 401 Unauthorized
-    SUBMITTING --> FORBIDDEN_INACTIVE : HTTP 403 Forbidden (Cuenta inactiva)
-    SUBMITTING --> RATE_LIMITED : HTTP 429 Too Many Requests
-    SUBMITTING --> NETWORK_ERROR : Fallo de conexión / 500 Server Error
-    
-    AUTH_FAILED --> IDLE : Alerta toast, inputs re-habilitados
-    FORBIDDEN_INACTIVE --> IDLE : Modal de cuenta desactivada
-    RATE_LIMITED --> COUNTDOWN_LOCK : Bloqueo con cuenta regresiva
-    COUNTDOWN_LOCK --> IDLE : Temporizador llega a cero
+    [*] --> IDLE : Montaje (precarga documento recordado si existe)
+    IDLE --> VALIDATING_LOCAL : Enviar
+    VALIDATING_LOCAL --> FIELD_ERROR : Zod falla
+    FIELD_ERROR --> IDLE : Usuario corrige
+    VALIDATING_LOCAL --> SUBMITTING : Formato válido (inputs y botón deshabilitados)
+
+    SUBMITTING --> AUTH_SUCCESS : 200
+    SUBMITTING --> AUTH_FAILED : 401
+    SUBMITTING --> SSO_REQUIRED : 403 SSO_REQUIRED
+    SUBMITTING --> FORBIDDEN_INACTIVE : 403 USER_INACTIVE
+    SUBMITTING --> RATE_LIMITED : 429
+    SUBMITTING --> NETWORK_ERROR : Error de red / 5xx
+
+    AUTH_FAILED --> IDLE : Alerta en línea
+    SSO_REQUIRED --> IDLE : Se destaca el botón de Microsoft
+    FORBIDDEN_INACTIVE --> IDLE : Alerta de cuenta desactivada
+    RATE_LIMITED --> COUNTDOWN_LOCK : Cuenta regresiva según Retry-After
+    COUNTDOWN_LOCK --> IDLE : Temporizador en cero
     NETWORK_ERROR --> IDLE : Botón "Reintentar"
-    
-    AUTH_SUCCESS --> EXITING_ANIMATION : Transición visual suave (0.4s)
-    EXITING_ANIMATION --> REDIRECTING : Navegación a ruta protegida
+
+    AUTH_SUCCESS --> REDIRECTING : navigate(redirect)
     REDIRECTING --> [*]
 ```
 
+El temporizador de `COUNTDOWN_LOCK` DEBE limpiarse (`clearInterval`) al desmontar el componente.
+
 ---
 
-## 4. Ciclo de Vida del Token de Sesión
+## 4. Ciclo de Vida de la Sesión (decisión canónica)
 
-1. **Emisión**: Se genera un Access Token (vida útil: 1 hora) y un Refresh Token (vida útil: 24 horas a 7 días).
-2. **Transporte Seguro**: El Access Token se envía preferentemente en una cookie `HttpOnly`, `Secure`, `SameSite=Lax`.
-3. **Validación en Vuelo**: En cada petición entrante, el middleware de backend valida la firma criptográfica RSA/HMAC y verifica que el usuario no haya sido revocado en la base de datos.
-4. **Rotación Silenciosa (Silent Refresh)**: Si el access token expira, el interceptor del cliente dispara una petición a `/api/auth/refresh/` para obtener un nuevo par sin interrumpir al usuario.
-5. **Revocación**: Al presionar "Cerrar Sesión", el Refresh Token se añade a una lista negra (Blacklist) en la base de datos y la cookie del navegador es eliminada (`Max-Age=0`).
+| Paso | Comportamiento |
+| :--- | :--- |
+| **Emisión** | `POST /api/v1/auth/login/` devuelve el **access token** (15 min) en el cuerpo JSON y fija el **refresh token** (12 h, rotativo) en la cookie `refresh_token` con `HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth/`. También fija la cookie `csrftoken` (no HttpOnly, para que el cliente la lea). |
+| **Almacenamiento en cliente** | El access token vive **solo en memoria** (estado de `AuthContext` o variable de módulo del cliente HTTP). NO DEBE guardarse en `localStorage` ni `sessionStorage`. |
+| **Uso** | Cada petición API envía `Authorization: Bearer <access>`. |
+| **Recuperación al recargar** | Al montar la app, `AuthContext` llama `POST /api/v1/auth/refresh/` con `withCredentials: true` y `X-CSRFToken`. Si responde 200, hay sesión; si no, el usuario queda no autenticado (sin modal). |
+| **Renovación** | El interceptor ante un 401 intenta **un** refresh; las peticiones concurrentes esperan en cola el mismo refresh; si el refresh falla, despacha `session-expired` y se muestra `SessionExpirationModal`. No hay reintentos en bucle. |
+| **Aviso proactivo** | El cliente PUEDE decodificar `exp` del access token en memoria para renovar o avisar antes del vencimiento (BP-20). |
+| **Rotación** | Cada refresh emite un nuevo refresh token y pone el anterior en lista negra (`ROTATE_REFRESH_TOKENS = True`, `BLACKLIST_AFTER_ROTATION = True`). |
+| **Cierre** | `POST /api/v1/auth/logout/` pone el refresh en lista negra, marca la `SesionUsuario` como inactiva y responde con `Set-Cookie: refresh_token=; Max-Age=0`. El cliente borra el access de memoria. |
+| **Revocación global** | Cambiar o restablecer la contraseña DEBE invalidar todos los refresh tokens del usuario. |
+
+**Por qué este diseño:** el access token en memoria no es persistente ni accesible a otras pestañas o extensiones a través del almacenamiento; el refresh en cookie HttpOnly no es legible por JavaScript (mitiga robo por XSS) y el CSRF en `/refresh/` evita que otro sitio lo use.

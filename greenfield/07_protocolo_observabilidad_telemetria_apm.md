@@ -1,91 +1,93 @@
-# Protocolo de Observabilidad, Telemetría y APM en Producción
-## Ecosistema Corporativo Jolifoods / Greenyard — Metodología SDD
+# Protocolo 07: observabilidad, telemetría y monitoreo en producción
 
-Este protocolo establece los lineamientos de monitorización proactiva, trazabilidad distribuida, métricas de rendimiento y verificación del estado de salud de todos los microservicios y aplicaciones del ecosistema.
+Lineamientos para saber, en producción, **si el sistema funciona, qué tan rápido responde y por qué falla**. Se basa en los tres pilares de la observabilidad (trazas, métricas y registros) y en las prácticas de SRE (*Site Reliability Engineering*, ingeniería de confiabilidad de Google).
+
+Las palabras **DEBE / DEBERÍA / PUEDE** siguen la RFC 2119.
+
+> **Estado de implementación en el SDD**: `stack/healthcheck.py` y `stack/validate_endpoints.py` cubren las sondas de salud. El SDD **no incluye** todavía middleware de identificador de correlación, configuración de OpenTelemetry, exportador de métricas ni configuración de Sentry; cada proyecto los configura siguiendo este protocolo.
 
 ---
 
-## 1. Los Tres Pilares de la Observabilidad en SDD
+## 1. Los tres pilares
 
-```text
-                  ┌──────────────────────────────────────────────┐
-                  │             OBSERVABILIDAD TOTAL             │
-                  └───────┬──────────────┬──────────────┬────────┘
-                          │              │              │
-                          ▼              ▼              ▼
-                    ┌───────────┐  ┌───────────┐  ┌───────────┐
-                    │  Trazas   │  │  Métricas │  │   Logs    │
-                    │  (APM)    │  │  (Prom)   │  │ (Audit)   │
-                    └───────────┘  └───────────┘  └───────────┘
+| Pilar | Responde a | Herramientas de referencia |
+|---|---|---|
+| **Registros (logs)** | ¿Qué pasó exactamente? | Logs estructurados en JSON (`python-json-logger` o `structlog`). |
+| **Métricas** | ¿Cuánto y qué tan rápido? | Prometheus (`django-prometheus`, `prometheus-fastapi-instrumentator`) + Grafana. |
+| **Trazas** | ¿Por dónde pasó la petición y dónde tardó? | OpenTelemetry (instrumentaciones para Django, FastAPI, Celery, psycopg, Redis). |
+
+---
+
+## 2. Identificador de correlación y trazas distribuidas
+
+Toda petición HTTP y toda tarea asíncrona DEBERÍA poder seguirse de punta a punta con un identificador común. **Por qué:** sin él, relacionar el error que vio un usuario con la línea de log del backend y con la tarea de Celery que falló es adivinar.
+
+1. **Estándar recomendado**: [W3C Trace Context](https://www.w3.org/TR/trace-context/) (cabecera `traceparent`), que OpenTelemetry propaga automáticamente entre servicios y hacia Celery.
+2. **Identificador legible** (convención complementaria): cabecera `X-Correlation-ID`.
+   * El *proxy* inverso (Nginx) la genera si no viene (`$request_id`) y la reenvía.
+   * Un middleware del backend la toma (o genera un UUID4), la guarda en un `contextvars.ContextVar` y la agrega a cada línea de log.
+   * La respuesta HTTP la devuelve al cliente en la misma cabecera, para que el usuario o soporte pueda citarla.
+   * Al encolar una tarea de Celery se envía en los `headers` de la tarea y el *worker* la restaura antes de ejecutar.
+3. El frontend PUEDE enviar su propio `X-Correlation-ID`; el backend DEBE validar que sea un UUID antes de usarlo (evita inyección en logs).
+
+---
+
+## 3. Sondas de salud
+
+Rutas canónicas del SDD (servidas por FastAPI, públicas y sin datos sensibles en la respuesta):
+
+| Ruta | Propósito | Qué verifica | Respuesta |
+|---|---|---|---|
+| `GET /health/live` | **Vida** (*liveness*): el proceso responde. | Nada externo (no toca BD). | `200 {"status": "alive"}` |
+| `GET /health/ready` | **Disponibilidad** (*readiness*): puede atender tráfico. | `SELECT 1` en PostgreSQL y `PING` a Redis (que también es el broker de Celery). | `200` si todo responde; `503` con el subsistema caído si no. |
+| `GET /fast/v1/health` | Salud propia de la capa FastAPI. | Que el router de FastAPI esté montado. | `200` |
+
+Ejemplo de `/health/ready`:
+
+```json
+{
+  "status": "ready",
+  "timestamp": "2026-10-06T15:15:00Z",
+  "dependencies": { "database": "ok", "redis": "ok" }
+}
 ```
 
----
+**Por qué separar vida y disponibilidad:** si la sonda de vida consultara la base de datos, una caída de PostgreSQL haría que el orquestador reiniciara todos los contenedores en bucle sin arreglar nada. La frecuencia de consulta (p. ej. cada 10 s) se configura en el orquestador (`healthcheck` de Docker Compose, `livenessProbe`/`readinessProbe` de Kubernetes), no en la aplicación.
 
-## 2. Trazabilidad Distribuida (Correlation ID & OpenTelemetry)
-
-Toda petición HTTP entrante o tarea asíncrona debe portar un identificador unívoco de correlación (`X-Correlation-ID`).
-
-### 2.1. Ciclo de Vida del Correlation ID
-1. **Frontend**: Genera un UUIDv4 o propaga el existente en el encabezado `X-Correlation-ID` en cada llamada Axios.
-2. **Reverse Proxy / Nginx**: Si la cabecera no existe, la genera y la inyecta al backend.
-3. **Backend ASGI (Django/FastAPI)**:
-   - Middleware intercepta el ID y lo asigna al contexto de ejecución (`contextvars`).
-   - Todos los logs generados durante la petición imprimen automáticamente el `correlation_id`.
-   - Si la petición delega trabajo a **Celery**, el `correlation_id` viaja dentro de los `headers` de la tarea de Redis.
-4. **Respuesta HTTP**: El backend retorna siempre la cabecera `X-Correlation-ID: <uuid>` al cliente.
+Verificaciones adicionales (espacio en disco, servicios externos) PUEDEN agregarse a `/health/ready` solo si su falla impide atender peticiones; si no, van como métricas con alerta.
 
 ---
 
-## 3. Contratos de Salud: Healthchecks Profundos (*Deep vs Shallow*)
+## 4. Objetivos de nivel de servicio (SLO)
 
-Para evitar caídas silenciosas en entornos orquestados por Docker Compose o Kubernetes, todo servicio expone dos endpoints de diagnóstico:
+Se monitorean las **cuatro señales doradas** de SRE: latencia, tráfico, errores y saturación.
 
-### 3.1. Endpoint de Liveness (`/health/live`)
-- **Propósito**: Verifica que el servidor web ASGI esté vivo y aceptando conexiones.
-- **Respuesta**: HTTP 200 `{ "status": "alive" }`.
-- **Frecuencia**: Cada 10 segundos.
+Los valores siguientes son **objetivos iniciales de referencia**, no mediciones. Cada proyecto DEBERÍA medir 2 a 4 semanas en producción y ajustarlos (registrando el cambio en un ADR).
 
-### 3.2. Endpoint de Readiness (`/health/ready`)
-- **Propósito**: Verifica la conectividad real con dependencias críticas.
-- **Verificaciones obligatorias**:
-  1. Consulta trivial a PostgreSQL (`SELECT 1;`).
-  2. Ping a Redis (`PING` -> `PONG`).
-  3. Estado del socket de Celery Broker.
-  4. Espacio disponible en disco (mínimo > 10% libre).
-- **Respuesta esperada**:
-  ```json
-  {
-    "status": "ready",
-    "timestamp": "2026-10-06T10:15:00Z",
-    "dependencies": {
-      "database": "connected",
-      "redis": "connected",
-      "celery_broker": "connected",
-      "disk_storage": "healthy"
-    }
-  }
-  ```
-- **Código de error**: Si alguna dependencia falla, retornar HTTP 503 con detalle del subsistema caído.
+| Señal | Indicador (SLI) | Objetivo inicial (SLO) | Alerta sugerida |
+|---|---|---|---|
+| Latencia — lecturas `/fast/v1/` | p95 del tiempo de respuesta | < 300 ms | p95 > 600 ms durante 5 min |
+| Latencia — API Django `/api/v1/` | p95 del tiempo de respuesta | < 500 ms | p95 > 1 s durante 5 min |
+| Tráfico | Peticiones por minuto por endpoint | Línea base del proyecto | Caída o pico > 3× la línea base |
+| Errores | % de respuestas 5xx sobre el total | < 0,5 % mensual (disponibilidad ≥ 99,5 %) | 5xx > 2 % durante 5 min |
+| Saturación — base de datos | Conexiones activas / máximas | < 75 % | > 85 % sostenido 10 min |
+| Saturación — Celery | Tareas pendientes en la cola | Línea base del proyecto | Crecimiento sostenido 15 min |
+
+**Por qué el percentil 95 y no el promedio:** el promedio oculta a los usuarios que esperan mucho; el p95 dice cuánto espera el 5 % más lento.
 
 ---
 
-## 4. Objetivos de Nivel de Servicio (SLOs) y Métricas de Rendimiento
+## 5. Captura centralizada de errores (Sentry u equivalente)
 
-El sistema se monitorea bajo el estándar de **Las 4 Señales Doradas de Google SRE**:
-
-| Métrica | Descripción | Umbral Objetivo (SLO) | Alerta Disparada |
-| :--- | :--- | :--- | :--- |
-| **Latencia /fast/** | Endpoints asíncronos Pydantic en FastAPI | **p95 < 45 ms** | p95 > 100 ms durante 3 min |
-| **Latencia CRUD** | Vistas y transacciones Django ORM | **p95 < 200 ms** | p95 > 500 ms durante 3 min |
-| **Tasa de Errores** | Respuestas HTTP 5xx sobre total de peticiones | **< 0.05%** | Errores 5xx > 0.5% en 5 min |
-| **Saturación DB** | Porcentaje de conexiones activas en el pool | **< 75%** | Uso del pool > 85% sostenido |
-| **Cola de Celery** | Mensajes acumulados sin procesar en Redis | **< 50 tareas** | Cola > 200 tareas acumuladas |
+* Integrar el SDK en backend y frontend con `send_default_pii=False`.
+* Los datos sensibles DEBEN eliminarse antes de enviar el evento (`before_send`): contraseñas, tokens, cookies, cabecera `Authorization`, números de documento, datos biométricos. **Por qué:** el servicio de errores es un tercero; enviarle datos personales es una transferencia que exige base legal (Ley 1581 de 2012).
+* Agrupar por huella (*fingerprint*) de excepción y ubicación para no generar una alerta por cada repetición.
+* Registrar la versión desplegada (`release`) para saber qué despliegue introdujo el error.
 
 ---
 
-## 5. Captura Centralizada de Errores (Sentry)
+## 6. Registros
 
-- Integrar el SDK de Sentry tanto en backend como frontend.
-- **Sanitización Obligatoria de Datos Sensibles (Data Scrubbing)**:
-  - Censurar contraseñas, tokens JWT, números de tarjetas de crédito y hashes biométricos antes de que el evento salga del servidor.
-- Agrupación por huella (*Fingerprinting*): Agrupar excepciones por `exception_class` y línea de código para evitar tormentas de alertas duplicadas.
+* Formato JSON con, como mínimo: `timestamp` (UTC), `level`, `logger`, `message`, `correlation_id`, `user_id` (identificador interno, no nombre ni documento).
+* Los registros NO DEBEN contener contraseñas, tokens ni datos personales completos.
+* La bitácora de auditoría de negocio (quién hizo qué) es distinta de los logs técnicos y se rige por su propio modelo (`model/auditoria/`).

@@ -1,28 +1,36 @@
-# Especificación de Componente: Panel Lateral de Administración de Roles y Permisos (`RolesAdminSidebar.tsx`)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
-### Basado en la Arquitectura de Estabilización de Permisos de `tiendita`
+# Especificación de Componente: Panel Lateral de Administración de Roles y Permisos (`RolesAdminSidebar`)
+## SDD Joli Foods — Spec-Driven Development
 
-El componente `RolesAdminSidebar` es un panel lateral deslizante (Right Drawer) diseñado para que los Administradores y Super Administradores gestionen dinámicamente los roles de la plataforma y sus permisos asociados en tiempo real, sin requerir reinicios de servidor ni migraciones de base de datos.
+> **Origen:** patrón tomado de tiendita (administración de roles y permisos). Aquí se describe de forma genérica.
 
----
-
-## 1. Principio Arquitectónico: Estabilización de Permisos Desacoplada
-
-> [!IMPORTANT]
-> **REGLA DE ORO DE ARQUITECTURA**:
-> Jamás se deben "preguntar" los roles de una plataforma en un Enum rígido ni quemar listas estáticas de roles en frontend o backend.
-> En su lugar, el sistema implementa **Estabilización de Permisos**:
-> 1. Existe una **tabla independiente para roles (`roles`)** con un campo `JSONField` donde se almacenan las banderas booleanas de permisos.
-> 2. La tabla `usuarios` se cruza con `roles` mediante una relación **Muchos a Muchos (`ManyToManyField`)**.
-> 3. Los permisos se agregan/combinan en el backend (`/api/mis-permisos/`), otorgando acceso si al menos un rol asignado tiene el permiso en `true`.
-> 4. El frontend se sincroniza en caliente, de modo que cualquier ajuste en este panel se refleja en la interfaz del usuario inmediatamente sin cerrar sesión.
+`RolesAdminSidebar` es un panel lateral derecho (*Right Drawer*) para que los administradores gestionen los roles de la plataforma y sus permisos sin reiniciar el servidor ni crear migraciones. Se monta sobre el componente canónico [`Drawer`](../drawer/drawer.md) (ancho `lg` / 720px), por lo que hereda su cabecera fija, cuerpo con scroll, pie fijo, cierre con `Escape` y manejo de foco.
 
 ---
 
-## 2. Contrato de Datos e Interfaces TypeScript
+## 1. Principio de arquitectura: permisos como datos
+
+Los roles y permisos se modelan como **datos administrables**, no como código.
+
+- Los roles NO DEBERÍAN definirse como `Enum` ni como listas quemadas en frontend o backend.
+  - **Por qué:** cada rol nuevo obligaría a desplegar código; como datos, el administrador lo crea desde la interfaz.
+- Modelo recomendado:
+  1. Tabla de **roles** con un campo `JSONField` `permisos` (banderas booleanas por clave de permiso).
+  2. Relación **muchos a muchos** (`ManyToManyField`) entre usuarios y roles.
+  3. El backend combina los permisos de todos los roles del usuario (basta un rol con la bandera en `true`) y los entrega como lista de claves en la respuesta de `ENDPOINTS.AUTH.ME` (`user.permisos: string[]`).
+- **Seguridad (DEBE):** la autorización real se hace en el backend en cada endpoint. El panel solo edita configuración; el servidor DEBE:
+  - exigir permiso de administración para `PATCH` de roles;
+  - rechazar claves de permiso desconocidas (validar contra el catálogo);
+  - impedir quitar los permisos bloqueados del rol super administrador (la regla del frontend es solo de UX);
+  - registrar en auditoría quién cambió qué y cuándo.
+- **Propagación:** el usuario que edita ve el cambio al refrescar su perfil (`AUTH.ME`). Los demás usuarios lo reciben en su siguiente renovación de sesión o consulta de perfil. Si se requiere efecto inmediato para todos, el backend DEBE validar permisos contra la base de datos en cada petición (no solo contra el token).
+
+---
+
+## 2. Contrato de datos (TypeScript)
 
 ```typescript
 // src/types/roles.types.ts
+import type { ReactNode } from 'react';
 
 export interface PermissionItem {
   key: string;
@@ -32,7 +40,7 @@ export interface PermissionItem {
 
 export interface PermissionGroup {
   category: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   items: PermissionItem[];
 }
 
@@ -40,552 +48,386 @@ export interface Rol {
   id: number;
   nombre: string;
   permisos: Record<string, boolean>;
-}
-
-export interface Usuario {
-  id?: number;
-  documento: string;
-  nombre: string;
-  cargo: string;
-  correo_electronico: string;
-  roles: string[]; // o Rol[]
-  is_active: boolean;
+  /** Calculado en el backend con annotate(Count('usuarios')): evita descargar todos los usuarios. */
+  usuarios_count: number;
 }
 ```
 
 ---
 
-## 3. Grupos Canónicos de Permisos del Sistema
+## 3. Catálogo de permisos del sistema
 
-Los permisos se organizan en categorías funcionales legibles con iconos descriptivos:
+Las claves DEBEN coincidir con el catálogo del backend. Al usar JSX, el archivo es `.tsx`.
 
-```typescript
+```tsx
+// src/config/permissionGroups.tsx
+import { Bell, Package, FileText, Users } from 'lucide-react';
+import type { PermissionGroup } from '@/types/roles.types';
+
 export const PERMISSION_GROUPS: PermissionGroup[] = [
   {
-    category: 'Acceso General & Interfaz',
-    icon: <Bell size={16} />,
+    category: 'Acceso general e interfaz',
+    icon: <Bell size={16} aria-hidden="true" />,
     items: [
-      {
-        key: 'ver_administracion_home',
-        label: 'Ver Botón "Administración" en Home',
-        description: 'Muestra u oculta el botón de acceso al Panel de Administración principal.',
-      },
-      {
-        key: 'ver_notificaciones_topheader',
-        label: 'Ver icono de Notificaciones en el TopHeader',
-        description: 'Permite visualizar el icono y campana de alertas en la barra superior.',
-      },
-      {
-        key: 'ver_admin_roles_button',
-        label: 'Ver Botón "Administración Roles"',
-        description: 'Permite abrir el panel lateral de Administración de Roles y Permisos.',
-      },
+      { key: 'ver_administracion_home', label: 'Ver botón "Administración" en inicio', description: 'Muestra el acceso al panel de administración.' },
+      { key: 'ver_notificaciones_topheader', label: 'Ver notificaciones en el TopHeader', description: 'Muestra la campana de alertas en la barra superior.' },
+      { key: 'ver_admin_roles_button', label: 'Ver botón "Administración de roles"', description: 'Permite abrir este panel.' },
     ],
   },
   {
-    category: 'Módulos Operativos y Transacciones',
-    icon: <Package size={16} />,
+    category: 'Módulos operativos',
+    icon: <Package size={16} aria-hidden="true" />,
     items: [
-      {
-        key: 'modulo_operaciones_crear',
-        label: 'Creación y Registro de Transacciones',
-        description: 'Habilita formularios de captura y entrega de bienes o registros.',
-      },
-      {
-        key: 'modulo_operaciones_editar',
-        label: 'Edición y Modificación',
-        description: 'Permite modificar registros ya creados desde el Drawer de edición.',
-      },
-      {
-        key: 'modulo_operaciones_anular',
-        label: 'Anulación con ConfirmModal',
-        description: 'Autoriza anular o dar de baja registros exigiendo motivo obligatorio.',
-      },
+      { key: 'modulo_operaciones_crear', label: 'Crear registros', description: 'Habilita formularios de captura.' },
+      { key: 'modulo_operaciones_editar', label: 'Editar registros', description: 'Permite modificar registros desde el panel lateral.' },
+      { key: 'modulo_operaciones_anular', label: 'Anular registros', description: 'Permite anular exigiendo motivo en ConfirmModal.' },
     ],
   },
   {
-    category: 'Informes y Actas',
-    icon: <FileText size={16} />,
+    category: 'Informes y actas',
+    icon: <FileText size={16} aria-hidden="true" />,
     items: [
-      {
-        key: 'informes_generales',
-        label: 'Consulta y Exportación de Informes',
-        description: 'Visualización de reportes históricos, exportación a Excel y PDF.',
-      },
+      { key: 'informes_generales', label: 'Consultar y exportar informes', description: 'Reportes históricos y exportación a Excel y PDF.' },
     ],
   },
   {
-    category: 'Administración Global',
-    icon: <Users size={16} />,
+    category: 'Administración global',
+    icon: <Users size={16} aria-hidden="true" />,
     items: [
-      {
-        key: 'admin_colaboradores',
-        label: 'Administración de Usuarios y Cuentas',
-        description: 'Gestión de perfiles de usuario, activación/desactivación y asignación de roles.',
-      },
+      { key: 'admin_colaboradores', label: 'Administrar usuarios y cuentas', description: 'Perfiles, activación/desactivación y asignación de roles.' },
     ],
   },
 ];
+
+/** Permisos que el rol super administrador no puede perder (el backend aplica la misma regla). */
+export const SUPERADMIN_ROLE_NAME = 'SA';
+export const SUPERADMIN_LOCKED_KEYS = ['ver_administracion_home', 'ver_admin_roles_button', 'admin_colaboradores'];
 ```
 
 ---
 
-## 4. Implementación del Componente (`RolesAdminSidebar.tsx`)
+## 4. Implementación (`RolesAdminSidebar.tsx`)
 
 ```tsx
-import React, { useState, useEffect } from 'react';
-import { 
-  X, Shield, Users, CheckSquare, Square, Save, Loader2, 
-  Lock, RefreshCw 
-} from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { toast } from 'sonner';
-import { PERMISSION_GROUPS, type Rol, type Usuario } from '../../types/roles.types';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Users, Save, Loader2, Lock } from 'lucide-react';
+import { Drawer } from '@/components/ui/Drawer';
+import { showToast } from '@/components/ui/ToastNotification';
+import { api } from '@services/api';
+import { ENDPOINTS } from '@services/endpoints';
+import { PERMISSION_GROUPS, SUPERADMIN_ROLE_NAME, SUPERADMIN_LOCKED_KEYS } from '@/config/permissionGroups';
+import type { Rol } from '@/types/roles.types';
 import './RolesAdminSidebar.css';
 
 interface RolesAdminSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  onFilterRole?: (roleName: string) => void;
-  theme?: 'light' | 'dark';
+  /** Se llama tras guardar, para que el contenedor refresque el perfil del usuario actual (AUTH.ME). */
+  onSaved?: (rol: Rol) => void;
 }
 
-const SA_LOCKED_KEYS = [
-  'ver_administracion_home',
-  'ver_admin_roles_button',
-  'admin_colaboradores',
-];
+const isSuperAdmin = (rol?: Rol) => rol?.nombre.trim().toUpperCase() === SUPERADMIN_ROLE_NAME;
 
-export const RolesAdminSidebar: React.FC<RolesAdminSidebarProps> = ({
-  isOpen,
-  onClose,
-  onFilterRole,
-  theme,
-}) => {
-  const { updateRolePermissions } = useAuth();
+function buildPermisosState(rol: Rol): Record<string, boolean> {
+  const state: Record<string, boolean> = {};
+  for (const group of PERMISSION_GROUPS) {
+    for (const item of group.items) {
+      state[item.key] =
+        (isSuperAdmin(rol) && SUPERADMIN_LOCKED_KEYS.includes(item.key)) || Boolean(rol.permisos?.[item.key]);
+    }
+  }
+  return state;
+}
+
+export const RolesAdminSidebar: React.FC<RolesAdminSidebarProps> = ({ isOpen, onClose, onSaved }) => {
   const [roles, setRoles] = useState<Rol[]>([]);
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
   const [permisosState, setPermisosState] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState<boolean>(true);
-  const [saving, setSaving] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const currentRole = roles.find((r) => r.id === selectedRoleId);
-  const isSARole = currentRole?.nombre.trim().toUpperCase() === 'SA';
+  const lockedForCurrent = (key: string) => isSuperAdmin(currentRole) && SUPERADMIN_LOCKED_KEYS.includes(key);
 
+  const selectRole = useCallback((rol: Rol) => {
+    setSelectedRoleId(rol.id);
+    setPermisosState(buildPermisosState(rol));
+  }, []);
+
+  // Carga al abrir, cancelable si el panel se cierra antes de responder.
   useEffect(() => {
-    if (isOpen) {
-      fetchData();
-    }
-  }, [isOpen]);
-
-  const fetchData = async () => {
+    if (!isOpen) return;
+    const controller = new AbortController();
     setLoading(true);
-    try {
-      const [resRoles, resUsers] = await Promise.all([
-        fetch('/api/v1/roles/').then((r) => r.json()),
-        fetch('/api/v1/usuarios/').then((r) => r.json()),
-      ]);
-      setRoles(resRoles);
-      setUsuarios(resUsers.results || resUsers);
-
-      if (resRoles.length > 0) {
-        setSelectedRoleId(resRoles[0].id);
-        initPermisosState(resRoles[0].permisos, resRoles[0].nombre);
-      }
-    } catch (err) {
-      toast.error('Error al cargar la configuración de roles');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const initPermisosState = (rawPermisos?: Record<string, boolean>, roleName?: string) => {
-    const isSA = roleName?.trim().toUpperCase() === 'SA';
-    const initialState: Record<string, boolean> = {};
-    PERMISSION_GROUPS.forEach((group) => {
-      group.items.forEach((item) => {
-        if (isSA && SA_LOCKED_KEYS.includes(item.key)) {
-          initialState[item.key] = true;
-        } else {
-          initialState[item.key] = rawPermisos ? Boolean(rawPermisos[item.key]) : false;
-        }
+    api
+      .get<Rol[]>(ENDPOINTS.ROLES.LISTA, { signal: controller.signal })
+      .then((res) => {
+        setRoles(res.data);
+        if (res.data.length > 0) selectRole(res.data[0]);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) showToast.error('Error al cargar la configuración de roles');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
       });
-    });
-    setPermisosState(initialState);
+    return () => controller.abort();
+  }, [isOpen, selectRole]);
+
+  const togglePermission = (key: string) => {
+    if (lockedForCurrent(key)) return;
+    setPermisosState((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSelectRole = (role: Rol) => {
-    setSelectedRoleId(role.id);
-    initPermisosState(role.permisos, role.nombre);
-  };
-
-  const handleTogglePermission = (key: string) => {
-    if (isSARole && SA_LOCKED_KEYS.includes(key)) {
-      toast.info('Este permiso es mandatorio e inmutable para el rol Super Administrador (SA)');
-      return;
-    }
-    setPermisosState((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
-  const handleSelectAllGroup = (items: { key: string }[], select: boolean) => {
+  const setGroup = (keys: string[], value: boolean) => {
     setPermisosState((prev) => {
-      const updated = { ...prev };
-      items.forEach((item) => {
-        if (!(isSARole && SA_LOCKED_KEYS.includes(item.key))) {
-          updated[item.key] = select;
-        }
-      });
-      return updated;
+      const next = { ...prev };
+      for (const key of keys) if (!lockedForCurrent(key)) next[key] = value;
+      return next;
     });
   };
 
-  const handleSavePermisos = async () => {
-    if (!selectedRoleId || !currentRole) return;
+  const handleSave = async () => {
+    if (!currentRole) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/v1/roles/${selectedRoleId}/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ permisos: permisosState }),
-      });
-      if (!res.ok) throw new Error('Error al actualizar permisos en backend');
-
-      const updatedRol = await res.json();
-      setRoles((prev) =>
-        prev.map((r) => (r.id === selectedRoleId ? { ...r, permisos: updatedRol.permisos } : r))
-      );
-
-      // Notificar al contexto para estabilización reactiva
-      updateRolePermissions(currentRole.nombre, permisosState);
-
-      toast.success(`Permisos actualizados para el rol "${currentRole.nombre}"`);
-    } catch (err) {
-      toast.error('No fue posible guardar los permisos');
+      // Agregar ROLES.DETALLE(id) al catálogo de endpoints (frontend y endpoints_registry.json).
+      const res = await api.patch<Rol>(ENDPOINTS.ROLES.DETALLE(currentRole.id), { permisos: permisosState });
+      setRoles((prev) => prev.map((r) => (r.id === res.data.id ? res.data : r)));
+      showToast.success(`Permisos actualizados para el rol "${res.data.nombre}"`);
+      onSaved?.(res.data);
+    } catch {
+      showToast.error('No fue posible guardar los permisos');
     } finally {
       setSaving(false);
     }
   };
 
-  if (!isOpen) return null;
+  const footer = (
+    <>
+      <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>
+        Cancelar
+      </button>
+      <button type="button" className="btn btn-primary roles-btn-save" onClick={handleSave} disabled={saving || loading || !currentRole}>
+        {saving ? <Loader2 size={16} className="spin" aria-hidden="true" /> : <Save size={16} aria-hidden="true" />}
+        <span>{saving ? 'Guardando…' : 'Guardar permisos'}</span>
+      </button>
+    </>
+  );
 
   return (
-    <div className={`roles-sidebar-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}>
-      <aside 
-        className="roles-sidebar-drawer" 
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-label="Panel de Administración de Roles y Permisos"
-      >
-        {/* Cabecera */}
-        <div className="roles-sidebar-header">
-          <div className="header-icon-box">
-            <Shield size={20} className="text-primary" />
-          </div>
-          <div className="header-title-box">
-            <h3 className="header-title">Gobernanza de Roles y Permisos</h3>
-            <p className="header-subtitle">Estabilización dinámica de accesos sin reinicio</p>
-          </div>
-          <button type="button" className="btn-close-sidebar" onClick={onClose}>
-            <X size={18} />
-          </button>
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Roles y permisos"
+      subtitle="Los cambios aplican sin reiniciar el servidor"
+      size="lg"
+      footer={footer}
+    >
+      {loading ? (
+        <div className="roles-loading-state" role="status">
+          <Loader2 size={28} className="spin" aria-hidden="true" />
+          <span>Cargando matriz de permisos…</span>
         </div>
-
-        {/* Contenido */}
-        <div className="roles-sidebar-content">
-          {loading ? (
-            <div className="roles-loading-state">
-              <Loader2 size={32} className="spin text-primary" />
-              <span>Cargando matriz de permisos...</span>
+      ) : (
+        <>
+          {/* Selector de rol */}
+          <section className="roles-selector-section" aria-labelledby="roles-selector-title">
+            <h6 id="roles-selector-title" className="roles-section-label">Rol a configurar</h6>
+            <div className="roles-pill-list" role="radiogroup" aria-labelledby="roles-selector-title">
+              {roles.map((rol) => {
+                const selected = rol.id === selectedRoleId;
+                return (
+                  <button
+                    key={rol.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    className={`role-pill-item ${selected ? 'active' : ''}`}
+                    onClick={() => selectRole(rol)}
+                  >
+                    <span className="role-pill-name">{rol.nombre}</span>
+                    <span className="role-pill-badge" title={`${rol.usuarios_count} usuarios con este rol`}>
+                      <Users size={11} aria-hidden="true" /> {rol.usuarios_count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          ) : (
-            <>
-              {/* Selector de Rol */}
-              <div className="roles-selector-section">
-                <label className="section-label">Selecciona el Rol a Configurar:</label>
-                <div className="roles-pill-list">
-                  {roles.map((rol) => {
-                    const isSelected = rol.id === selectedRoleId;
-                    const usersCount = usuarios.filter((u) => 
-                      u.roles?.some((r) => (typeof r === 'string' ? r : r.nombre) === rol.nombre)
-                    ).length;
+          </section>
 
-                    return (
-                      <button
-                        key={rol.id}
-                        type="button"
-                        className={`role-pill-item ${isSelected ? 'active' : ''}`}
-                        onClick={() => handleSelectRole(rol)}
-                      >
-                        <span className="role-pill-name">{rol.nombre}</span>
-                        <span className="role-pill-badge" title={`${usersCount} colaboradores con este rol`}>
-                          <Users size={11} /> {usersCount}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+          {/* Matriz de permisos por grupo: checkboxes nativos => teclado y lector de pantalla */}
+          {PERMISSION_GROUPS.map((group) => {
+            const keys = group.items.map((i) => i.key);
+            const allActive = keys.every((k) => permisosState[k]);
+            return (
+              <fieldset key={group.category} className="permission-group-card">
+                <legend className="group-header">
+                  <span className="group-title-box">
+                    {group.icon}
+                    <span>{group.category}</span>
+                  </span>
+                  <button type="button" className="btn-group-toggle-all" onClick={() => setGroup(keys, !allActive)}>
+                    {allActive ? 'Desmarcar todos' : 'Marcar todos'}
+                  </button>
+                </legend>
 
-              {/* Matriz de Permisos por Grupo */}
-              <div className="permissions-matrix-section">
-                {PERMISSION_GROUPS.map((group) => {
-                  const allActive = group.items.every((item) => permisosState[item.key]);
+                {group.items.map((item) => {
+                  const locked = lockedForCurrent(item.key);
+                  const inputId = `perm-${item.key}`;
                   return (
-                    <div key={group.category} className="permission-group-card">
-                      <div className="group-header">
-                        <div className="group-title-box">
-                          {group.icon}
-                          <span className="group-title">{group.category}</span>
-                        </div>
-                        <button
-                          type="button"
-                          className="btn-group-toggle-all"
-                          onClick={() => handleSelectAllGroup(group.items, !allActive)}
-                        >
-                          {allActive ? 'Desmarcar todos' : 'Marcar todos'}
-                        </button>
-                      </div>
-
-                      <div className="group-items-list">
-                        {group.items.map((item) => {
-                          const isChecked = Boolean(permisosState[item.key]);
-                          const isLocked = isSARole && SA_LOCKED_KEYS.includes(item.key);
-
-                          return (
-                            <div
-                              key={item.key}
-                              className={`permission-item-row ${isChecked ? 'checked' : ''} ${isLocked ? 'locked' : ''}`}
-                              onClick={() => handleTogglePermission(item.key)}
-                            >
-                              <div className="item-checkbox-box">
-                                {isLocked ? (
-                                  <Lock size={16} className="text-warning" />
-                                ) : isChecked ? (
-                                  <CheckSquare size={17} className="text-primary" />
-                                ) : (
-                                  <Square size={17} className="text-muted" />
-                                )}
-                              </div>
-                              <div className="item-info-box">
-                                <span className="item-label">{item.label}</span>
-                                <p className="item-description">{item.description}</p>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <label key={item.key} htmlFor={inputId} className={`permission-item-row ${locked ? 'locked' : ''}`}>
+                      <input
+                        id={inputId}
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={Boolean(permisosState[item.key])}
+                        disabled={locked}
+                        onChange={() => togglePermission(item.key)}
+                        aria-describedby={`${inputId}-desc`}
+                      />
+                      <span className="item-info-box">
+                        <span className="item-label">
+                          {item.label}
+                          {locked && (
+                            <span className="item-locked-tag" title="Permiso obligatorio del super administrador">
+                              <Lock size={12} aria-hidden="true" /> Obligatorio
+                            </span>
+                          )}
+                        </span>
+                        <span id={`${inputId}-desc`} className="item-description">{item.description}</span>
+                      </span>
+                    </label>
                   );
                 })}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Footer de Acciones */}
-        <div className="roles-sidebar-footer">
-          <button type="button" className="btn-cancel-sidebar" onClick={onClose} disabled={saving}>
-            Cerrar
-          </button>
-          <button
-            type="button"
-            className="btn-save-sidebar"
-            onClick={handleSavePermisos}
-            disabled={saving || loading}
-          >
-            {saving ? (
-              <>
-                <Loader2 size={16} className="spin" />
-                <span>Guardando cambios...</span>
-              </>
-            ) : (
-              <>
-                <Save size={16} />
-                <span>Guardar Permisos</span>
-              </>
-            )}
-          </button>
-        </div>
-      </aside>
-    </div>
+              </fieldset>
+            );
+          })}
+        </>
+      )}
+    </Drawer>
   );
 };
 ```
 
 ---
 
-## 5. Estilos Canónicos (`RolesAdminSidebar.css`)
+## 5. Estilos (`RolesAdminSidebar.css`)
+
+El contenedor, la cabecera, el overlay y el pie los aporta `Drawer`. Aquí solo va el contenido, con tokens de `variables.css`.
 
 ```css
-.roles-sidebar-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(4px);
-  z-index: 1050;
-  display: flex;
-  justify-content: flex-end;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease;
-}
-
-.roles-sidebar-overlay.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.roles-sidebar-drawer {
-  width: 100%;
-  max-width: 540px;
-  height: 100vh;
-  background-color: var(--color-bg-surface, #1E293B);
-  border-left: 1px solid var(--color-border-subtle, #334155);
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.35);
+.roles-loading-state {
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.roles-sidebar-overlay.active .roles-sidebar-drawer {
-  transform: translateX(0);
-}
-
-.roles-sidebar-header {
-  padding: 18px 24px;
-  border-bottom: 1px solid var(--color-border-subtle, #334155);
-  display: flex;
   align-items: center;
-  gap: 14px;
-  background-color: var(--color-bg-base, #0F172A);
+  gap: var(--space-3);
+  padding: var(--space-8) 0;
+  color: var(--text-muted);
 }
 
-.header-icon-box {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--border-radius-md, 8px);
-  background-color: rgba(45, 106, 79, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.header-title-box {
-  flex: 1;
-}
-
-.header-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-text-primary, #F8FAFC);
-  margin: 0;
-}
-
-.header-subtitle {
-  font-size: 12px;
-  color: var(--color-text-secondary, #94A3B8);
-  margin: 2px 0 0;
-}
-
-.btn-close-sidebar {
-  background: transparent;
-  border: none;
-  color: var(--color-text-secondary, #94A3B8);
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
-  transition: background 0.15s;
-}
-
-.btn-close-sidebar:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-}
-
-.roles-sidebar-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.roles-section-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--label-color);
+  margin: 0 0 var(--space-2);
 }
 
 .roles-pill-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
 }
 
 .role-pill-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   padding: 7px 14px;
-  border-radius: 20px;
-  background-color: var(--color-bg-base, #0F172A);
-  border: 1px solid var(--color-border-subtle, #334155);
-  color: var(--color-text-secondary, #94A3B8);
+  border-radius: var(--radius-full);
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.role-pill-item:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-input-focus);
 }
 
 .role-pill-item.active {
-  background-color: rgba(45, 106, 79, 0.2);
-  border-color: var(--color-primary, #2D6A4F);
-  color: var(--color-primary-light, #52B788);
-  font-weight: 600;
+  background-color: var(--status-success-bg);
+  border-color: var(--brand-primary);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.role-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--font-size-2xs);
+  color: var(--text-muted);
 }
 
 .permission-group-card {
-  border: 1px solid var(--color-border-subtle, #334155);
-  border-radius: var(--border-radius-md, 8px);
-  background-color: var(--color-bg-base, #0F172A);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-card);
+  margin: 0 0 var(--space-4);
+  padding: 0;
   overflow: hidden;
 }
 
 .group-header {
+  float: left; /* hace que el <legend> ocupe el ancho como una cabecera */
+  width: 100%;
   padding: 10px 14px;
-  background-color: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid var(--color-border-subtle, #334155);
+  margin: 0;
+  background-color: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+.group-header + * {
+  clear: both;
+}
+
 .group-title-box {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 600;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-semibold);
   font-size: 13px;
-  color: var(--color-text-primary, #F8FAFC);
+  color: var(--text-primary);
 }
 
 .btn-group-toggle-all {
   background: transparent;
   border: none;
-  font-size: 11px;
-  color: var(--color-primary-light, #52B788);
+  font-size: var(--font-size-2xs);
+  color: var(--brand-primary);
   cursor: pointer;
   text-decoration: underline;
 }
 
 .permission-item-row {
+  clear: both;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: var(--space-3);
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border-subtle);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--transition-fast);
 }
 
 .permission-item-row:last-child {
@@ -593,59 +435,45 @@ export const RolesAdminSidebar: React.FC<RolesAdminSidebarProps> = ({
 }
 
 .permission-item-row:hover {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--bg-hover);
 }
 
-.permission-item-row.checked {
-  background-color: rgba(45, 106, 79, 0.05);
+.permission-item-row.locked {
+  cursor: not-allowed;
+}
+
+.item-info-box {
+  display: flex;
+  flex-direction: column;
 }
 
 .item-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-primary, #F8FAFC);
-  display: block;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.item-locked-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--status-warning);
 }
 
 .item-description {
   font-size: 11.5px;
-  color: var(--color-text-secondary, #94A3B8);
-  margin: 2px 0 0;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
-.roles-sidebar-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--color-border-subtle, #334155);
-  background-color: var(--color-bg-base, #0F172A);
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.btn-cancel-sidebar {
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border-subtle, #334155);
-  background: transparent;
-  color: var(--color-text-secondary, #94A3B8);
-  cursor: pointer;
-}
-
-.btn-save-sidebar {
-  display: flex;
+.roles-btn-save {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
-  border-radius: 6px;
-  border: none;
-  background-color: var(--color-primary, #2D6A4F);
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-save-sidebar:hover:not(:disabled) {
-  background-color: var(--color-primary-dark, #1B4332);
+  gap: var(--space-2);
 }
 ```

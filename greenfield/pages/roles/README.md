@@ -1,5 +1,5 @@
 ﻿# Módulo: Roles y Permisos (RBAC) — Spec-Driven Development (SDD)
-## Ecosistema Jolifoods
+## Joli Foods
 
 Este módulo gestiona la administración matricial de permisos de acceso por rol y módulo.
 

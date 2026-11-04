@@ -1,65 +1,86 @@
-# Protocolo de Gestión de Incidentes Críticos, SRE y Post-Mortem Sin Culpa
-## Ecosistema Corporativo Jolifoods / Greenyard — Metodología SDD
+# Protocolo 10: gestión de incidentes y análisis posterior sin culpa
 
-Este protocolo estandariza la respuesta operativa del equipo de ingeniería ante incidentes en producción, la comunicación interna y la cultura de mejora continua basada en **Blameless Post-Mortems**.
+Cómo responder a un incidente en producción, cómo comunicarlo y cómo aprender de él mediante un **post-mortem sin culpa** (análisis posterior que busca causas en el sistema y el proceso, no culpables).
 
----
+Las palabras **DEBE / DEBERÍA / PUEDE** siguen la RFC 2119.
 
-## 1. Clasificación de Severidad de Incidentes
-
-| Severidad | Impacto en el Negocio | Tiempo de Respuesta (MTTA) | Tiempo de Mitigación (MTTR) | Canal de Activación |
-| :--- | :--- | :--- | :--- | :--- |
-| **SEV-1 (Crítico)** | Sistema totalmente inaccesible, transacciones detenidas, pérdida o corrupción de datos. | **< 5 minutos** | **< 30 minutos** | Sirena automática PagerDuty / Llamada telefónica inmediata a Tech Lead y DevOps. |
-| **SEV-2 (Mayor)** | Módulo principal con fallas severas (ej. facturación caída, pero el resto opera). | **< 15 minutos** | **< 2 horas** | Alerta en canal prioritario `#ops-emergencias` con mención `@here`. |
-| **SEV-3 (Menor)** | Degradación de rendimiento o fallas cosméticas sin impacto en la continuidad operativa. | **< 2 horas** | **< 24 horas** | Ticket en backlog con prioridad Alta. |
+> **Estado de implementación**: este protocolo es normativo. La organización DEBE definir, por sistema, la herramienta de guardia y el canal de comunicación de incidentes; los nombres usados abajo son ejemplos.
 
 ---
 
-## 2. Protocolo de Sala de Guerra (War Room) para SEV-1
+## 1. Severidades
 
-1. **Roles Asignados**:
-   - **Comandante del Incidente (IC)**: Dirige la estrategia de resolución y toma decisiones ejecutivas.
-   - **Líder Operativo (Tech Lead / SRE)**: Investiga logs, métricas y ejecuta rollbacks o parches.
-   - **Líder de Comunicaciones**: Mantiene informada a la gerencia de operaciones y usuarios clave cada 15 minutos.
-2. **Regla de Oro en Producción**:
-   - **Primero mitigar, luego investigar la causa raíz**. Si un despliegue reciente causó la falla, la acción inmediata e incuestionable es el **ROLLBACK** a la versión estable previa.
+| Severidad | Impacto en el negocio | Reconocer (MTTA objetivo) | Mitigar (objetivo) | Activación |
+|---|---|---|---|---|
+| **SEV-1 (crítico)** | Sistema inaccesible, operación detenida, pérdida o corrupción de datos, o incidente de seguridad con datos expuestos. | < 15 min en horario laboral | < 4 h | Llamada directa al responsable técnico de guardia y al líder del área afectada. |
+| **SEV-2 (mayor)** | Un módulo principal falla o se degrada gravemente, pero hay alternativa o el resto opera. | < 30 min | < 1 día hábil | Mensaje en el canal de incidentes del equipo (p. ej. `#ops-incidentes`). |
+| **SEV-3 (menor)** | Degradación leve o defecto sin impacto en la continuidad. | < 1 día hábil | Según priorización del backlog | Ticket en el backlog. |
+
+* **MTTA** (*Mean Time To Acknowledge*): tiempo hasta que alguien reconoce el incidente. Los tiempos son **objetivos de referencia**; cada sistema los ajusta según su criticidad y la disponibilidad real del equipo (p. ej. si no hay guardia fuera de horario, decirlo explícitamente).
+* Ante duda entre dos severidades, se elige la más alta y se baja después.
+* Un incidente que exponga datos personales se trata además según el procedimiento de protección de datos de la organización (Ley 1581 de 2012).
 
 ---
 
-## 3. Plantilla Oficial de Post-Mortem Sin Culpa (*Blameless Post-Mortem*)
+## 2. Respuesta a un SEV-1 (y SEV-2 cuando aplique)
 
-Todo incidente SEV-1 o SEV-2 exige la redacción y publicación de este reporte en menos de 48 horas hábiles:
+1. **Roles** (en equipos pequeños una persona puede cubrir dos, pero se nombran explícitamente):
+   * **Coordinador del incidente** (*Incident Commander*): decide y prioriza; no necesariamente es quien corrige.
+   * **Responsable técnico**: investiga logs, métricas y trazas (protocolo 07) y ejecuta la mitigación.
+   * **Responsable de comunicación**: informa a los usuarios afectados y a la gerencia con una cadencia acordada (p. ej. cada 30 min en SEV-1).
+2. **Primero mitigar, después investigar.** Si un despliegue reciente coincide con el inicio del incidente, la primera opción DEBERÍA ser revertir a la versión anterior (*rollback*). **Por qué:** restaurar el servicio reduce el daño mientras se busca la causa con calma. Excepción: si el despliegue incluyó una migración de base de datos no reversible, se evalúa antes (protocolo 08).
+3. Llevar una línea de tiempo con hora de cada hallazgo y acción mientras ocurre.
+
+---
+
+## 3. Post-mortem sin culpa
+
+Todo SEV-1 DEBE y todo SEV-2 DEBERÍA tener un post-mortem publicado en máximo **5 días hábiles**. Se redacta sobre hechos, en términos de sistema y proceso ("la migración no tenía límite de espera de bloqueo"), nunca de personas ("X olvidó…").
+
+**Por qué sin culpa:** si contar un error tiene castigo, la gente lo oculta y la organización pierde la información para evitar el siguiente.
+
+Plantilla:
 
 ```markdown
-# Reporte Post-Mortem de Incidente — [SEV-X] [Título Breve]
-**Fecha del Incidente**: AAAA-MM-DD  
-**Duración Total**: XX minutos  
-**Líder del Incidente**: Nombre y Cargo  
+# Post-mortem — [SEV-X] [Título breve]
+**Fecha del incidente**: AAAA-MM-DD
+**Duración (detección → mitigación)**: XX min
+**Coordinador del incidente (rol)**: ...
+**Estado de las acciones**: abiertas / cerradas
 
-## 1. Resumen Ejecutivo
-Breve descripción orientada a directores sobre qué ocurrió, a quiénes afectó y cómo se solucionó.
+## 1. Resumen
+Qué pasó, a quién afectó y cómo se resolvió, en lenguaje para no técnicos.
 
-## 2. Impacto Cuantificado
-- Usuarios afectados: XXX
-- Transacciones no procesadas: XXX
-- Tiempo total de indisponibilidad: XX min
+## 2. Impacto
+- Usuarios o áreas afectadas: ...
+- Transacciones no procesadas o datos afectados: ...
+- Tiempo sin servicio: ...
 
-## 3. Cronología Minuto a Minuto (Horas UTC-5)
-- 10:02 - Se despliega versión v2.4.1 en producción.
-- 10:07 - Alerta en canal #ops por disparo de latencia p95 > 1200ms.
-- 10:11 - Se activa War Room con Comandante de Incidente.
-- 10:15 - Se identifica bloqueo en tabla core_transaccion.
-- 10:18 - Se ejecuta rollback a v2.4.0.
-- 10:22 - Métricas regresan a parámetros normales (SLO restaurado).
+## 3. Línea de tiempo (hora de Colombia, UTC−5)
+- 10:02 Se despliega la versión 2.4.1.
+- 10:07 Alerta: p95 de latencia > 1,2 s.
+- 10:11 Se declara SEV-1 y se nombra coordinador.
+- 10:15 Se identifica bloqueo en la tabla `core_transaccion`.
+- 10:18 Se revierte a 2.4.0.
+- 10:22 Latencia vuelve a valores normales.
 
-## 4. Análisis de Causa Raíz (Los 5 Porqués)
-1. ¿Por qué se congeló el sistema? -> Porque la base de datos se bloqueó.
-2. ¿Por qué se bloqueó? -> Porque se ejecutó un ALTER TABLE sin timeout de lock.
-3. ¿Por qué se ejecutó ese comando? -> Porque la migración no siguió el protocolo Expand & Contract.
-4. ¿Por qué no se detectó en CI? -> Porque no se ejecutó oasdiff ni prueba de migración en staging.
-5. ¿Por qué no había prueba en staging? -> Falta de regla estricta en el pipeline.
+## 4. Causas (técnica de los 5 porqués u otra)
+1. ¿Por qué se detuvo el sistema? Porque una tabla quedó bloqueada.
+2. ¿Por qué se bloqueó? Porque un `ALTER TABLE` esperó un bloqueo exclusivo sin `lock_timeout` y las demás consultas se encolaron detrás.
+3. ¿Por qué no tenía `lock_timeout`? Porque la migración no siguió el protocolo 08.
+4. ¿Por qué no se detectó antes? Porque la migración no se probó en staging con volumen de datos similar al de producción.
+5. ¿Por qué no se probó? Porque el *pipeline* no exige ese paso para migraciones.
 
-## 5. Acciones Preventivas Inmediatas (Action Items con Responsable y Fecha)
-- [ ] Incorporar script de validación de lock_timeout en el CI (DevOps - 3 días).
-- [ ] Actualizar documentación del módulo con checklist obligatorio (Tech Lead - 2 días).
+(Los 5 porqués suelen revelar varias causas; se registran todas las relevantes, no solo una cadena.)
+
+## 5. Qué funcionó y qué no
+- Funcionó: la alerta de latencia detectó el problema en 5 minutos.
+- No funcionó: ...
+
+## 6. Acciones (responsable por rol y fecha)
+- [ ] Agregar al *pipeline* la verificación de migraciones en staging. (DevOps — AAAA-MM-DD)
+- [ ] Incluir `SET LOCAL lock_timeout` en la plantilla de migraciones. (Líder técnico — AAAA-MM-DD)
+- [ ] Registrar la lección en `memory/learnings/bug_lessons.md`. (Responsable técnico — AAAA-MM-DD)
 ```
+
+Las acciones se siguen hasta cerrarse; un post-mortem con acciones abiertas indefinidamente no cumplió su propósito.

@@ -1,185 +1,212 @@
-# Componente UI: Columnas Ajustables / Redimensionables (Column Resizer)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
-### Patrón Canónico de Referencia: Redimensionamiento Dinámico de Columnas (`useResizable` / `resizable-th-resizer`)
+# Componente UI: Columnas Redimensionables (Column Resizer)
+## Spec-Driven Development (SDD)
 
-El **Column Resizer** permite a los usuarios ajustar interactivamente el ancho de cada columna de la tabla arrastrando su borde derecho. Además, incluye la capacidad de restablecer el ancho predeterminado mediante doble clic y persistir las preferencias del usuario en `localStorage`.
-
----
-
-## 1. Características Técnicas
-
-1. **Control de Arrastre Fluido (`col-resize`)**: Un manipulador visual transparente de 6px en el borde derecho de cada cabecera `<th>`, con cambio cromático a color acento al pasar el cursor o hacer clic.
-2. **Ancho Mínimo de Seguridad**: Garantiza que ninguna columna pueda contraerse por debajo de `60px` para evitar colapsos visuales.
-3. **Restablecimiento Inmediato por Doble Clic**: Un doble clic en el separador restaura inmediatamente el ancho de columna por defecto asignado en la configuración.
-4. **Persistencia Local (`localStorage`)**: Los anchos personalizados se guardan automáticamente por clave de columna (`localStorage.setItem('<modulo>_col_widths', JSON.stringify(widths))`).
-5. **Estructura de Tabla de Ancho Fijo**: Se aplica `tableLayout: 'fixed'` y anchos en píxeles tanto al `<th>` como al `<td>` correspondiente para evitar desalineaciones durante el scroll horizontal.
+El **Column Resizer** permite ajustar el ancho de cada columna arrastrando su borde derecho (o con el teclado), restablecer el ancho por defecto con doble clic y recordar la preferencia del usuario en `localStorage`.
 
 ---
 
-## 2. Implementación Canónica en React / TypeScript
+## 1. Características
 
-### Hook `useResizable.ts` o Lógica en Componente de Tabla
+1. **Manipulador de arrastre (`col-resize`)** de 6px en el borde derecho de cada `<th>`, resaltado con el color de marca al pasar el cursor o al enfocarlo.
+2. **Ancho mínimo** de `60px` para evitar columnas colapsadas.
+3. **Doble clic** sobre el separador restaura el ancho por defecto.
+4. **Teclado:** el separador es enfocable (`role="separator"`); `←`/`→` ajustan 10px (`Shift` = 50px) y `Enter` restablece.
+5. **Persistencia** con la clave `STORAGE_KEYS.columnWidths(modulo)` (prefijo de app, ver [`auth_context.md`](../context/auth_context.md) §2.1). Se guarda **al soltar** el arrastre, no en cada movimiento.
+6. **Tabla de ancho fijo:** `table-layout: fixed` y anchos en píxeles en `<th>` para evitar desalineaciones con scroll horizontal.
+
+---
+
+## 2. Hook de referencia (`src/hooks/useColumnResize.ts`)
 
 ```tsx
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { STORAGE_KEYS, safeStorage } from '../config/storageKeys';
 
+const MIN_WIDTH = 60;
+const FALLBACK_WIDTH = 120;
+
+function readSaved(key: string, defaults: Record<string, number>): Record<string, number> {
+  const raw = safeStorage.get(key);
+  if (!raw) return { ...defaults };
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const valid = Object.fromEntries(
+      Object.entries(parsed).filter((entry): entry is [string, number] => typeof entry[1] === 'number'),
+    );
+    return { ...defaults, ...valid };
+  } catch {
+    return { ...defaults };
+  }
+}
+
+export function useColumnResize(modulo: string, defaultWidths: Record<string, number>) {
+  const storageKey = STORAGE_KEYS.columnWidths(modulo);
+  const [colWidths, setColWidths] = useState<Record<string, number>>(() => readSaved(storageKey, defaultWidths));
+  const widthsRef = useRef(colWidths);
+  const draggingRef = useRef(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
+
+  // Sincroniza la ref y persiste cuando no hay un arrastre en curso
+  useEffect(() => {
+    widthsRef.current = colWidths;
+    if (!draggingRef.current) safeStorage.set(storageKey, JSON.stringify(colWidths));
+  }, [colWidths, storageKey]);
+
+  const setWidth = useCallback((key: string, width: number) => {
+    setColWidths((prev) => ({ ...prev, [key]: Math.max(MIN_WIDTH, Math.round(width)) }));
+  }, []);
+
+  const handleStartResize = useCallback(
+    (key: string, event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const startX = event.clientX;
+      const startWidth = widthsRef.current[key] ?? defaultWidths[key] ?? FALLBACK_WIDTH;
+
+      const onMouseMove = (moveEvent: MouseEvent) => setWidth(key, startWidth + moveEvent.clientX - startX);
+      const stop = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        draggingRef.current = false;
+        cleanupRef.current = null;
+      };
+      const onMouseUp = () => {
+        stop();
+        safeStorage.set(storageKey, JSON.stringify(widthsRef.current)); // una sola escritura al soltar
+      };
+
+      draggingRef.current = true;
+
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+      cleanupRef.current = stop;
+    },
+    [defaultWidths, setWidth, storageKey],
+  );
+
+  const handleResetWidth = useCallback(
+    (key: string) => {
+      setWidth(key, defaultWidths[key] ?? FALLBACK_WIDTH);
+    },
+    [defaultWidths, setWidth],
+  );
+
+  const handleKeyResize = useCallback(
+    (key: string, event: React.KeyboardEvent) => {
+      const step = event.shiftKey ? 50 : 10;
+      const current = widthsRef.current[key] ?? defaultWidths[key] ?? FALLBACK_WIDTH;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        setWidth(key, current + (event.key === 'ArrowRight' ? step : -step));
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        handleResetWidth(key);
+      }
+    },
+    [defaultWidths, handleResetWidth, setWidth],
+  );
+
+  // Si el componente se desmonta durante un arrastre, se retiran los listeners
+  useEffect(() => () => cleanupRef.current?.(), []);
+
+  return { colWidths, handleStartResize, handleResetWidth, handleKeyResize };
+}
+```
+
+Ejemplo de anchos por defecto de un módulo:
+
+```ts
 export const DEFAULT_COL_WIDTHS: Record<string, number> = {
   codigo: 120,
-  departamento: 160,
-  municipio: 150,
-  temperatura: 120,
-  precipitacion: 140,
-  humedad: 120,
-  alerta: 130,
+  cliente: 220,
+  fecha: 120,
+  valor: 140,
   estado: 110,
-  opciones: 95
-};
-
-export const useColumnResize = (storageKey: string, defaultWidths: Record<string, number>) => {
-  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      try {
-        return { ...defaultWidths, ...JSON.parse(saved) };
-      } catch {
-        return { ...defaultWidths };
-      }
-    }
-    return { ...defaultWidths };
-  });
-
-  const handleStartResize = (key: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const startX = e.clientX;
-    const currentWidth = colWidths[key] || defaultWidths[key] || 120;
-
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      const diff = moveEvent.clientX - startX;
-      const newWidth = Math.max(60, currentWidth + diff);
-      setColWidths((prev) => {
-        const next = { ...prev, [key]: newWidth };
-        localStorage.setItem(storageKey, JSON.stringify(next));
-        return next;
-      });
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    };
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  };
-
-  const handleResetWidth = (key: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setColWidths((prev) => {
-      const next = { ...prev, [key]: defaultWidths[key] || 120 };
-      localStorage.setItem(storageKey, JSON.stringify(next));
-      return next;
-    });
-  };
-
-  return { colWidths, handleStartResize, handleResetWidth };
+  opciones: 95,
 };
 ```
 
 ---
 
-## 3. Renderizado del Marcador en el Encabezado `<th>`
+## 3. Separador en el encabezado `<th>`
 
 ```tsx
-<th
-  key={col.key}
-  className="resizable-th"
-  style={{
-    width: `${colWidths[col.key]}px`,
-    minWidth: `${colWidths[col.key]}px`,
-    maxWidth: `${colWidths[col.key]}px`,
-    position: 'relative'
-  }}
->
+<th key={col.key} className="resizable-th" style={{ width: colWidths[col.key] }}>
   <div className="th-content">
     <span>{col.label}</span>
   </div>
 
-  {/* Manipulador de Redimensionamiento */}
   <div
     className="resizable-th-resizer"
+    role="separator"
+    aria-orientation="vertical"
+    aria-label={`Ajustar ancho de ${col.label}`}
+    aria-valuenow={colWidths[col.key]}
+    aria-valuemin={60}
+    tabIndex={0}
     onMouseDown={(e) => handleStartResize(col.key, e)}
-    onDoubleClick={(e) => handleResetWidth(col.key, e)}
-    title="Arrastra para redimensionar columna (Doble clic para restablecer)"
+    onDoubleClick={() => handleResetWidth(col.key)}
+    onKeyDown={(e) => handleKeyResize(col.key, e)}
+    title="Arrastra para ajustar el ancho (doble clic para restablecer)"
   />
 </th>
 ```
 
 ---
 
-## 4. Estilos CSS Corporativos
+## 4. Estilos CSS
 
 ```css
-/* Cabecera relativa para contener el separador */
 .resizable-th {
   position: relative;
   overflow: visible;
   user-select: none;
 }
 
-/* Barra de agarre interactiva en el borde derecho */
 .resizable-th-resizer {
   position: absolute;
   top: 0;
   right: 0;
+  z-index: var(--z-base);
   width: 6px;
   height: 100%;
   cursor: col-resize;
   user-select: none;
-  z-index: 5;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--transition-fast);
 }
 
 .resizable-th-resizer:hover,
-.resizable-th-resizer:active {
-  background-color: var(--accent-color, #3b82f6);
-  opacity: 0.8;
+.resizable-th-resizer:active,
+.resizable-th-resizer:focus-visible {
+  background-color: var(--brand-primary);
+  outline: none;
 }
 ```
 
 ---
 
-## 5. Implementación Autónoma en Vanilla JS (Mocks / HTML)
+## 5. Implementación en Vanilla JS (mocks HTML)
 
 ```javascript
-let isResizing = false;
-let currentResizingCol = null;
-let startX = 0;
-let startWidth = 0;
+const MIN_WIDTH = 60;
 
 function handleStartColResize(colKey, event) {
   event.preventDefault();
   event.stopPropagation();
-  isResizing = true;
-  currentResizingCol = colKey;
-  startX = event.clientX;
-  
-  const th = event.target.closest('th');
-  startWidth = th.getBoundingClientRect().width;
+  const startX = event.clientX;
+  const startWidth = event.target.closest('th').getBoundingClientRect().width;
   document.body.style.cursor = 'col-resize';
   document.body.style.userSelect = 'none';
 
   function onMouseMove(e) {
-    if (!isResizing) return;
-    const diff = e.clientX - startX;
-    const newWidth = Math.max(60, Math.round(startWidth + diff));
-    applyColumnWidth(currentResizingCol, newWidth);
+    applyColumnWidth(colKey, Math.max(MIN_WIDTH, Math.round(startWidth + e.clientX - startX)));
   }
 
   function onMouseUp() {
-    isResizing = false;
-    currentResizingCol = null;
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
     document.removeEventListener('mousemove', onMouseMove);
@@ -193,23 +220,15 @@ function handleStartColResize(colKey, event) {
 function handleResetColWidth(colKey, event) {
   event.preventDefault();
   event.stopPropagation();
-  const defaultW = DEFAULT_COL_WIDTHS[colKey] || 120;
-  applyColumnWidth(colKey, defaultW);
+  applyColumnWidth(colKey, DEFAULT_COL_WIDTHS[colKey] || 120);
 }
 
 function applyColumnWidth(colKey, width) {
   COL_WIDTHS[colKey] = width;
-  const ths = document.querySelectorAll(`th[data-col="${colKey}"]`);
-  const tds = document.querySelectorAll(`td[data-col="${colKey}"]`);
-  ths.forEach(th => {
+  document.querySelectorAll(`th[data-col="${colKey}"]`).forEach((th) => {
     th.style.width = width + 'px';
-    th.style.minWidth = width + 'px';
-    th.style.maxWidth = width + 'px';
-  });
-  tds.forEach(td => {
-    td.style.width = width + 'px';
-    td.style.minWidth = width + 'px';
-    td.style.maxWidth = width + 'px';
   });
 }
 ```
+
+En los mocks, `COL_WIDTHS` y `DEFAULT_COL_WIDTHS` son objetos globales del archivo `[modulo].js`; con `table-layout: fixed` basta con fijar el ancho del `<th>`.

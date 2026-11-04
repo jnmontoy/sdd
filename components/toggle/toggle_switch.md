@@ -122,7 +122,7 @@ Consumiendo estrictamente [`../variables.css`](../variables.css):
   padding: 2px;
   border: 1px solid transparent;
   border-radius: 9999px;
-  background-color: var(--border-color, #cbd5e1);
+  background-color: var(--border-color);
   cursor: pointer;
   transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
               border-color 0.2s ease,
@@ -132,12 +132,12 @@ Consumiendo estrictamente [`../variables.css`](../variables.css):
 
 .joli-toggle-track:focus-visible {
   box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.35);
-  border-color: var(--color-primary, #059669);
+  border-color: var(--brand-primary);
 }
 
 /* Estado Activo (Esmeralda Jolifoods) */
 .joli-toggle-track.is-checked {
-  background-color: var(--color-primary, #059669);
+  background-color: var(--brand-primary);
 }
 
 /* Estado Deshabilitado */
@@ -206,11 +206,11 @@ Consumiendo estrictamente [`../variables.css`](../variables.css):
 }
 
 .joli-toggle-text.text-success {
-  color: var(--color-primary, #059669) !important;
+  color: var(--brand-primary) !important;
 }
 
 .joli-toggle-text.text-muted {
-  color: var(--text-secondary, #64748b) !important;
+  color: var(--text-secondary) !important;
 }
 
 /* Spinner miniatura de carga */
@@ -218,7 +218,7 @@ Consumiendo estrictamente [`../variables.css`](../variables.css):
   width: 10px;
   height: 10px;
   border: 2px solid rgba(5, 150, 105, 0.2);
-  border-top-color: var(--color-primary, #059669);
+  border-top-color: var(--brand-primary);
   border-radius: 50%;
   animation: joli-spin 0.6s linear infinite;
 }

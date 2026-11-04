@@ -1,9 +1,16 @@
 ﻿# Plantilla HTML de Correo Corporativo: Restablecimiento de Contraseña
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
+## Spec-Driven Development (SDD)
 
 Esta especificación define la **plantilla de correo electrónico corporativo** enviada a los colaboradores cuando solicitan recuperar o restablecer su clave de acceso.
 
-Diseñada con **HTML transaccional en línea (inline-styles)** para garantizar máxima compatibilidad y renderizado perfecto en Microsoft Outlook (escritorio y web), Gmail, Apple Mail y clientes móviles de iOS/Android.
+Diseñada con **HTML transaccional en línea (inline-styles)** para maximizar la compatibilidad con Microsoft Outlook (escritorio y web), Gmail, Apple Mail y clientes móviles. Se debe verificar el renderizado en los clientes reales que usa la compañía antes de publicarla.
+
+> **Excepción de colores:** los clientes de correo no soportan variables CSS, por eso esta plantilla usa colores hex en línea. Son copia de los tokens de `variables.css` (tema Noche) y DEBEN actualizarse si cambia la paleta.
+
+### Reglas de seguridad del flujo de recuperación
+- El token del enlace DEBE ser aleatorio (p. ej. `secrets.token_urlsafe(32)`), de un solo uso y con vencimiento corto; en base de datos se guarda solo su hash.
+- `POST /api/v1/auth/recovery/` DEBE responder siempre lo mismo (p. ej. 200 con mensaje genérico) exista o no el usuario, para no permitir enumerar cuentas; el envío del correo se hace en segundo plano y sus errores se registran en el log, no se devuelven al cliente.
+- El correo NO DEBERÍA incluir el número de documento completo: se muestra enmascarado (p. ej. `******0001`).
 
 ---
 
@@ -13,11 +20,11 @@ La plantilla acepta las siguientes variables de contexto (Jinja2 / Django Templa
 
 | Variable | Tipo | Descripción | Ejemplo |
 | :--- | :--- | :--- | :--- |
-| `{{ nombre_usuario }}` | String | Nombre y apellido del colaborador | `Joan Montoya` |
-| `{{ numero_documento }}` | String | Cédula o identificador del usuario | `1020405060` |
-| `{{ enlace_recuperacion }}` | URL | Enlace único de un solo uso (OTT) con token criptográfico | `https://app.jolifoods.com/auth/reset?token=a8f9...` |
+| `{{ nombre_usuario }}` | String | Nombre y apellido del colaborador | `Ana Pérez` |
+| `{{ numero_documento }}` | String | Documento enmascarado (solo últimos 4 dígitos) | `******0001` |
+| `{{ enlace_recuperacion }}` | URL | Enlace único de un solo uso (OTT) con token criptográfico | `https://app.ejemplo.local/auth/reset?token=<TOKEN>` |
 | `{{ tiempo_expiracion_minutos }}` | Entero | Ventana de validez del enlace | `15` |
-| `{{ ip_solicitante }}` | String | Dirección IP que generó la solicitud | `190.14.85.120` |
+| `{{ ip_solicitante }}` | String | Dirección IP que generó la solicitud | `203.0.113.10` |
 | `{{ fecha_hora_solicitud }}` | String | Marca de tiempo legible en zona horaria local | `30/09/2026 12:10 PM` |
 | `{{ nombre_proyecto }}` | String | Módulo o aplicación destino | `Portal Corporativo` |
 
@@ -32,7 +39,7 @@ La plantilla acepta las siguientes variables de contexto (Jinja2 / Django Templa
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Restablecimiento de Contraseña | Jolifoods</title>
+  <title>Restablecimiento de Contraseña | Joli Foods</title>
   <!--[if mso]>
   <style type="text/css">
     body, table, td {font-family: Arial, Helvetica, sans-serif !important;}
@@ -49,7 +56,7 @@ La plantilla acepta las siguientes variables de contexto (Jinja2 / Django Templa
         <!-- TARJETA CENTRAL DEL CORREO -->
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background-color: #1e293b; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); overflow: hidden;">
           
-          <!-- CABECERA CON BRANDING JOLIFOODS -->
+          <!-- CABECERA CON MARCA JOLI FOODS -->
           <tr>
             <td align="center" style="padding: 36px 30px 24px 30px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(30, 41, 59, 0) 100%);">
               <!-- LOGO VECTORIAL O IMAGEN HOSTED -->
@@ -146,7 +153,7 @@ La plantilla acepta las siguientes variables de contexto (Jinja2 / Django Templa
                 Si tú no realizaste esta solicitud, puedes ignorar este mensaje; tu contraseña actual continuará siendo segura.
               </p>
               <p style="margin: 0; font-size: 11px; color: #475569;">
-                &copy; 2026 Jolifoods S.A.S. &bull; Todos los derechos reservados.<br>
+                &copy; {{ anio }} Joli Foods &bull; Todos los derechos reservados.<br>
                 Este es un mensaje generado automáticamente por el sistema de seguridad. Por favor no responder a este correo.
               </p>
             </td>
@@ -167,33 +174,49 @@ La plantilla acepta las siguientes variables de contexto (Jinja2 / Django Templa
 ## 3. Implementación en Backend (Python / Django)
 
 ```python
+import logging
+
+from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+from django.utils import timezone
 from django.utils.html import strip_tags
-from django.conf import settings
 
-def enviar_correo_recuperacion(usuario, token_plano, request):
+logger = logging.getLogger(__name__)
+
+
+def _enmascarar(documento: str) -> str:
+    return "*" * max(len(documento) - 4, 0) + documento[-4:]
+
+
+def enviar_correo_recuperacion(usuario, token_plano: str, ip_cliente: str) -> None:
+    """`ip_cliente` la resuelve el middleware de proxy confiable; no se lee X-Forwarded-For crudo."""
     enlace = f"{settings.FRONTEND_URL}/auth/reset?token={token_plano}"
+    ahora = timezone.localtime()
     
     contexto = {
         "nombre_usuario": f"{usuario.first_name} {usuario.last_name}".strip() or usuario.username,
-        "numero_documento": usuario.numero_documento,
+        "numero_documento": _enmascarar(usuario.numero_documento),
         "enlace_recuperacion": enlace,
         "tiempo_expiracion_minutos": 15,
-        "ip_solicitante": request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR")),
-        "fecha_hora_solicitud": "30/09/2026 12:10 PM",
-        "nombre_proyecto": settings.APP_NAME or "Portal Jolifoods",
+        "ip_solicitante": ip_cliente,
+        "fecha_hora_solicitud": ahora.strftime("%d/%m/%Y %I:%M %p"),
+        "nombre_proyecto": settings.APP_NAME,
+        "anio": ahora.year,
     }
     
     html_content = render_to_string("emails/recovery_password.html", contexto)
     text_content = strip_tags(html_content)
     
     email = EmailMultiAlternatives(
-        subject="[Jolifoods] Restablecimiento de contraseña de acceso",
+        subject=f"[{settings.APP_NAME}] Restablecimiento de contraseña",
         body=text_content,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[usuario.email],
     )
     email.attach_alternative(html_content, "text/html")
-    email.send(fail_silently=False)
+    try:
+        email.send(fail_silently=False)
+    except Exception:  # se registra, pero la vista responde igual (anti-enumeración)
+        logger.exception("No se pudo enviar el correo de recuperación (usuario_id=%s)", usuario.pk)
 ```

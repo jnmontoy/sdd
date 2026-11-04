@@ -1,90 +1,100 @@
-# Protocolo 14: Gestión de Cambios Atómicos y Especificaciones Vivas (Living Specs)
-## Ecosistema Greenfield / Jolifoods — Metodología SDD
+# Protocolo 14: cambios atómicos y especificaciones vivas
 
-Este protocolo establece el estándar corporativo obligatorio para planificar, ejecutar y auditar cualquier cambio incremental, nueva característica o refactorización técnica dentro de los proyectos del ecosistema.
+Cómo planear, ejecutar y verificar un cambio incremental (funcionalidad nueva, refactorización, ajuste de contrato) en un proyecto existente, de forma que el alcance quede acotado y la verificación quede demostrada.
 
-Inspirado en la filosofía **OpenSpec** y la disciplina de ingeniería de **Spec-Driven Development (SDD)**, este protocolo erradica el *"Vibe Coding"* y asegura que los agentes de Inteligencia Artificial operen con límites precisos, tareas atómicas y evidencia verificable.
+Se inspira en el desarrollo guiado por especificaciones (*spec-driven development*) y en herramientas como OpenSpec. Plantilla: [`../changes_template/`](../changes_template/README.md).
 
----
-
-## 1. El Problema del "Vibe Coding" con Agentes de IA
-
-Cuando un desarrollador le pide a una IA cambios sin un contrato previo mediante prompts informales:
-1. **La IA alucina o expande el alcance sin permiso (Scope Creep)**: Modifica archivos no relacionados, añade librerías no aprobadas o reescribe estilos existentes.
-2. **Rompe componentes funcionales**: Al no tener una lista de verificación secuencial, omite casos de borde o altera contratos de endpoints.
-3. **Afirma falsamente que todo funciona**: La IA responde con cortesía diciendo que *"el requerimiento ha sido completado con éxito"*, pero sin haber ejecutado validadores ni pruebas.
+Las palabras **DEBE / DEBERÍA / PUEDE** siguen la RFC 2119.
 
 ---
 
-## 2. La Regla de Oro del Cambio Atómico
+## 1. Problema que resuelve
 
-> **REGLA DE ORO**:
-> Ningún agente de IA ni desarrollador puede alterar código fuente de un proyecto sin que exista previamente una subcarpeta aprobada en `specs/changes/[YYYY-MM-DD]-[nombre-cambio]/` con sus 4 artefactos canónicos:
-> 1. `proposal.md`
-> 2. `design.md`
-> 3. `tasks.md`
-> 4. `evidence.md`
+Cuando se piden cambios sin un acuerdo previo de alcance (a una persona o a un agente de IA) es frecuente que:
+1. **El alcance crezca solo**: se modifican archivos no relacionados, se agregan librerías no aprobadas o se reescriben estilos existentes.
+2. **Se rompan contratos**: sin una lista de verificación, se omiten casos de borde o se cambia la forma de una respuesta que otro consumidor usa.
+3. **Se declare terminado sin verificar**: "ya funciona" sin haber ejecutado pruebas.
 
 ---
 
-## 3. Estructura y Función de los 4 Artefactos
+## 2. Regla
 
-### A. `proposal.md` (Definición de Alcance y Fronteras)
-* **Objetivo de Negocio**: Por qué se hace el cambio.
-* **Solución**: Qué se implementará.
-* **Límites Estrictos (Out-of-Scope)**: Lista taxativa de lo que la IA **NO DEBE TOCAR**. Esto actúa como una barrera de seguridad infranqueable contra la sobreingeniería.
-* **Criterios de Aceptación**: Métricas observables de éxito.
+Un cambio de **nivel 2** (ver `SPEC_GUIDE.md` §1.0) DEBERÍA tener, antes de modificar código, una carpeta aprobada `specs/changes/AAAA-MM-DD-nombre-cambio/` con:
+1. `proposal.md` — problema, alcance, fuera de alcance, impacto en otras áreas y criterios de aceptación.
+2. `design.md` — contratos, componentes, impacto en base de datos, casos de borde y reversión.
+3. `tasks.md` — tareas pequeñas y verificables.
+4. `evidence.md` — salida real de las verificaciones.
 
-### B. `design.md` (Contratos de Datos y Arquitectura)
-* **Componentes UI Reutilizados**: Referencias directas a `.sdd/components/` (prohibido CSS nuevo).
-* **Contratos de Endpoints**: Entrada (Request), Salida (Response) y registro en `endpoints_registry.json`.
-* **Impacto en Base de Datos**: Transaccionalidad (`with transaction.atomic():`), persistencia en bloque (`bulk_create`), y patrón Expand & Contract si hay migraciones.
-* **Casos de Borde (Edge Cases)**: Respuestas a escenarios adversos (offline, 401/403, 409 duplicados, estados vacíos).
-
-### C. `tasks.md` (Plan de Ejecución Secuencial Atómico)
-* Tareas pequeñas, autónomas y verificables.
-* El agente de IA debe ejecutar **una sola tarea a la vez**.
-* Tras completar cada tarea y validar que compila, marca `[x]`. Si falla, se detiene y reporta.
-
-### D. `evidence.md` (Quality Gates con Evidencia Real)
-* La IA debe adjuntar la salida real de la terminal de:
-  1. `python stack/validate_endpoints.py` (debe arrojar 100% de éxito).
-  2. `pytest pruebas/ -v` (o tests de Playwright).
-  3. Verificación de cumplimiento de las 17 Buenas Prácticas Inflexibles.
+Los cambios de nivel 1 (ajustes menores) no la requieren. **Por qué DEBERÍA y no DEBE:** el valor de la plantilla depende del tamaño del cambio; para un equipo pequeño, exigirla siempre generaría documentos vacíos. Lo que sí DEBE cumplirse siempre es que un cambio no se declare terminado sin evidencia de las verificaciones (§3.D).
 
 ---
 
-## 4. Flujo Operativo Paso a Paso
+## 3. Contenido de cada artefacto
+
+### A. `proposal.md`
+* **Problema y motivación**, distinguiendo hechos de supuestos.
+* **Alcance**: qué se construye.
+* **Fuera de alcance**: lo que NO DEBE tocarse en este cambio.
+* **Impacto en otras áreas o sistemas** (otras unidades de negocio, reportes, integraciones).
+* **Criterios de aceptación** verificables.
+* Una persona aprueba la propuesta antes de pasar al diseño.
+
+### B. `design.md`
+* Componentes de `.sdd/components/` reutilizados.
+* Contratos de endpoints (entrada, salida, registro en `backend/config/endpoints_registry.json`) y si el cambio rompe compatibilidad (protocolo 09).
+* Impacto en base de datos: transacciones (BP-12), escritura en bloque (BP-13), *Expand & Contract* si hay migración en producción (protocolo 08).
+* Casos de borde: 401/403, 409, datos inválidos, lista vacía, red caída.
+* Cómo se revierte.
+
+### C. `tasks.md`
+* Tareas pequeñas, cada una con su verificación.
+* Se ejecutan en orden; si una falla, se detiene y se reporta.
+
+### D. `evidence.md`
+Salida real (no resumida ni inventada) de:
+1. Pruebas de backend: `.\.venv\Scripts\python.exe -m pytest -m "not e2e"`.
+2. Pruebas de frontend: `npm test`.
+3. Prueba de humo HTTP: `.\.venv\Scripts\python.exe pruebas\validate_endpoints.py --base-url http://localhost:8000` (código de salida 0; contraseña en `SDD_LOGIN_PASSWORD`).
+4. Lint (`ruff check .`, `npm run lint`) y, si cambian dependencias, `pip-audit` / `npm audit --audit-level=high`.
+5. Revisión de la lista de verificación de la normativa 00 (BP-01 a BP-22) que aplique al cambio.
+
+Lo que no se ejecutó se marca **NO EJECUTADO** con el motivo.
+
+> **Estado de implementación**: la plantilla existe; el SDD no verifica automáticamente que un *pull request* traiga su carpeta de cambio. Esa verificación queda a la revisión de código (o a un chequeo de CI que cada proyecto PUEDE agregar).
+
+---
+
+## 4. Flujo
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Dev as Ingeniero / Usuario
-    participant IA as Agente de IA
+    actor Dev as Persona responsable
+    participant IA as Agente de IA (opcional)
     participant Spec as specs/changes/
-    participant Code as Código Fuente (backend/frontend)
-    participant Gate as Quality Gate (validate_endpoints.py)
+    participant Code as Código
+    participant Gate as Verificaciones (pytest, vitest, validate_endpoints)
 
-    Dev->>IA: Solicita nueva funcionalidad o mejora
-    IA->>Spec: Clona plantilla .sdd/changes_template/
-    IA->>Spec: Redacta proposal.md y design.md
-    Dev->>IA: Aprueba propuesta y alcance
-    IA->>Spec: Desglosa tasks.md
-    loop Por cada tarea atómica
-        IA->>Code: Implementa código respetando BP-01 a BP-17
-        IA->>Spec: Marca [x] en tasks.md
+    Dev->>IA: Solicita el cambio
+    IA->>Spec: Copia changes_template/ y redacta proposal.md
+    Dev->>Spec: Revisa y aprueba alcance
+    IA->>Spec: Redacta design.md y tasks.md
+    loop Por cada tarea
+        IA->>Code: Implementa respetando BP-01 a BP-22
+        IA->>Gate: Ejecuta la verificación de la tarea
+        IA->>Spec: Marca [x] solo si pasó
     end
-    IA->>Gate: Ejecuta validaciones y tests automáticos
-    Gate-->>IA: Retorna evidencias (logs / JSON)
-    IA->>Spec: Registra evidencias en evidence.md
-    IA->>Dev: Entrega completada con evidencia técnica
+    IA->>Gate: Ejecuta verificación completa
+    Gate-->>IA: Salidas reales
+    IA->>Spec: Registra evidence.md
+    IA->>Dev: Entrega con evidencia para revisión
 ```
 
 ---
 
-## 5. Especificaciones Vivas (Living Specs)
+## 5. Especificaciones vivas
 
-Cuando un requerimiento cambia a mitad del sprint o en el futuro:
-1. **Primero se actualiza la especificación** (`proposal.md` o `design.md`).
-2. **Luego se modifica el código**.
-3. La carpeta `specs/changes/` se versiona en Git junto con el código, formando un historial vivo y auditable de la evolución del software.
+Cuando un requisito cambia durante o después de la implementación:
+1. Se actualiza primero la especificación (`proposal.md` o `design.md`), dejando constancia del cambio.
+2. Luego se modifica el código.
+3. `specs/changes/` se versiona en Git con el código, de modo que el historial explica **por qué** cambió el software, no solo **qué** cambió.

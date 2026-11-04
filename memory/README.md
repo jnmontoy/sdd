@@ -1,55 +1,64 @@
-# Sistema de Memoria Persistente para Agentes de IA (SDD Memory Engine)
+# Memoria persistente del proyecto (`memory/`)
 
-Inspirado en el concepto de **memoria persistente de largo plazo (Engram™)** y los registros de decisiones arquitectónicas (**ADRs**), este sistema resuelve el mayor problema de programar con Inteligencia Artificial: **la amnesia entre sesiones**.
+Plantilla para que el conocimiento de un proyecto (decisiones tomadas, errores ya resueltos, convenciones del equipo) quede **escrito en el repositorio** y no dependa de la memoria de una persona ni de la sesión de un asistente de IA.
 
----
+Se basa en dos prácticas conocidas:
+* **ADR** (*Architecture Decision Record*, registro de decisión de arquitectura; formato popularizado por Michael Nygard): un archivo corto por decisión con contexto, alternativas y consecuencias.
+* **Lecciones aprendidas**: catálogo de errores resueltos con síntoma, causa raíz y regla preventiva.
 
-## 🧠 ¿Por qué es necesaria la Memoria Persistente?
-
-Los modelos de lenguaje (LLMs) operan en ventanas de contexto efímeras:
-1. **Pérdida de contexto**: Cada nueva sesión en la terminal o IDE arranca desde cero.
-2. **Reincidencia en errores**: Si un desarrollador tardó 2 horas corrigiendo un bug sutil de dependencias circulares o serialización, en la siguiente sesión la IA puede volver a cometer exactamente el mismo error.
-3. **Decisiones descartadas que vuelven a proponerse**: La IA sugiere arquitecturas que el equipo ya rechazó semanas atrás por motivos de rendimiento o seguridad.
+Protocolo que la rige: [`greenfield/15_protocolo_memoria_persistente_y_aprendizaje_agentes.md`](../greenfield/15_protocolo_memoria_persistente_y_aprendizaje_agentes.md).
 
 ---
 
-## 📂 Estructura Canónica de la Carpeta `memory/`
+## Para qué sirve
 
-Todo proyecto nacido bajo el ecosistema SDD incorpora en su raíz la carpeta `memory/`:
+Los asistentes de IA (y las personas nuevas en un equipo) no recuerdan lo que pasó en sesiones anteriores. Sin un registro escrito:
+1. Se repiten errores que ya se habían corregido.
+2. Se vuelven a proponer alternativas que el equipo ya descartó, sin conocer el motivo.
+3. Las convenciones (formatos, nombres, zona horaria) se aplican de forma inconsistente.
+
+---
+
+## Estructura
+
+En el SDD esta carpeta es una **plantilla**: se copia a la raíz de cada proyecto nuevo y allí se mantiene.
 
 ```text
-mi_proyecto/
+<proyecto>/
 └── memory/
-    ├── README.md                      # Explicación de uso para desarrolladores y agentes
-    ├── adrs/                          # Architectural Decision Records (Decisiones inmutables)
-    │   ├── 0000_template_adr.md       # Plantilla de registro de decisión
-    │   └── 0001_arquitectura_stack.md # ADRs adoptados en el proyecto
-    │
-    └── learnings/                     # Aprendizaje continuo acumulativo
-        ├── bug_lessons.md             # Lecciones aprendidas de bugs corregidos (Anti-Reincidencia)
-        └── conventions.md             # Reglas y preferencias del negocio no negociables
+    ├── README.md               # Este documento
+    ├── adrs/
+    │   ├── 0000_template_adr.md   # Plantilla de ADR
+    │   └── 0001_....md            # Decisiones del proyecto (numeradas, no se reescriben)
+    └── learnings/
+        ├── bug_lessons.md      # Errores resueltos y regla para no repetirlos
+        └── conventions.md      # Convenciones de negocio, datos y formato
 ```
 
----
-
-## 🔄 Protocolo de Memoria para el Agente (Recall & Log)
-
-### 1. Fase de Inicio de Sesión: Recall (Recuperación)
-Antes de proponer o ejecutar código, el agente de IA **DEBE LEER OBLIGATORIAMENTE**:
-* `memory/adrs/`: Para no contradecir decisiones arquitectónicas ya tomadas.
-* `memory/learnings/conventions.md`: Para adoptar los formatos y reglas del equipo.
-* `memory/learnings/bug_lessons.md`: Para verificar si la tarea que va a realizar toca un área propensa a bugs conocidos.
-
-### 2. Fase de Cierre de Sesión: Log Learnings (Registro de Aprendizajes)
-Cuando se resuelve un problema complejo, un bug sutil o se toma una decisión técnica clave:
-* El agente o el desarrollador añade una entrada en `memory/learnings/bug_lessons.md`.
-* Si se tomó una decisión de arquitectura, se redacta un nuevo ADR numerado (`0002_...md`).
+`adrs/0001_arquitectura_hibrida_fastapi_django.md` es la decisión base del stack del SDD; el proyecto la hereda y puede reemplazarla con un ADR propio si cambia de stack.
 
 ---
 
-## 🔌 Compatibilidad con Servidores MCP (Model Context Protocol)
+## Uso
 
-Este estándar en Markdown es **100% interoperable** con:
-* **Engram™ (Gentleman Programming)**: Servidor MCP local en Go + SQLite/FTS5 que indexa automáticamente estas carpetas.
-* **Knowledge Items (KI) de Antigravity / Gemini**: Inyección directa en el prompt del sistema.
-* **Claude Code / Cursor / OpenCode**: Consumo directo mediante reglas de proyecto (`AGENTS.md` o `.cursorrules`).
+### Al iniciar una sesión de trabajo (persona o agente)
+Leer, en este orden, lo que aplique a la tarea:
+* `memory/adrs/`: para no contradecir decisiones vigentes.
+* `memory/learnings/conventions.md`: formatos y reglas del equipo.
+* `memory/learnings/bug_lessons.md`: si la tarea toca un área con errores conocidos.
+
+### Al cerrar una tarea
+* Si se resolvió un error que costó más de un intento o una investigación, agregar una entrada en `bug_lessons.md`.
+* Si se tomó una decisión de arquitectura, crear un ADR nuevo con el siguiente número. Un ADR aceptado **no se edita**: si la decisión cambia, se crea uno nuevo que lo reemplaza y se actualiza el campo "Estado" del anterior.
+* NO registrar aquí datos personales, credenciales ni información confidencial del negocio.
+
+---
+
+## Cómo lo leen las herramientas de IA
+
+Los archivos son Markdown plano, así que cualquier herramienta puede leerlos. La forma práctica de que un agente los consulte es referenciarlos desde el archivo de instrucciones del proyecto:
+* **Claude Code**: `CLAUDE.md` (admite importar archivos con `@ruta/al/archivo.md`).
+* **Cursor**: reglas de proyecto (`.cursor/rules/` o el formato heredado `.cursorrules`).
+* **Otros agentes** (OpenCode, Copilot, etc.): `AGENTS.md` en la raíz.
+
+También existen servidores MCP (*Model Context Protocol*) de memoria, por ejemplo Engram (Gentleman Programming), que indexan notas con búsqueda de texto completo (SQLite FTS5). Son **opcionales**: el SDD no los instala ni depende de ellos.

@@ -48,7 +48,7 @@ Una vez el usuario ingresa al sistema autenticado, **EL 100% DE LAS VISTAS ES HO
    ========================================================================== */
 .page-wrapper-full {
   width: 100%;
-  min-height: calc(100vh - var(--topheader-height, 60px));
+  min-height: calc(100vh - var(--topbar-height));
   padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
@@ -77,7 +77,7 @@ Una vez el usuario ingresa al sistema autenticado, **EL 100% DE LAS VISTAS ES HO
   gap: 0.75rem;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   padding: 0.75rem 1rem;
 }
 
@@ -87,7 +87,7 @@ Una vez el usuario ingresa al sistema autenticado, **EL 100% DE LAS VISTAS ES HO
   overflow-x: auto;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
 }
 ```
 

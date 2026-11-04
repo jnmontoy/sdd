@@ -103,12 +103,12 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
   left: 0;
   bottom: 0;
   width: 260px;
-  background-color: var(--color-bg-card);
-  border-right: 1px solid var(--color-border);
+  background-color: var(--bg-card);
+  border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   z-index: 900;
-  transition: width var(--transition-normal), transform var(--transition-normal);
+  transition: width var(--transition-base), transform var(--transition-base);
   overflow-x: hidden;
 }
 
@@ -126,24 +126,24 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
 
 .joli-sidebar.collapsed .joli-nav-link {
   justify-content: center;
-  padding: var(--space-3) 0;
+  padding: 0.75rem 0;
 }
 
 .joli-sidebar-header {
-  padding: var(--space-4) var(--space-5) var(--space-2) var(--space-5);
+  padding: 1rem 1.25rem 0.5rem 1.25rem;
 }
 
 .joli-sidebar-section-title {
   font-size: 11px;
-  font-weight: var(--weight-bold);
-  color: var(--color-text-muted);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-muted);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
 
 .joli-sidebar-nav {
   flex: 1;
-  padding: var(--space-2) var(--space-3);
+  padding: 0.5rem 0.75rem;
   overflow-y: auto;
 }
 
@@ -153,32 +153,32 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 0.25rem;
 }
 
 .joli-nav-link {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  color: var(--color-text-secondary);
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--text-secondary);
   text-decoration: none;
   border-radius: var(--radius-lg);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   transition: all var(--transition-fast);
 }
 
 .joli-nav-link:hover {
-  background-color: var(--color-bg-card-hover);
-  color: var(--color-text-primary);
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .joli-nav-item.active .joli-nav-link {
   background: rgba(16, 185, 129, 0.12);
-  color: var(--color-primary);
-  font-weight: var(--weight-semibold);
-  border-left: 3px solid var(--color-primary);
+  color: var(--brand-primary);
+  font-weight: var(--font-weight-semibold);
+  border-left: 3px solid var(--brand-primary);
 }
 
 .joli-nav-icon {
@@ -189,7 +189,7 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
   margin-left: auto;
   padding: 2px 8px;
   font-size: 10px;
-  font-weight: var(--weight-bold);
+  font-weight: var(--font-weight-bold);
   color: #10b981;
   background-color: rgba(16, 185, 129, 0.15);
   border-radius: var(--radius-full);
@@ -197,14 +197,14 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
 
 /* PIE DE SIDEBAR */
 .joli-sidebar-footer {
-  padding: var(--space-4);
-  border-top: 1px solid var(--color-border);
+  padding: 1rem;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .joli-system-status {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 0.5rem;
 }
 
 .joli-status-dot {
@@ -214,12 +214,12 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
 }
 
 .joli-status-dot.online {
-  background-color: var(--color-primary);
+  background-color: var(--brand-primary);
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
 }
 
 .joli-status-text {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
 }
 ```

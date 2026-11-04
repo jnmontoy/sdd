@@ -1,298 +1,261 @@
-# Normativa Maestra de Buenas Prácticas y Auditoría de Seguridad
-## Ecosistema Corporativo Jolifoods — Spec-Driven Development (SDD)
-### Estándar de Conformidad Pre-Auditoría (Score Objetivo: 100 / 100)
+# Normativa de buenas prácticas de ingeniería (BP-01 a BP-22)
 
-Esta normativa formaliza **todos los criterios de evaluación, hardening y buenas prácticas validados en los procesos de auditoría del ecosistema Jolifoods** (Paso 01 al Paso 06, Pentesting OWASP y Docker).
+Esta es la **fuente única** de las buenas prácticas del SDD. Los demás documentos citan el código (por ejemplo, "BP-12") en lugar de copiar la regla.
 
-Cualquier proyecto o módulo creado a partir de `.sdd` **debe nacer blindado bajo estos lineamientos técnicos desde el primer commit**, garantizando que supere cualquier auditoría sin requerir remediaciones posteriores.
+> **Origen:** reúne los criterios que se revisaron en las auditorías de los proyectos internos (buenas prácticas, pruebas de penetración OWASP, endpoints, dependencias y contenedores Docker). Cada regla se justifica con la práctica de industria correspondiente, no con el proyecto donde se detectó.
 
----
+## Cómo leer las reglas
 
-## 1. Matriz de Conformidad Técnica (Las 6 Buenas Prácticas Obligatorias)
+| Palabra | Significado |
+| :--- | :--- |
+| **DEBE / NO DEBE** | Obligatorio. Incumplirlo es un hallazgo de auditoría. Se reserva para seguridad e integridad de datos. |
+| **DEBERÍA / NO DEBERÍA** | Recomendado. Se puede desviar si la razón queda registrada en un ADR (`memory/adrs/`) o si el usuario lo pide expresamente. |
+| **PUEDE** | Opcional. |
 
-| # | Dimensión | Regla Inflexible para el Proyecto | Implementación Técnica Obligatoria |
-|---|---|---|---|
-| **BP-01** | **Aislamiento de Entorno (`DEBUG`)** | Nunca ejecutar `DEBUG=True` en producción. Los secretos jamás se cablean en código. | Leer estrictamente de variables de entorno (`.env`). Lanzar excepción fatal en el arranque si `DEBUG=False` y falta `SECRET_KEY` o credenciales de BD. |
-| **BP-02** | **Blindaje de Hosts (`ALLOWED_HOSTS`)** | Prohibido terminantemente el uso del comodín `ALLOWED_HOSTS = ['*']`. | Lista explícita de dominios e IPs autorizadas: `ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')`. |
-| **BP-03** | **Política de Orígenes Cruzados (`CORS`)** | Prohibido `CORS_ALLOW_ALL_ORIGINS = True`. | `CORS_ALLOWED_ORIGINS` restringido únicamente a los dominios y puertos del frontend institucional (`http://localhost:5173`, `https://*.jolifoods.com`). |
-| **BP-04** | **Limitación de Tasa (`Throttling / Rate Limiting`)** | Proteger todos los endpoints contra fuerza bruta y DoS. | Rate Limiting distribuido respaldado en **Redis**: 5 req/min en login, 30 req/min para clientes anónimos y 120 req/min para usuarios autenticados. Retornar cabecera `Retry-After`. |
-| **BP-05** | **Principio de Mínimo Privilegio (`Deny by Default`)** | Todo endpoint es privado y protegido por defecto, salvo excepción explícita. | `DEFAULT_PERMISSION_CLASSES = ['rest_framework.permissions.IsAuthenticated']` en Django y dependencias de autenticación mandatorias en FastAPI. El login es la única ruta pública autorizada. |
-| **BP-06** | **Hardening Perimetral de Cabeceras HTTP & Cookies** | Forzar directivas de protección contra Clickjacking, MIME-Sniffing y XSS. | `X_FRAME_OPTIONS = 'DENY'`, `SECURE_CONTENT_TYPE_NOSNIFF = True`, `SESSION_COOKIE_HTTPONLY = True`, `CSRF_COOKIE_HTTPONLY = True`, directiva `SameSite = 'Lax'`. |
-| **BP-07** | **Rutas 100% Relativas y Cero Rutas Absolutas** | Prohibido terminantemente cablear rutas absolutas de disco (`C:\...`, `/home/...`) o URLs con dominios fijos (`http://localhost:8000/media/...`) en código fuente. | Todo archivo, asset o import debe resolverse de manera relativa o mediante variables de entorno dinámicas (`BASE_DIR / 'media'`). |
-| **BP-08** | **Directorio Canónico `backend/media/` para Cargas** | Estandarizar la ubicación de subida para cualquier archivo (firmas, PDFs, evidencias, fotos). | Crear siempre `backend/media/` con `.gitkeep`, montar volumen Docker `./backend/media:/app/media` y exponer mediante `MEDIA_URL = '/media/'` y `MEDIA_ROOT = BASE_DIR / 'media'`. |
-| **BP-09** | **Centralización de Endpoints (Cero URLs en Vistas)** | Prohibido terminantemente escribir rutas HTTP quemadas en componentes React o vistas. | Centralizar en `frontend/src/services/endpoints.ts` y registrar en `backend/config/endpoints_registry.json` para validación automatizada en un solo comando. |
-| **BP-10** | **Exención de Testing en Modo Mock No-Code** | Prohibido e innecesario exigir pruebas automáticas, Pytest o validadores sobre prototipos de `mock/`. | Los mocks son simulaciones visuales estáticas (HTML/CSS/JS) sin servidor real ni base de datos conectada. El testing aplica exclusivamente a la fase de implementación real en `frontend/` y `backend/`. |
-| **BP-11** | **Prohibición de Ciclos `for` Anidados ($O(N^2)$ / $O(N \times M)$)** | Prohibido terminantemente anidar ciclos `for` para cruzar o relacionar colecciones, y ejecutar queries o llamadas API dentro de bucles. | Reemplazar por indexación en memoria con tablas Hash / diccionarios (`dict` / `defaultdict`) con lookup en tiempo constante $O(1)$ (reduciendo complejidad a $O(N + M)$), o resolver el cruce directamente en base de datos (`JOIN`, `prefetch_related`, `annotate`). |
-| **BP-12** | **Transaccionalidad Atómica Obligatoria (`transaction.atomic`)** | Prohibido ejecutar mutaciones múltiples dependientes sin control transaccional. | Toda operación de negocio con 2 o más escrituras en base de datos debe envolverse en `with transaction.atomic():` para evitar estados inconsistentes o registros huérfanos. |
-| **BP-13** | **Persistencia en Bloque (`bulk_create` / `bulk_update`)** | Prohibido invocar `.save()` o `.create()` individual dentro de bucles para colecciones. | Utilizar operaciones masivas en bloque (`bulk_create(batch_size=500)` y `bulk_update()`) en un único viaje de red SQL. |
-| **BP-14** | **Integridad Absoluta de Código (Cero Código Truncado)** | Prohibido truncar código o dejar placeholders tipo `// ... resto del código ...`. | Toda modificación o creación asistida por IA debe entregar el archivo 100% completo, operativo y respetando la lógica previa del módulo. |
-| **BP-15** | **Aislamiento Estricto de Entorno (Cero Python Global)** | Prohibido terminantemente ejecutar `pip install` o comandos de Python en el intérprete global del sistema. | Operar exclusivamente dentro del entorno virtual `.venv` (`.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt`). |
-| **BP-16** | **Documentación Holística de Capacidades (Cero Changelogs de Micro-Cambios)** | Prohibido redactar bitácoras de cambios puntuales o micro-ediciones. | La carpeta de documentación (`docs/`) y el `README.md` deben documentar a nivel macro cada componente/página realizada, detallando todo lo que realiza la aplicación, su alcance funcional y el destino y visión global de la plataforma. |
-| **BP-17** | **Directorio Canónico `pruebas/` en la Raíz (Cero Tests en `backend/`)** | Prohibido terminantemente crear archivos o carpetas de pruebas dentro de `backend/`. | En modo Greenfield, toda suite de pruebas automatizadas (unitarias, integración, endpoints, E2E) debe residir exclusivamente en la carpeta raíz `pruebas/` (`<project-root>/pruebas/`), manteniendo `backend/` completamente limpio. |
-| **BP-18** | **Transporte Seguro de Tokens (Cero Tokens de Sesión en URL)** | Prohibido terminantemente usar query params (`?token=`) como método estándar de transporte para sesiones de usuario o llamadas API regulares. | Los tokens de sesión deben transmitirse exclusivamente vía cabecera HTTP `Authorization: Bearer <jwt>` (o `Token <token>`) o Cookies seguras `HttpOnly`. Se admiten solo 2 excepciones auditadas: 1) Fallback controlado para streaming/descargas masivas de reportes o conectores externos (ej. Power BI / Excel en `bi`); 2) Redirecciones de callbacks OAuth2/Azure AD (ej. `tiendita`, `app_tic`), con sanitización inmediata de la URL del navegador vía `window.history.replaceState`. |
-| **BP-19** | **Estabilización de Permisos y Roles Desacoplados (Cero Roles Rígidos en Código)** | Prohibido terminarte hardcodear listas de roles en Enums, cablear "Admin/Operador" o preguntar roles rígidos en código. | Implementar tabla propia para roles (`roles` / modelo `Rol`) con `permisos: JSONField`, cruzada con `usuarios` mediante `ManyToManyField`. Compilar permisos en backend mediante el endpoint universal `/api/mis-permisos/`, validar rutas por `permissionKey` (no por nombre de rol) y estabilizar en frontend con sincronización en caliente (`AuthContext` + `RolesAdminSidebar`) sin forzar cierre de sesión. |
-| **BP-20** | **Cierre Controlado de Sesión por Token Vencido (Cero Redirecciones Abruptas o Bucles 401)** | Prohibido redirigir bruscamente o dejar la pantalla en blanco ante un token vencido o respuesta 401. | Implementar el motor de doble detección (reactiva por interceptor HTTP 401 que despacha el evento global `session-expired` + proactiva en cliente comparando `Date.now() >= exp * 1000`). Desplegar `SessionExpirationModal` con backdrop blur, bloquear interacción de fondo, purgar de forma idempotente las credenciales y redirigir limpiamente a login preservando la ruta previa. |
+Cada regla trae su **por qué**. Si el por qué no aplica a su caso, documente la excepción en lugar de forzar la regla.
 
 ---
 
-## 2. Buenas Prácticas de Arquitectura Backend (Django + FastAPI)
+## 1. Resumen
 
-### 2.1. Erradicación Absoluta de Consultas N+1 (Django ORM)
-1. **Relaciones Foráneas y Uno a Uno (`ForeignKey` / `OneToOne`)**:
-   - Mandatorio el uso de `.select_related()` en todas las consultas que involucren roles, sedes, perfiles o departamentos en una única sentencia `JOIN` SQL:
-     ```python
-     # CORRECTO (1 Consulta SQL):
-     usuario = Usuario.objects.select_related('rol', 'sede', 'perfil').get(numero_documento=doc)
-     
-     # INCORRECTO - PENALIZADO EN AUDITORÍA (N+1 Consultas SQL):
-     usuario = Usuario.objects.get(numero_documento=doc)
-     nombre_rol = usuario.rol.nombre  # Dispara una query adicional por cada registro
-     ```
-2. **Relaciones Muchos a Muchos y Relaciones Inversas (`ManyToManyField` / `Reverse FK`)**:
-   - Mandatorio el uso de `.prefetch_related()` para precargar colecciones agrupadas mediante lotes indexados:
-     ```python
-     usuarios = Usuario.objects.prefetch_related('groups', 'user_permissions').filter(is_active=True)
-     ```
-3. **Proyección Estricta de Columnas (`.only()` y `.values()`)**:
-   - Si solo se requieren atributos de identidad (cédula, nombre), proyectar únicamente esos campos para no consumir ancho de banda de red ni memoria en el pool de conexiones.
+| Código | Tema | Nivel |
+| :--- | :--- | :--- |
+| BP-01 | Secretos y `DEBUG` por ambiente | DEBE |
+| BP-02 | Hosts permitidos explícitos | DEBE |
+| BP-03 | CORS restringido | DEBE |
+| BP-04 | Limitación de tasa | DEBE |
+| BP-05 | Denegar por defecto | DEBE |
+| BP-06 | Cabeceras HTTP y cookies seguras | DEBE |
+| BP-07 | Sin rutas absolutas ni URLs fijas | DEBE |
+| BP-08 | Carpeta `backend/media/` para archivos subidos | DEBERÍA |
+| BP-09 | Registro centralizado de endpoints | DEBERÍA |
+| BP-10 | Los prototipos (mock) no llevan pruebas automatizadas | — |
+| BP-11 | Sin cruces cuadráticos ni consultas dentro de ciclos | DEBE / DEBERÍA |
+| BP-12 | Transacciones atómicas | DEBE |
+| BP-13 | Escrituras en lote | DEBERÍA |
+| BP-14 | Código completo, sin truncar | DEBE |
+| BP-15 | Dependencias aisladas en `.venv` | DEBE |
+| BP-16 | Documentación del estado actual del sistema | DEBERÍA |
+| BP-17 | Ubicación de las pruebas | DEBERÍA |
+| BP-18 | Transporte y almacenamiento de tokens | DEBE |
+| BP-19 | Roles y permisos en datos, no en código | DEBE / DEBERÍA |
+| BP-20 | Vencimiento de sesión controlado | DEBE |
+| BP-21 | Cambios de nivel 2 con propuesta y evidencia | DEBERÍA |
+| BP-22 | Memoria de decisiones y errores conocidos | DEBERÍA |
 
-### 2.2. Entrega JSON Ultra Rápida en FastAPI y Django como Capa de Seguridad
-- **FastAPI como capa exclusiva de entrega de datos**: Debe ser **siempre ultra rápido** en la serialización y entrega de respuestas JSON. Para garantizar microsegundos de latencia, se configura `default_response_class=ORJSONResponse` (`orjson>=3.10.0`) junto con **Pydantic v2** (`pydantic>=2.8.0`), omitiendo cualquier overhead de middleware innecesario.
-- **Django como capa de seguridad**: Django asume el rol exclusivo de seguridad (autenticación JWT, sesiones seguras, RBAC, permisos de usuario y gobierno del ORM). Los endpoints de datos de FastAPI consumen las validaciones de identidad y permisos garantizadas por Django.
-- **Versiones estandarizadas obligatorias**: `fastapi>=0.115.0`, `uvicorn[standard]>=0.30.0`, `pydantic>=2.8.0` y `orjson>=3.10.0`.
-- Implementar pooling de conexiones persistentes con PostgreSQL (`CONN_MAX_AGE = 600` en Django y pools asíncronos en async engines).
+---
 
-### 2.3. Manejo Seguro de Errores y Fugas de Información
-- **Nunca exponer `stack traces` ni nombres internos de tablas en respuestas de error HTTP**.
-- Capturar excepciones y mapearlas a un contrato de error estándar en español con código de correlación UUID:
-  ```json
-  {
-    "status": "error",
-    "error_code": "ERR_DATABASE_UNAVAILABLE",
-    "message": "En este momento no es posible procesar la solicitud. Intente nuevamente en unos minutos.",
-    "correlation_id": "c8b417ef-5769-42b8-935a-4933a30c5e7b"
-  }
-  ```
+## 2. Seguridad y configuración (BP-01 a BP-09)
 
-### 2.4. Prohibición Terminante de Ciclos `for` Anidados (Antipatrón O(N²) y O(N × M))
-1. **El Problema**:
-   - Anidar bucles `for` (recorrer una colección dentro de otra para cruzar relaciones o buscar coincidencias) degrada drásticamente el rendimiento al disparar una complejidad algorítmica cuadrática o polinomial ($O(N^2)$ o $O(N \times M)$).
-   - **Antipatrón Fatal**: Ejecutar consultas SQL/ORM o llamadas HTTP dentro de un ciclo `for` (o ciclos anidados). Esto multiplica de forma inaceptable la latencia y satura el pool de conexiones a la base de datos.
-2. **Buenas Prácticas Obligatorias para Evitar Relaciones en Bucles**:
-   - **Indexación mediante Diccionarios / Tablas Hash ($O(1)$)**: Convertir la colección secundaria en un mapa hash (`dict` por clave primaria o `defaultdict(list)` por clave foránea). Esto reduce la complejidad global de $O(N \times M)$ a tiempo lineal **$O(N + M)$**, transformando cada búsqueda interna en un acceso instantáneo en tiempo constante $O(1)$.
-   - **Uso de Conjuntos (`set`) para Validación de Existencia**: Utilizar `set` para comprobar pertenencia (`if item_id in ids_set`) en tiempo constante $O(1)$ en lugar de buscar dentro de una lista lineal en $O(K)$.
-   - **Delegación Directa al Motor de Base de Datos**: Resolver los cruces y agregaciones en la capa de datos (`select_related()`, `prefetch_related()`, `annotate()`, `aggregate()` o `.values()`), aprovechando los índices y optimizaciones de PostgreSQL antes de transferir datos a la memoria de Python.
-   - **Comprensiones Directas de Listas y Diccionarios**: Evitar bucles anidados manuales con acumuladores mutables `.append()`; priorizar comprensiones declarativas y limpias.
+Implementación de referencia: [`stack/settings_security_template.py`](../stack/settings_security_template.py).
 
-#### Comparativa Técnica de Código:
+**BP-01. Secretos y `DEBUG`.** `DEBUG` NO DEBE estar activo en producción. Los secretos (`SECRET_KEY`, credenciales de BD, claves de API) NO DEBEN estar en el código ni en archivos versionados: se leen de variables de entorno. Con `DEBUG=False`, si falta `SECRET_KEY` la aplicación DEBE negarse a arrancar.
+*Por qué:* `DEBUG=True` muestra trazas con variables y configuración; un secreto en git queda en el historial aunque se borre después.
 
-❌ **INCORRECTO (Penalizado en auditoría — Ciclo anidado O(N × M) o consultas dentro de bucles)**:
+**BP-02. Hosts permitidos.** `ALLOWED_HOSTS` NO DEBE contener `'*'` en producción; se lee de la variable de entorno como lista explícita.
+*Por qué:* evita ataques de cabecera `Host` (envenenamiento de enlaces de restablecimiento y de caché).
+
+**BP-03. CORS.** `CORS_ALLOW_ALL_ORIGINS` NO DEBE ser `True`. Los orígenes se listan en `CORS_ALLOWED_ORIGINS`. Ese ajuste no acepta comodines: para subdominios se usa `CORS_ALLOWED_ORIGIN_REGEXES`. Con credenciales (`CORS_ALLOW_CREDENTIALS=True`) el origen nunca puede ser `*`, y esto aplica también a FastAPI.
+*Por qué:* con CORS abierto y cookies, cualquier sitio puede hacer peticiones autenticadas en nombre del usuario.
+
+**BP-04. Limitación de tasa.** El login, el restablecimiento de contraseña y las APIs DEBEN tener límites de peticiones respaldados en Redis, compartidos entre procesos, y responder `429` con `Retry-After`. Valores iniciales sugeridos y configurables: login 5/min, recuperación 3/min, anónimos 30/min, autenticados 120/min.
+*Por qué:* frena la fuerza bruta y el abuso. Si el contador vive en la memoria de un proceso, cada réplica tiene el suyo y el límite real se multiplica.
+
+**BP-05. Denegar por defecto.** Todo endpoint DEBE requerir autenticación salvo que se declare público de forma explícita (login, refresh, restablecimiento, `/health/*`). En DRF: `IsAuthenticated` como permiso por defecto. En FastAPI: routers con `dependencies=[Depends(usuario_actual)]`.
+*Por qué:* un endpoint nuevo que se olvida de proteger queda cerrado, no abierto.
+
+**BP-06. Cabeceras y cookies.** DEBE enviarse `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` y HSTS en producción. Las cookies de sesión y de refresh DEBEN ser `HttpOnly`, `Secure` (en HTTPS) y `SameSite=Lax` o `Strict`. La cookie `csrftoken` NO es `HttpOnly`, porque la SPA debe leerla para enviar `X-CSRFToken`. `SECURE_BROWSER_XSS_FILTER` no se usa: Django lo retiró y los navegadores ignoran esa cabecera.
+*Por qué:* evita el clickjacking y la interpretación errónea de tipos de archivo, y que JavaScript lea las credenciales.
+
+**BP-07. Rutas y URLs.** El código NO DEBE contener rutas absolutas de disco (`C:\...`, `/home/...`) ni URLs fijas de servidores. Backend: `BASE_DIR / "media"`. Frontend: base desde `VITE_API_URL` y rutas desde `ENDPOINTS`.
+*Por qué:* el mismo código debe correr en cualquier equipo, contenedor y ambiente.
+
+**BP-08. Archivos subidos.** Los archivos subidos DEBERÍAN guardarse bajo `MEDIA_ROOT = BASE_DIR / "media"` (`backend/media/` con `.gitkeep`) y montarse como volumen en Docker. Los archivos sensibles (firmas, documentos de identidad) NO DEBEN servirse por URL pública adivinable: se entregan por una vista que verifica permisos. Ver [`model/archivos/`](../model/archivos/spec_model_archivos_media.md).
+
+**BP-09. Endpoints centralizados.** Las vistas de React NO DEBERÍAN escribir rutas HTTP: las importan de `frontend/src/services/endpoints.ts`. Cada endpoint se declara también en `backend/config/endpoints_registry.json`, que usa el [validador](../stack/validate_endpoints.py).
+*Por qué:* un cambio de ruta se hace en un solo lugar y la validación automática sabe qué probar.
+
+---
+
+## 3. Calidad del código (BP-10 a BP-17)
+
+**BP-10. Prototipos.** Los prototipos en `mock/` (HTML/CSS/JS estático, sin servidor) no llevan pruebas automatizadas ni validación de endpoints. Las pruebas empiezan cuando el prototipo aprobado se implementa en `frontend/` y `backend/`.
+*Por qué:* un prototipo es descartable y sirve para validar la pantalla y el contrato de datos con el negocio; probarlo no reduce ningún riesgo.
+
+**BP-11. Cruces de colecciones y consultas en ciclos.**
+- NO DEBE ejecutarse una consulta a la BD ni una llamada HTTP dentro de un ciclo que recorre datos (el problema N+1). DEBE precargarse en lote (`filter(id__in=...)`, `select_related`, `prefetch_related`).
+- NO DEBERÍA cruzarse dos colecciones con ciclos anidados cuando su tamaño depende de los datos. Se indexa una en un diccionario (`dict`/`defaultdict`) y el costo baja de O(N×M) a O(N+M), o se resuelve en SQL (`JOIN`, `annotate`).
+- *Excepción:* ciclos anidados sobre conjuntos pequeños y de tamaño fijo (por ejemplo 7 días × 3 turnos) son legibles y no tienen costo apreciable.
+*Por qué:* con 1 000 clientes y 10 000 facturas, el cruce anidado hace 10 millones de comparaciones; el indexado, 11 000.
+
 ```python
-# PÉSIMO RENDIMIENTO: O(N * M) en CPU o saturación si hay consultas internas
-resultado = []
-for cliente in clientes:
-    # Antipatrón fatal si además se hace: Factura.objects.filter(cliente_id=cliente.id)
-    for factura in facturas:  # Ciclo dentro de ciclo
-        if factura.cliente_id == cliente.id:
-            resultado.append({
-                "cliente": cliente.nombre,
-                "factura": factura.numero,
-                "monto": factura.monto
-            })
-```
-
-✅ **CORRECTO (Estándar SDD — Indexación Hash O(N + M) con Lookup O(1))**:
-```python
-# ÓPTIMO: Pre-agrupación en diccionario O(M) y búsqueda instantánea O(1)
 from collections import defaultdict
 
 facturas_por_cliente = defaultdict(list)
-for factura in facturas:
-    facturas_por_cliente[factura.cliente_id].append({
-        "numero": factura.numero,
-        "monto": factura.monto
-    })
-
-# Un solo recorrido lineal O(N) sin ciclos anidados
-resultado = [
-    {
-        "cliente": cliente.nombre,
-        "facturas": facturas_por_cliente.get(cliente.id, [])
-    }
-    for cliente in clientes
+for f in facturas:                                # O(M)
+    facturas_por_cliente[f.cliente_id].append(f)
+resultado = [                                     # O(N)
+    {"cliente": c.nombre, "facturas": facturas_por_cliente.get(c.id, [])}
+    for c in clientes
 ]
+# Mejor aún, si las relaciones están en el ORM:
+clientes = Cliente.objects.filter(activo=True).prefetch_related("facturas")
 ```
 
-✅ **AÚN MEJOR (Delegado en Base de Datos / ORM — 1 Sola Sentencia SQL)**:
-```python
-# La base de datos resuelve las relaciones de forma nativa e indexada
-clientes_con_facturas = (
-    Cliente.objects.prefetch_related('facturas')
-    .filter(activo=True)
-)
-```
+Para N+1 en Django:
+- `select_related()` para claves foráneas y uno a uno (un `JOIN`).
+- `prefetch_related()` para muchos a muchos y relaciones inversas (una consulta adicional por relación, no por fila).
+- `.only()` o `.values()` cuando se necesitan pocas columnas.
+- En las pruebas, `django_assert_max_num_queries` fija el número máximo de consultas de cada listado.
 
-### 2.5. Transaccionalidad Atómica Obligatoria y Persistencia en Lote (BP-12 y BP-13)
-1. **Transacciones Atómicas Obligatorias (`with transaction.atomic():`)**:
-   - Toda operación de negocio que involucre dos o más escrituras dependientes en la base de datos (ej. crear factura y sus líneas de detalle, debitar saldo y asentar movimiento, o crear usuario con rol y perfil) debe ejecutarse obligatoriamente dentro de un bloque `transaction.atomic()`.
-   - Si se produce una excepción en cualquier paso, se ejecuta un `ROLLBACK` completo automático, impidiendo registros huérfanos o datos corruptos a medio guardar.
-2. **Prohibición de `.save()` dentro de Bucles**:
-   - Prohibido iterar sobre listas para ejecutar `instancia.save()` o `Model.objects.create()` individualmente. Esto dispara $N$ viajes de ida y vuelta al motor SQL, degradando la latencia y bloqueando transacciones en PostgreSQL.
-   - Es obligatorio agrupar en colecciones e invocar `bulk_create(batch_size=500)` o `bulk_update(batch_size=500)`.
+**BP-12. Transacciones atómicas.** Una operación de negocio con dos o más escrituras dependientes DEBE ejecutarse dentro de `transaction.atomic()`.
+*Por qué:* si falla un paso, se revierte todo y no quedan registros huérfanos ni a medias.
 
-#### Comparativa Técnica:
-
-❌ **INCORRECTO (Penalizado en auditoría: escrituras individuales no atómicas)**:
-```python
-# PÉSIMO: Si falla el ítem 3, la orden queda incompleta y se hicieron 10 transacciones SQL separadas
-orden = Orden.objects.create(cliente=cliente, total=total)
-for item in items:
-    DetalleOrden.objects.create(orden=orden, producto=item.prod, cantidad=item.cant)  # N queries individuales
-```
-
-✅ **CORRECTO (Estándar SDD: Atómico y en 1 sola sentencia SQL masiva)**:
 ```python
 from django.db import transaction
 
 with transaction.atomic():
     orden = Orden.objects.create(cliente=cliente, total=total)
-    detalles = [
-        DetalleOrden(orden=orden, producto=item.prod, cantidad=item.cant)
-        for item in items
-    ]
-    DetalleOrden.objects.bulk_create(detalles, batch_size=500)  # 1 sola query SQL
+    DetalleOrden.objects.bulk_create(
+        [DetalleOrden(orden=orden, producto=i.producto, cantidad=i.cantidad) for i in items],
+        batch_size=500,
+    )
 ```
 
----
+**BP-13. Escrituras en lote.** Para insertar o actualizar colecciones DEBERÍA usarse `bulk_create`/`bulk_update` (con `batch_size`) en lugar de `.save()` dentro de un ciclo.
+*Por qué:* una consulta por lote en vez de una por fila.
+*Atención:* `bulk_create` y `bulk_update` no llaman a `save()`, no emiten señales (`pre_save`/`post_save`) y no ejecutan `full_clean()`. Si el modelo depende de eso, como auditoría por señales o campos calculados en `save()`, valide antes o use `save()` dentro de la transacción y justifíquelo.
 
-## 3. Buenas Prácticas de Frontend (React 19 + Vite + Bootstrap 5 + TypeScript)
+**BP-14. Código completo.** Ningún cambio, humano o de IA, DEBE dejar código truncado ni marcadores como `// ... resto del código ...`.
+*Por qué:* el código omitido se pierde al guardar el archivo.
 
-### 3.1. Cero Almacenamiento de Tokens Críticos en `localStorage`
-- **Regla Estricta contra XSS**: Ni el Access Token JWT ni el Refresh Token deben almacenarse en `localStorage` o `sessionStorage`.
-- La autenticación debe manejarse mediante **Cookies Seguras `HttpOnly`**. En el almacenamiento local del navegador únicamente está permitido guardar preferencias cosméticas:
-  - `jolifoods_theme`: `'dark'` | `'light'`
-  - `gy_remembered_doc`: número de documento recordado (si el usuario marcó la casilla voluntariamente).
+**BP-15. Entorno virtual.** Las dependencias de Python NO DEBEN instalarse en el intérprete global: se instalan en `.venv` en la raíz del proyecto y se invocan con su ejecutable (`.\.venv\Scripts\python.exe -m pip ...` en Windows, `./.venv/bin/python -m pip ...` en Linux/macOS). El Python del sistema PUEDE usarse para crear el `.venv` o ejecutar scripts que solo usan la librería estándar, como `init_project.py`.
+*Por qué:* las instalaciones globales mezclan versiones entre proyectos y hacen que "en mi equipo funciona" no se pueda reproducir.
 
-### 3.2. Optimización de Renderizado y Memoria en React
-- Utilizar `useMemo` y `useCallback` en componentes con listas grandes o tablas de datos para evitar re-renderizados fantasmas.
-- Desacoplar la lógica de formularios mediante hooks personalizados (`useLoginForm`, `useRecoveryForm`) usando **React Hook Form + Zod** para evitar renders en cada pulsación de tecla (`onBlur` o validación por esquema).
-- Manejo limpio de suscripciones y temporizadores en `useEffect` con función de limpieza (`cleanup return () => clearInterval(...)`).
+**BP-16. Documentación.** `README.md` y `docs/` DEBERÍAN describir el **estado actual** del sistema: qué hace cada módulo, su alcance, cómo se ejecuta y hacia dónde va la plataforma. El historial de cambios vive en git y en un `CHANGELOG.md` por versión (ver [protocolo 06](./06_protocolo_devops_cicd_y_calidad.md)), no en la documentación funcional.
+*Por qué:* una documentación hecha de bitácoras ("se agregó el campo X") obliga a reconstruir el estado leyendo la historia.
 
-### 3.3. Estilizado Puro con `variables.css`
-- Prohibido el uso de valores hexadecimales o RGB fijos quemados dentro de los estilos locales. Todo color, espaciado, radio de borde y fuente debe consumir las variables CSS corporativas (`var(--color-primary)`, `var(--color-bg-base)`, etc.) garantizando la conmutación instantánea entre **Modo Noche** y **Modo Día**.
-
-### 3.4. Regla Inflexible de Maquetación: Layout 100% Horizontal (Prohibido Centrar la Pantalla)
-- **PROHIBICIÓN TERMINANTE**: Queda estrictamente prohibido centrar vistas, tablas, módulos o dashboards en el frontend mediante contenedores estrechos (`max-w-xl mx-auto`, `max-w-4xl`, `items-center justify-center` en el contenedor raíz).
-- **MAQUETACIÓN A LO LARGO DE LA PANTALLA**: Todo desarrollo frontend debe extenderse **a lo largo de la pantalla en horizontal (`width: 100%`, `w-full`, layout fluido)**, aprovechando de extremo a extremo el ancho del monitor para visualizar tablas masivas, toolbars y KPIs sin scroll horizontal forzado ni espacios vacíos a los costados.
-- **Únicas excepciones de centrado**: Solo los diálogos emergentes (`ModalDialog`, `ConfirmModal`) y la tarjeta previa de autenticación (`LoginCard`).
-
-### 3.5. Reutilización Estricta de Componentes y Prohibición de CSS Inventado
-- **PROHIBICIÓN TERMINANTE**: Queda estrictamente prohibido crear archivos `.css` aislados o estilos improvisados desde cero para nuevos módulos (ej. inventar `users.css`, `pedidos.css` con selectores arbitrarios).
-- **OBLIGACIÓN DE CONSUMO DE COMPONENTES `.sdd/components/`**: Todo desarrollo debe utilizar las clases, estructuras y contratos ya probados y auditados:
-  - Tablas: `.joli-table`, `.table-wrapper-full` de `data_table.md`.
-  - Toolbars: `.compact-action-box` (28px) y `.row-actions-group` (26px) de `icon_action_group.md`.
-  - Filtros: `.filter-topbar` de `expandable_filter_group.md` y `checklist_popover.md`.
-  - Modales: `ConfirmModal` con justificación obligatoria.
-  - Paneles: Right Drawer (`.joli-drawer-container`) de `drawer.md`.
-  - Colores: `variables.css`.
-- **Sanción en Auditoría**: Cualquier archivo CSS huérfano que duplique o ignore los componentes auditados de `.sdd` será penalizado como falta grave de consistencia arquitectónica.
-
-### 3.6. Creación y Edición CRUD Exclusiva en Right Sidebar Drawer (Prohibido Modales)
-- **PROHIBICIÓN TERMINANTE**: Queda terminantemente prohibido generar formularios de creación (`+ Nuevo`) o edición (`Editar`) de cualquier CRUD en modales flotantes centrados (`ModalDialog`) o navegando a páginas separadas (`/crear`, `/editar`), a menos que la persona lo pida expresamente.
-- **OBLIGATORIEDAD DE RIGHT DRAWER**: Todo formulario de captura, edición y detalle debe operar **exclusivamente desde el panel lateral derecho deslizante** ([`drawer.md`](../components/drawer/drawer.md), `.joli-drawer-container`). Esto preserva el contexto de la tabla en segundo plano, maximiza la ergonomía horizontal y evita la proliferación de modales intrusivos.
-- **Uso Exclusivo de Modales**: Los modales centrados quedan reservados estrictamente para confirmaciones (`ConfirmModal`), firmas digitales (`SignatureModal`), lectores biométricos o alerta de sesión expirada.
-
-### 3.7. Agrupación Obligatoria de Botones de Acción en Tablas con Bootstrap (`btn-group`)
-- **PROHIBICIÓN TERMINANTE**: Queda terminantemente prohibido dejar botones sueltos o separados por márgenes (`btn me-1`, `btn me-2`) dentro de la celda de acciones/opciones de una tabla.
-- **OBLIGATORIEDAD DE BOOTSTRAP `btn-group`**: Siempre que haya 2 o más botones de acción en una fila (ej. Ver en Drawer, Restablecer clave, Anular con ConfirmModal), deben agruparse obligatoriamente dentro de un contenedor `<div class="btn-group btn-group-sm row-actions-group" role="group">...</div>`, unificando las esquinas redondeadas en los extremos y garantizando una altura uniforme de 26px a 28px.
+**BP-17. Ubicación de las pruebas.**
+- Backend: `pruebas/unitarias/`, `pruebas/integracion/` y `pruebas/e2e/` en la raíz del proyecto, con `pytest.ini` (`testpaths = pruebas`, `pythonpath = backend`). NO DEBERÍAN crearse pruebas dentro de `backend/`.
+- Frontend: las pruebas de componentes y hooks van junto al archivo (`X.test.tsx`), según la convención de Vite/Vitest.
+*Por qué:* la imagen de producción del backend se construye solo con `backend/` y queda sin código de pruebas, y todas las pruebas de Python se ejecutan con un solo `pytest` desde la raíz. Detalle en el [protocolo 11](./11_protocolo_pruebas_automaticas_y_testing_e2e.md).
 
 ---
 
-## 4. Buenas Prácticas de Contenedores Docker e Infraestructura
+## 4. Sesión, permisos y proceso (BP-18 a BP-22)
 
-1. **Usuarios No-Root (`Non-Root User`)**:
-   - Los contenedores de producción deben ejecutarse bajo un usuario con privilegios mínimos (`appuser`), nunca como `root`.
-2. **Imágenes Base Ligeras y Seguras**:
-   - Usar `python:3.11-slim` o `alpine` y `node:20-alpine`, reduciendo la superficie de ataque y el tiempo de arranque.
-3. **Higiene de Archivos (`.dockerignore`)**:
-   - Omitir de forma mandatoria: `.git`, `node_modules`, `__pycache__`, `*.pyc`, `.env`, carpetas `.vscode`, archivos de log y temporales.
-4. **Healthchecks Declarados en Orquestación**:
-   - Todos los servicios críticos (`db`, `redis`, `backend`) deben contar con directiva `healthcheck` en `docker-compose.yml` utilizando las sondas de [`.sdd/stack/healthcheck.py`](../stack/healthcheck.py).
-5. **Volúmenes Persistentes Nombrados**:
-   - Separar el almacenamiento de base de datos (`postgres_data`), caché (`redis_data`) y archivos de medios (`media_volume`) del ciclo de vida de los contenedores.
+**BP-18. Tokens.**
+- El **access token** (JWT, de vida corta) DEBE vivir solo en memoria (estado del `AuthContext` o del cliente HTTP) y enviarse en `Authorization: Bearer <token>`.
+- El **refresh token** DEBE viajar en una cookie `HttpOnly; Secure; SameSite=Lax` limitada a `/api/v1/auth/`. Se rota en cada uso y el anterior va a una lista negra.
+- Ningún token DEBE guardarse en `localStorage` ni en `sessionStorage`, ni viajar en la URL (`?token=`).
+- Al cargar la página, la app llama a `/api/v1/auth/refresh/` para recuperar la sesión.
+- *Excepciones auditadas:* (1) el retorno de SSO OAuth2 puede traer un código o token en la URL; el frontend DEBE canjearlo de inmediato y limpiar la URL con `history.replaceState`. (2) Las descargas que el navegador abre directamente o los conectores externos (por ejemplo Power BI) PUEDEN usar un token de un solo uso, de vida muy corta y con alcance limitado a ese recurso.
+*Por qué:* cualquier script inyectado (XSS) puede leer `localStorage`, pero no puede leer una cookie `HttpOnly`. Los tokens en la URL quedan en el historial, en los logs del servidor y en la cabecera `Referer`.
 
----
+> **Origen de las excepciones:** conectores de reportes y SSO con Microsoft 365 usados en proyectos internos.
 
-## 5. Lista de Chequeo Rápida para la Creación de Proyectos (Pre-Flight Checklist)
+**BP-19. Roles y permisos.**
+- Las decisiones de acceso NO DEBEN depender de nombres de rol escritos en el código (`if rol == "Admin"`); DEBEN depender de claves de permiso (`ventas.ver`, `usuarios.editar`).
+- Los roles DEBERÍAN estar en una tabla propia (`Rol`, con sus permisos) relacionada con usuarios por muchos a muchos. El backend expone los permisos efectivos en `GET /api/v1/mis-permisos/` y el frontend protege rutas y botones por clave de permiso.
+- Un cambio de permisos DEBERÍA reflejarse sin obligar a cerrar sesión: el `AuthContext` vuelve a consultar los permisos.
+- Modelo: [`model/roles/`](../model/roles/spec_model_roles_permisos.md).
+*Por qué:* agregar un rol o mover un permiso se vuelve un cambio de datos, no de código.
 
-Antes de dar por finalizada la creación de cualquier nuevo módulo, verificar:
+**BP-20. Vencimiento de sesión.** Ante un token vencido o una respuesta 401, la app NO DEBE quedar en blanco ni entrar en un bucle de redirecciones. Lo que sí debe hacer:
+- Reactiva: el interceptor HTTP intenta **un** refresh (las peticiones simultáneas esperan ese mismo intento) y, si falla, emite el evento `session-expired`.
+- Proactiva: el cliente lee el `exp` del access token en memoria y renueva antes de que venza.
+- Muestra el `SessionExpirationModal` bloqueante, limpia el estado de sesión y redirige al login conservando la ruta de regreso.
 
-- [ ] ¿El archivo `.env` está en `.gitignore` y existe un `.env.example` completo?
-- [ ] ¿`ALLOWED_HOSTS` contiene únicamente los nombres de dominio de Jolifoods y localhost?
-- [ ] ¿Las cabeceras de seguridad (`X_FRAME_OPTIONS`, `NOSNIFF`, `HttpOnly`, `SameSite`) están activas?
-- [ ] ¿Todas las consultas ORM de usuario y entidades relacionadas usan `select_related` o `prefetch_related` (Anti-N+1)?
-- [ ] ¿Las cookies de sesión tienen directiva `HttpOnly=True`?
-- [ ] ¿El frontend lee los tokens de diseño desde `variables.css` con soporte noche/día?
-- [ ] ¿El script `init_project.py` inyectó el nombre y logo de Jolifoods dinámicamente?
-- [ ] ¿Se creó y aisló el entorno virtual `.venv` en la raíz del proyecto y se instaló `requirements.txt` exclusivamente dentro de él? (Cero paquetes instalados en el Python global del equipo).
-- [ ] ¿El layout es 100% horizontal a lo largo de la pantalla (full-width) y libre de contenedores centrados tipo blog (`max-w-xl mx-auto`)?
-- [ ] ¿Todos los módulos y vistas reutilizan directamente las clases CSS y componentes de `.sdd/components/` (cero archivos `.css` inventados o improvisados desde cero)?
-- [ ] ¿La creación y edición de registros CRUD se realiza obligatoriamente desde el Right Drawer lateral (cero modales o páginas separadas para formularios de CRUD)?
-- [ ] ¿Si una fila de tabla tiene 2 o más botones de acción, se encuentran agrupados obligatoriamente con Bootstrap `btn-group btn-group-sm` (cero botones sueltos con márgenes)?
-- [ ] ¿El código está libre de ciclos `for` anidados ($O(N^2)$ / $O(N \times M)$) y se implementó indexación con diccionarios $O(1)$ o cruces directos en BD (BP-11)?
-- [ ] ¿Toda operación compuesta de 2 o más escrituras está blindada con `with transaction.atomic():` (BP-12)?
-- [ ] ¿Las inserciones o actualizaciones masivas usan `bulk_create` o `bulk_update` en vez de `.save()` en bucles (BP-13)?
-- [ ] ¿El código entregado está 100% completo, sin truncamientos ni comentarios tipo `// ... resto del código ...` (BP-14)?
-- [ ] ¿La documentación en `docs/` y el `README.md` describe todo lo que realiza el módulo/aplicación de forma holística, omitiendo micro-cambios y dando contexto del destino de la plataforma (BP-16)?
-- [ ] ¿Los archivos y suites de pruebas se ubicaron exclusivamente en la carpeta raíz `pruebas/` y el directorio `backend/` quedó libre de archivos de test (BP-17)?
-- [ ] ¿Los tokens de sesión viajan exclusivamente por cabeceras `Authorization` o cookies `HttpOnly` y se sanitiza la URL de inmediato ante callbacks OAuth (BP-18)?
-- [ ] ¿Los roles y permisos cuentan con tabla propia (`roles` / `Rol` con `JSONField`) cruzada mediante `ManyToManyField`, validando por `permissionKey` en vez de roles quemados (BP-19)?
-- [ ] ¿El vencimiento de tokens se gestiona con doble detección proactiva/reactiva y modal no intrusivo `SessionExpiredModal` con purga total (BP-20)?
-- [ ] ¿La sonda `/api/v1/health/` responde HTTP 200 con la latencia de Postgres y Redis?
+Componentes: [`context/auth_context.md`](../components/context/auth_context.md), [`services/api_client.md`](../components/services/api_client.md), [`modal/session_expiration_modal.md`](../components/modal/session_expiration_modal.md).
+
+**BP-21. Cambios de nivel 2.** Una funcionalidad incremental o un refactor (nivel 2) DEBERÍA tener su carpeta `specs/changes/AAAA-MM-DD-nombre/` con `proposal.md`, `design.md`, `tasks.md` y `evidence.md`. No se da por terminado sin la salida real de las pruebas en `evidence.md`. Ver [protocolo 14](./14_protocolo_cambios_atomicos_y_especificaciones_vivas.md).
+*Por qué:* queda escrito qué se decidió, qué quedó fuera y con qué evidencia se cerró.
+
+**BP-22. Memoria del proyecto.** Antes de un cambio relevante DEBERÍAN revisarse `memory/adrs/` (decisiones vigentes) y `memory/learnings/` (convenciones y errores ya resueltos). Un error difícil de diagnosticar se registra en `memory/learnings/bug_lessons.md`. Ver [protocolo 15](./15_protocolo_memoria_persistente_y_aprendizaje_agentes.md).
 
 ---
 
-## 6. Decálogo Anti-Caos para Asistentes y Agentes de IA
+## 5. Backend: prácticas complementarias
 
-Para evitar que una Inteligencia Artificial introduzca deuda técnica, rompa código en producción o degrade el rendimiento del ecosistema, **todo modelo o agente de IA que opere sobre este repositorio debe cumplir inflexiblemente el siguiente decálogo**:
+### 5.1. Errores sin fugas de información
+Las respuestas de error NO DEBEN incluir trazas, SQL, nombres de tablas ni rutas internas. Se responde con un contrato estable y un identificador de correlación que permite buscar el detalle en los logs:
 
-1. **Cero Código Truncado (`BP-14`)**:
-   - Prohibido reemplazar o generar archivos dejando comentarios del tipo `// ... resto del código ...` o `# [Mantener funciones anteriores]`. Todo archivo o bloque editado debe conservar el 100% de su funcionalidad y contexto sin omisiones destructivas.
-2. **Aislamiento Total del Entorno (`BP-15`)**:
-   - NUNCA ejecutar comandos `pip install` o `python` en el intérprete global del anfitrión. Las ejecuciones deben realizarse únicamente invocando el binario del entorno virtual local (`.\.venv\Scripts\python.exe`).
-3. **Transaccionalidad Atómica Innegociable (`BP-12`)**:
-   - Si una operación crea o modifica múltiples tablas relacionadas, debe envolverse obligatoriamente en `with transaction.atomic():`. Cero registros huérfanos ante excepciones imprevistas.
-4. **Persistencia en Bloque vs Bucles Lentos (`BP-13`)**:
-   - Prohibido llamar a `.save()` o `.create()` individual dentro de bucles `for`. Usar siempre `bulk_create` o `bulk_update` por lotes (`batch_size=500`).
-5. **Cero Ciclos `for` Anidados ($O(N^2)$) (`BP-11`)**:
-   - Prohibido iterar colecciones dentro de bucles para cruzar relaciones o buscar coincidencias. Emplear diccionarios de búsqueda rápida Hash ($O(1)$) o resolver el cruce directamente en el motor de base de datos con SQL (`JOIN` / `prefetch_related`).
-6. **Prohibición de CSS Inventado**:
-   - Prohibido inventar archivos CSS (`custom.css`, `module.css`) o selectores ad-hoc con colores hexadecimales fijos. Reutilizar estrictamente los componentes auditados de `.sdd/components/` y las variables de diseño de `variables.css`.
-7. **Diseño 100% Horizontal (Prohibido Centrar Pantallas)**:
-   - Prohibido centrar dashboards o tablas masivas con contenedores estrechos (`max-w-xl mx-auto`). Toda interfaz debe ocupar el 100% del ancho de la pantalla (`w-full`) para maximizar la legibilidad de columnas y datos.
-8. **Rutas 100% Relativas y Centralizadas (`BP-07` y `BP-09`)**:
-   - Cero URLs fijas (`http://localhost:8000`) o rutas absolutas de Windows/Linux (`C:\Users\...`). Las rutas se resuelven relativamente con `BASE_DIR` en backend y se centralizan en `endpoints.ts` en frontend.
-9. **Tipado Estricto (Prohibido `any` en TypeScript)**:
-   - No ocultar errores de tipado con `any`. Definir contratos rigurosos de interfaces en TypeScript, esquemas de validación Zod en cliente y esquemas Pydantic v2 en FastAPI.
-10. **Cero Alucinación de Librerías o Métodos**:
-    - Usar exclusivamente las dependencias aprobadas en `requirements.txt` y `package.json`. No asumir métodos inexistentes de frameworks; verificar siempre contra la sintaxis oficial y documentada.
-11. **Documentación Viva de Capacidades y Destino de la Plataforma (`BP-16`)**:
-    - Prohibido redactar bitácoras de cambios puntuales ("se agregó campo x"). Documentar todo lo que realiza la aplicación por módulo en `docs/` y mantener actualizado el `README.md` con el alcance global y visión destino del software.
-12. **Ubicación Exclusiva de Pruebas en `pruebas/` (`BP-17`)**:
-    - NUNCA crear archivos o carpetas de pruebas dentro de `backend/`. En modo Greenfield, toda suite de pruebas debe crearse y ejecutarse estrictamente en la carpeta `pruebas/` en la raíz del proyecto (`<project-root>/pruebas/`), manteniendo limpio el código de producción.
-13. **Seguridad Absoluta de Tokens (`BP-18`)**:
-    - Prohibido transmitir tokens de sesión en query params (`?token=`). Utilizar cabeceras `Authorization` o cookies `HttpOnly`. Si se recibe un token por redirección OAuth/SSO, el frontend debe sanitizar la URL inmediatamente con `window.history.replaceState`.
-14. **Estabilización de Permisos Desacoplada (`BP-19`)**:
-    - Prohibido preguntar qué roles fijos tiene una plataforma o quemar Enums de roles. Implementar la tabla `roles` con `JSONField` cruzada por `ManyToManyField` con `usuarios`, compilando mediante `/api/mis-permisos/` y validando por `permissionKey`.
-15. **Cierre Controlado por Token Vencido (`BP-20`)**:
-    - Prohibido dejar la pantalla en blanco o redirigir bruscamente ante errores 401 o token expirado. Implementar la doble detección proactiva/reactiva con `SessionExpiredModal`, purga limpia de almacenamiento y redirección controlada preservando el contexto.
-16. **Gestión de Cambios Atómicos con Evidencia Real (`BP-21` / OpenSpec)**:
-    - Prohibido modificar código en solicitudes incrementales de Nivel 2 sin crear previamente la subcarpeta en `specs/changes/[fecha-cambio]/` con sus 4 artefactos (`proposal.md`, `design.md`, `tasks.md` y `evidence.md`). La IA no puede declarar una tarea terminada sin adjuntar la salida real de `validate_endpoints.py` o de la suite de pruebas (Protocolo 14).
-17. **Memoria Persistente y Aprendizaje Continuo (`BP-22` / Engram)**:
-    - Prohibido iniciar desarrollo sin realizar la fase de *Recall* consultando `memory/adrs/` (decisiones tomadas) y `memory/learnings/` (bugs conocidos y convenciones). Todo error complejo resuelto debe registrarse inmediatamente en `memory/learnings/bug_lessons.md` para blindar al equipo contra la reincidencia (Protocolo 15).
+```json
+{
+  "status": "error",
+  "error_code": "ERR_DATABASE_UNAVAILABLE",
+  "message": "En este momento no es posible procesar la solicitud. Intente nuevamente en unos minutos.",
+  "correlation_id": "c8b417ef-5769-42b8-935a-4933a30c5e7b"
+}
+```
 
+### 5.2. Django y FastAPI
+La división de responsabilidades (Django para seguridad y escrituras, FastAPI para lecturas de alto volumen), con sus costos, está en [`stack/asgi_hybrid_architecture.md`](../stack/asgi_hybrid_architecture.md) y en el [ADR 0001](../memory/adrs/0001_arquitectura_hibrida_fastapi_django.md). Conexiones persistentes a PostgreSQL: `CONN_MAX_AGE` con `CONN_HEALTH_CHECKS = True`.
 
+---
 
+## 6. Frontend: convenciones de interfaz
 
+Estas reglas dan consistencia entre aplicaciones. Son **DEBERÍA**: se pueden desviar con una razón registrada o a pedido del usuario.
 
+> **Origen:** patrones de las aplicaciones internas de gestión, centradas en tablas y uso diario en monitores de escritorio.
 
+**6.1. Tokens de diseño.** Los colores, espaciados, radios y fuentes DEBERÍAN venir de [`variables.css`](../components/variables.css) (`var(--...)`). NO DEBERÍAN escribirse colores hexadecimales en los componentes.
+*Por qué:* el modo noche/día y un cambio de marca se resuelven en un solo archivo.
+
+**6.2. Reutilizar componentes.** Antes de crear estilos o componentes nuevos se DEBERÍA usar el [catálogo](../components/README.md): tablas (`data_table.md`), barras de acciones (`icon_action_group.md`), filtros (`expandable_filter_group.md`), drawer (`drawer.md`), modales (`confirm_modal.md`) y selectores (`select_filter.md`). Si hace falta un estilo nuevo, se escribe con tokens y, si sirve a más de un proyecto, se propone para el catálogo.
+*Por qué:* cada CSS ad-hoc crea otra variante que se debe mantener, probar en ambos temas y revisar en accesibilidad.
+
+**6.3. Pantallas a todo el ancho.** Las vistas de trabajo (tablas, tableros, módulos) DEBERÍAN ocupar el ancho disponible, sin contenedores angostos centrados (`max-width` de lectura más `margin: auto`). Se centran los modales y la tarjeta de login. Los textos largos de lectura PUEDEN limitar su ancho de línea dentro del layout completo.
+*Por qué:* las tablas con muchas columnas son el uso principal; un contenedor angosto obliga a desplazarse en horizontal y deja espacio vacío.
+
+**6.4. CRUD en drawer.** Crear y editar registros DEBERÍA hacerse en el panel lateral derecho ([`drawer.md`](../components/drawer/drawer.md), 560 px o 720 px para formularios largos). Los modales se reservan para confirmaciones, firmas, escáneres y sesión vencida. Un formulario de muchos pasos o de pantalla completa PUEDE ir en una página propia, registrando la razón.
+*Por qué:* la tabla sigue visible como contexto y el usuario no pierde su lugar.
+
+**6.5. Acciones de fila agrupadas.** Dos o más botones en una fila DEBERÍAN ir en `<div class="btn-group btn-group-sm" role="group" aria-label="Acciones de fila">`, con altura uniforme de 26 a 28 px. Los botones de solo ícono DEBEN tener `aria-label` y `title`. Con más de tres acciones secundarias, se agrupan en un menú desplegable.
+
+**6.6. Paginador arriba.** El paginador DEBERÍA ir en la barra superior de la tabla, junto al buscador, el selector de registros por página y el resumen ("Mostrando 1-10 de 150").
+*Por qué:* el usuario ve cuántos registros hay y navega sin bajar hasta el final de la tabla.
+
+**6.7. Rendimiento en React.** `useMemo` y `useCallback` se usan cuando una medición o una lista grande lo justifican, no por defecto. Los efectos con temporizadores, suscripciones o peticiones DEBEN limpiarse (`return () => ...` y `AbortController`). Los formularios usan React Hook Form + Zod.
+
+**6.8. Almacenamiento del navegador.** `localStorage` solo guarda preferencias no sensibles (tema, anchos y visibilidad de columnas, documento recordado si el usuario lo marcó), con claves que llevan el slug de la app (`<app>:theme`) y acceso envuelto en `try/catch`.
+
+---
+
+## 7. Contenedores e infraestructura
+
+Plantillas: [`stack/`](../stack/README.md).
+
+1. Las imágenes de producción DEBEN ejecutarse con un usuario sin privilegios, no `root`.
+2. Las imágenes base DEBERÍAN ser ligeras y estar fijadas a una versión mayor (`python:3.12-slim`, `node:20-alpine`).
+3. `.dockerignore` DEBE excluir `.git`, `.env`, `node_modules`, `.venv`, `__pycache__` y los logs.
+4. `db`, `redis` y `backend` DEBERÍAN tener `healthcheck`. El backend expone `GET /health/live` y `GET /health/ready`.
+5. Los datos DEBEN vivir en volúmenes con nombre (`postgres_data`, `redis_data`, `media_volume`).
+6. En producción, PostgreSQL y Redis NO DEBEN publicar puertos hacia fuera de la red de contenedores.
+
+---
+
+## 8. Lista de verificación antes de entregar
+
+- [ ] `.env` está en `.gitignore` y existe `.env.example` sin secretos (BP-01).
+- [ ] `ALLOWED_HOSTS` y CORS son listas explícitas (BP-02, BP-03).
+- [ ] El login y la recuperación tienen límite de tasa (BP-04).
+- [ ] Todo endpoint nuevo es privado salvo declaración explícita y figura en el registro y en `endpoints.ts` (BP-05, BP-09).
+- [ ] Las cabeceras de seguridad están activas y las cookies de sesión/refresh son `HttpOnly` (BP-06).
+- [ ] No hay rutas absolutas ni URLs fijas (BP-07).
+- [ ] No hay consultas dentro de ciclos; los listados tienen un máximo de consultas probado (BP-11).
+- [ ] Las escrituras dependientes van en `transaction.atomic()` (BP-12).
+- [ ] Ningún token está en `localStorage`, `sessionStorage` ni en la URL (BP-18).
+- [ ] Los permisos se validan por clave, no por nombre de rol (BP-19).
+- [ ] Un 401 termina en el modal de sesión vencida, sin bucles (BP-20).
+- [ ] Las pruebas pasan: `pytest`, `npm test`, `npm run typecheck`, y `pruebas/validate_endpoints.py` con la app levantada.
+- [ ] `pip-audit` y `npm audit --audit-level=high` sin hallazgos altos ni críticos.
+- [ ] La interfaz usa tokens y componentes del catálogo, y es accesible por teclado (sección 6).
+- [ ] `README.md` y `docs/` describen el estado actual (BP-16).
+
+---
+
+## 9. Reglas para asistentes de IA
+
+Las reglas operativas para agentes (Claude Code, Cursor, Copilot) están resumidas en [`stack/agent_harness/AGENTS.md`](../stack/agent_harness/AGENTS.md), que `init_project.py` copia a cada proyecto. Ese archivo cita estos códigos BP y no los redefine.

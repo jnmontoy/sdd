@@ -1,477 +1,262 @@
 ﻿# 01. Especificación del Tablero Principal (Dashboard Operativo)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
+## Joli Foods — Spec-Driven Development (SDD)
 
-Esta especificación describe la vista de aterrizaje (**Home / Dashboard**) presentada al colaborador una vez autenticado a través del módulo de Login y envuelto en el **Layout Maestro (App Shell)**.
+Vista de inicio que ve el colaborador tras autenticarse, dentro del [Layout Maestro](../layout/01_layout_maestro_especificacion.md). Muestra indicadores clave (KPI), un panel de actividad y los últimos accesos. Ocupa el 100% del ancho del área de contenido (DEBERÍA, ver regla de ancho del layout).
 
-Ofrece una visión ejecutiva y operativa instantánea, con indicadores clave de rendimiento (KPIs), gráfico de actividad temporal y bitácora de accesos recientes.
+> **Origen:** patrón tomado de bi (tablero de cartera: KPI clicables como filtro). Aquí se describe de forma genérica.
 
 ---
 
-## 1. Topología de la Vista
+## 1. Topología
 
 ```
 +------------------------------------------------------------------------------------------------+
-|  ¡Bienvenido de nuevo, [Nombre del Usuario]!                                                   |
-|  Panel Operativo • Sede Principal • [Fecha y Hora Actual]                                       |
+|  Bienvenido, <nombre>                                                                           |
+|  <Nombre del proyecto> • <sede> • <fecha>                                                       |
 +------------------------------------------------------------------------------------------------+
-|  [ KPI 1: Accesos Hoy ]  [ KPI 2: Sesiones Activas ]  [ KPI 3: Operaciones ]  [ KPI 4: Estado] |
-|        1,280 (+12%)              42 en línea                856 completadas       99.9% Óptimo |
+|  [ Accesos hoy ]   [ Sesiones activas* ]   [ Alertas de seguridad* ]   [ Estado del servicio ]  |
 +------------------------------------------------------------------------------------------------+
-|                                              |                                                 |
-|  Gráfica de Actividad por Hora (Canvas/CSS)  |  Bitácora de Accesos Recientes                  |
-|  [Curva de demanda y peticiones atendidas]   |  - Joan Montoya (1020405060) • Hace 2 min       |
-|                                              |  - Operador Sede (1010203040) • Hace 8 min      |
+|  Actividad por hora (gráfico)                 |  Últimos inicios de sesión                      |
+|                                               |  - Usuario Ejemplo (•••••0001) • hace 2 min     |
 +------------------------------------------------------------------------------------------------+
+  * KPI clicables: filtran la lista de últimos accesos.
 ```
 
 ---
 
-## 2. Anatomía de los Componentes del Dashboard
+## 2. Datos
 
-### 2.1. Tarjetas KPI (KPI Cards)
-Cada tarjeta consume los tokens de [`variables.css`](../../../components/variables.css) con elevación suave (`--shadow-md`), borde sutil (`--color-border`) y fondo adaptable (`--color-bg-card`):
-- **KPI 1: Accesos Totales**: Contador numérico con indicador de tendencia porcentual en verde esmeralda.
-- **KPI 2: Sesiones Simultáneas**: Lectura en tiempo real de sesiones en Redis con pulso animado.
-- **KPI 3: Operaciones Realizadas**: Métricas del módulo específico del proyecto (transacciones, registros o despachos).
-- **KPI 4: Salud de Infraestructura**: Estado reportado por `/api/v1/health/` (Latencia < 15ms).
+| Bloque | Fuente (`ENDPOINTS`) | Permiso requerido |
+| :--- | :--- | :--- |
+| KPI de accesos, sesiones y alertas | `ENDPOINTS.FAST.METRICAS_KPI` (`GET /fast/v1/metricas/kpi`) | `dashboard.ver` |
+| Estado del servicio | `ENDPOINTS.HEALTH.READY` (`GET /health/ready`, 200 = disponible, 503 = degradado) | público |
+| Últimos inicios de sesión | `GET /api/v1/auditoria/accesos/?limit=5` | `auditoria.ver` (si no lo tiene, el panel no se muestra) |
+
+Respuesta de ejemplo de `/fast/v1/metricas/kpi`:
+```json
+{ "accesos_hoy": 128, "sesiones_activas": 42, "alertas_seguridad": 3 }
+```
+
+En la lista de accesos el documento se muestra **enmascarado** (últimos 4 dígitos) y no se muestra la IP. **Por qué:** el tablero lo ven muchos perfiles; el detalle completo está en la bitácora, protegida por permiso.
+
+Los KPI se cargan con esqueleto (`loading`) y las peticiones se cancelan al desmontar (`AbortController`).
 
 ---
 
-## 3. Implementación en React 19 + TypeScript (`DashboardPage.tsx`)
+## 3. Implementación (`DashboardPage.tsx`)
+
+Usa el componente [`KPIRow`](../../../components/kpi/kpi_cards.md) (sus estilos ya están definidos ahí; no se duplican).
 
 ```tsx
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { 
-  Users, 
-  Activity, 
-  CheckCircle2, 
-  TrendingUp, 
-  ShieldCheck, 
-  Clock, 
-  ArrowUpRight 
-} from 'lucide-react';
-import '../../styles/variables.css';
+import { useEffect, useMemo, useState } from 'react';
+import { Users, Activity, AlertCircle, ShieldCheck, Clock, TrendingUp } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../services/apiClient';
+import { ENDPOINTS } from '../services/endpoints';
+import { KPIRow, type KPICardItem } from '../components/kpi/KPICards';
+import './dashboard.css';
 
-interface KPIItem {
-  id: string;
-  title: string;
-  value: string | number;
-  change: string;
-  isPositive: boolean;
-  icon: React.ReactNode;
+interface KpiResumen { accesos_hoy: number; sesiones_activas: number; alertas_seguridad: number }
+interface AccesoReciente {
+  id: number;
+  nombre: string;
+  documento_enmascarado: string;
+  evento: string;
+  resultado: 'SUCCESS' | 'FAILURE' | 'BLOCKED';
+  fecha_evento: string;
+}
+type FiltroAccesos = 'todos' | 'exitosos' | 'alertas';
+
+const formatoNumero = new Intl.NumberFormat('es-CO');
+const formatoRelativo = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
+
+function haceCuanto(iso: string): string {
+  const minutos = Math.round((new Date(iso).getTime() - Date.now()) / 60000);
+  return Math.abs(minutos) < 60
+    ? formatoRelativo.format(minutos, 'minute')
+    : formatoRelativo.format(Math.round(minutos / 60), 'hour');
 }
 
-export const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
-  const [currentDate, setCurrentDate] = useState<string>('');
+function iniciales(nombre: string): string {
+  return nombre.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
+}
+
+export function DashboardPage() {
+  const { user, hasPermission } = useAuth();
+  const puedeVerAuditoria = hasPermission('auditoria.ver');
+  const [kpi, setKpi] = useState<KpiResumen | null>(null);
+  const [servicioListo, setServicioListo] = useState<boolean | null>(null);
+  const [accesos, setAccesos] = useState<AccesoReciente[]>([]);
+  const [filtro, setFiltro] = useState<FiltroAccesos>('todos');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const now = new Date();
-    setCurrentDate(
-      now.toLocaleDateString('es-CO', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })
-    );
-  }, []);
+    const controller = new AbortController();
+    const { signal } = controller;
 
-  const [activeKpiFilter, setActiveKpiFilter] = useState<string | null>(null);
+    apiClient
+      .get<KpiResumen>(ENDPOINTS.FAST.METRICAS_KPI, { signal })
+      .then((r) => setKpi(r.data))
+      .catch(() => { if (!signal.aborted) setError('No fue posible cargar los indicadores.'); });
 
-  const kpis = [
-    {
-      id: 'kpi-accesos',
-      label: 'ACCESOS HOY',
-      value: '1,280',
-      subtext: 'Valor total verificado',
-      icon: <Users size={20} />,
-      colorClass: 'icon-blue',
-      clickable: false
-    },
-    {
-      id: 'kpi-sesiones',
-      label: 'SESIONES ACTIVAS',
-      value: '42',
-      subtext: 'Sesiones concurrentes',
-      icon: <Activity size={20} />,
-      colorClass: 'icon-emerald',
-      clickable: true
-    },
-    {
-      id: 'kpi-mora',
-      label: 'INCIDENCIAS O ALERTAS',
-      value: '3',
-      subtext: 'Intentos fallidos / alertas',
-      icon: <AlertCircle size={20} />,
-      colorClass: 'icon-pink',
-      clickable: true
-    },
-    {
-      id: 'kpi-salud',
-      label: 'ESTADO DE INFRAESTRUCTURA',
-      value: '99.98%',
-      subtext: 'Latencia 2.3ms • Óptimo',
-      icon: <ShieldCheck size={20} />,
-      colorClass: 'icon-cyan',
-      clickable: false
+    apiClient
+      .get(ENDPOINTS.HEALTH.READY, { signal, validateStatus: () => true })
+      .then((r) => setServicioListo(r.status === 200))
+      .catch(() => { if (!signal.aborted) setServicioListo(false); });
+
+    if (puedeVerAuditoria) {
+      apiClient
+        .get<AccesoReciente[]>(`${ENDPOINTS.AUDITORIA.ACCESOS}?limit=5`, { signal })
+        .then((r) => setAccesos(r.data))
+        .catch(() => { /* el panel muestra estado vacío */ });
     }
-  ];
+
+    return () => controller.abort();
+  }, [puedeVerAuditoria]);
+
+  const fechaHoy = useMemo(
+    () => new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+    []
+  );
+
+  const alternarFiltro = (siguiente: FiltroAccesos) => setFiltro((actual) => (actual === siguiente ? 'todos' : siguiente));
+
+  const items: KPICardItem[] = kpi
+    ? [
+        { id: 'kpi-accesos', label: 'Accesos hoy', value: formatoNumero.format(kpi.accesos_hoy),
+          icon: <Users size={20} />, iconColorClass: 'icon-blue' },
+        { id: 'kpi-sesiones', label: 'Sesiones activas', value: formatoNumero.format(kpi.sesiones_activas),
+          subtext: 'Ver solo accesos exitosos', icon: <Activity size={20} />, iconColorClass: 'icon-emerald',
+          isClickable: puedeVerAuditoria, isActiveFilter: filtro === 'exitosos', onClick: () => alternarFiltro('exitosos') },
+        { id: 'kpi-alertas', label: 'Alertas de seguridad', value: formatoNumero.format(kpi.alertas_seguridad),
+          subtext: 'Intentos fallidos o bloqueados', icon: <AlertCircle size={20} />, iconColorClass: 'icon-pink',
+          isClickable: puedeVerAuditoria, isActiveFilter: filtro === 'alertas', onClick: () => alternarFiltro('alertas') },
+        { id: 'kpi-servicio', label: 'Estado del servicio',
+          value: servicioListo === null ? '—' : servicioListo ? 'Disponible' : 'Degradado',
+          subtext: 'Base de datos y caché', icon: <ShieldCheck size={20} />, iconColorClass: servicioListo === false ? 'icon-amber' : 'icon-cyan' },
+      ]
+    : [];
+
+  const accesosFiltrados = accesos.filter((a) =>
+    filtro === 'todos' ? true : filtro === 'exitosos' ? a.resultado === 'SUCCESS' : a.resultado !== 'SUCCESS'
+  );
 
   return (
-    <div className="joli-dashboard-container">
-      {/* 1. CABECERA DE BIENVENIDA */}
-      <section className="joli-dashboard-hero mb-4">
-        <div>
-          <h1 className="joli-hero-title">
-            ¡Bienvenido de nuevo, {user?.nombre || user?.username || 'Colaborador'}!
-          </h1>
-          <p className="joli-hero-subtitle">
-            Ecosistema Jolifoods &bull; {user?.sede || 'Sede Principal'} &bull; <span className="text-capitalize">{currentDate}</span>
-          </p>
-        </div>
+    <div className="joli-dashboard">
+      <section className="joli-dashboard-hero">
+        <h1 className="joli-dashboard-title">Bienvenido, {user?.nombre ?? 'colaborador'}</h1>
+        <p className="joli-dashboard-subtitle">
+          {import.meta.env.VITE_APP_NAME ?? 'Aplicación'} &bull; <span className="text-capitalize">{fechaHoy}</span>
+        </p>
       </section>
 
-      {/* 2. REJILLA DE TARJETAS KPI (ESTÁNDAR BI CARTERA) */}
-      <div className="joli-kpi-row">
-        {kpis.map((kpi) => {
-          const isFilterActive = activeKpiFilter === kpi.id;
-          return (
-            <div
-              key={kpi.id}
-              className={`joli-kpi-card ${kpi.clickable ? 'clickable-kpi-card' : ''} ${isFilterActive ? 'active-filter' : ''}`}
-              onClick={() => {
-                if (kpi.clickable) {
-                  setActiveKpiFilter((prev) => (prev === kpi.id ? null : kpi.id));
-                }
-              }}
-              title={kpi.clickable ? "Clic para filtrar los registros de la bitácora" : undefined}
-            >
-              <div className="joli-kpi-content">
-                <div className="joli-kpi-label-row">
-                  <span className="joli-kpi-label">{kpi.label}</span>
-                  {isFilterActive && (
-                    <span className="joli-kpi-filter-badge">FILTRO ACTIVO</span>
-                  )}
-                </div>
-                <div className="joli-kpi-value">{kpi.value}</div>
-                <span className="joli-kpi-subtext">{kpi.subtext}</span>
-              </div>
-              <div className={`joli-kpi-icon-box ${kpi.colorClass}`}>
-                {kpi.icon}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {error && <div className="alert alert-warning" role="alert">{error}</div>}
 
-      {/* 3. SECCIÓN MIXTA: ACTIVIDAD Y BITÁCORA */}
+      <KPIRow items={items} loading={kpi === null && error === null} />
+
       <div className="row g-4">
-        {/* PANEL DE ACTIVIDAD TEMPORAL */}
-        <div className="col-12 col-lg-8">
-          <div className="joli-panel-card h-100">
-            <div className="joli-panel-header">
-              <h2 className="joli-panel-title">Monitoreo de Actividad en Vivo</h2>
-              <span className="badge bg-success-subtle text-success">Operación Normal</span>
+        <div className={puedeVerAuditoria ? 'col-12 col-xl-8' : 'col-12'}>
+          <section className="joli-panel-card h-100" aria-labelledby="panel-actividad">
+            <header className="joli-panel-header">
+              <h2 id="panel-actividad" className="joli-panel-title">Actividad por hora</h2>
+            </header>
+            <div className="joli-panel-body joli-panel-body--chart">
+              {/* Reemplazar por el gráfico de .sdd/components/charts/ con datos de /fast/v1/telemetria/resumen */}
+              <TrendingUp size={40} aria-hidden="true" />
+              <p className="mb-0">Gráfico de actividad</p>
             </div>
-            <div className="joli-panel-body d-flex align-items-center justify-content-center" style={{ minHeight: '260px' }}>
-              <div className="text-center text-muted">
-                <TrendingUp size={48} className="mb-2 text-primary opacity-50" />
-                <p className="mb-0">Canal de telemetría activo. Registros en tiempo real conectados vía FastAPI ASGI.</p>
-              </div>
-            </div>
-          </div>
+          </section>
         </div>
 
-        {/* BITÁCORA DE ACCESOS RECIENTES */}
-        <div className="col-12 col-lg-4">
-          <div className="joli-panel-card h-100">
-            <div className="joli-panel-header">
-              <h2 className="joli-panel-title">Últimos Inicios de Sesión</h2>
-              <Clock size={18} className="text-muted" />
-            </div>
-            <div className="joli-panel-body p-0">
-              <ul className="joli-activity-list">
-                <li className="joli-activity-item">
-                  <div className="joli-activity-avatar">JM</div>
-                  <div className="joli-activity-info">
-                    <span className="joli-activity-user">Joan Montoya</span>
-                    <span className="joli-activity-meta">Doc. 1020405060 &bull; 190.14.85.120</span>
-                  </div>
-                  <span className="joli-activity-time">Hace 2m</span>
-                </li>
-                <li className="joli-activity-item">
-                  <div className="joli-activity-avatar">OP</div>
-                  <div className="joli-activity-info">
-                    <span className="joli-activity-user">Operador Báscula</span>
-                    <span className="joli-activity-meta">Doc. 1010203040 &bull; 10.0.1.45</span>
-                  </div>
-                  <span className="joli-activity-time">Hace 14m</span>
-                </li>
-                <li className="joli-activity-item">
-                  <div className="joli-activity-avatar">AD</div>
-                  <div className="joli-activity-info">
-                    <span className="joli-activity-user">Auditor Calidad</span>
-                    <span className="joli-activity-meta">Doc. 71203040 &bull; 10.0.1.52</span>
-                  </div>
-                  <span className="joli-activity-time">Hace 32m</span>
-                </li>
-              </ul>
-            </div>
+        {puedeVerAuditoria && (
+          <div className="col-12 col-xl-4">
+            <section className="joli-panel-card h-100" aria-labelledby="panel-accesos">
+              <header className="joli-panel-header">
+                <h2 id="panel-accesos" className="joli-panel-title">Últimos inicios de sesión</h2>
+                <Clock size={18} aria-hidden="true" />
+              </header>
+              {accesosFiltrados.length === 0 ? (
+                <p className="joli-panel-body mb-0">Sin registros para el filtro seleccionado.</p>
+              ) : (
+                <ul className="joli-activity-list">
+                  {accesosFiltrados.map((a) => (
+                    <li key={a.id} className="joli-activity-item">
+                      <span className="joli-activity-avatar" aria-hidden="true">{iniciales(a.nombre)}</span>
+                      <span className="joli-activity-info">
+                        <span className="joli-activity-user">{a.nombre}</span>
+                        <span className="joli-activity-meta">Doc. {a.documento_enmascarado} &bull; {a.evento}</span>
+                      </span>
+                      <time className="joli-activity-time" dateTime={a.fecha_evento}>{haceCuanto(a.fecha_evento)}</time>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
-};
+}
 ```
+
+`ENDPOINTS.AUDITORIA.ACCESOS` (`/api/v1/auditoria/accesos/`) DEBE agregarse al registro de endpoints si el proyecto no lo tiene.
 
 ---
 
-## 4. Estilos CSS Canónicos (`dashboard.css`)
+## 4. Estilos (`dashboard.css`)
+
+Solo tokens de [`variables.css`](../../../components/variables.css). Los estilos de KPI están en `kpi_cards.md`.
 
 ```css
-.joli-dashboard-container {
-  padding: var(--space-2) 0;
+.joli-dashboard { width: 100%; }
+
+.joli-dashboard-hero { margin-bottom: var(--space-6); }
+.joli-dashboard-title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-primary);
 }
+.joli-dashboard-subtitle { margin: 0; font-size: var(--font-size-sm); color: var(--text-secondary); }
 
-.joli-hero-title {
-  font-size: var(--text-2xl);
-  font-weight: var(--weight-extrabold);
-  color: var(--color-text-primary);
-  margin-bottom: var(--space-1);
-  letter-spacing: -0.5px;
-}
-
-.joli-hero-subtitle {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-  margin-bottom: 0;
-}
-
-/* REJILLA RESPONSIVE INTELIGENTE (ESTÁNDAR BI CARTERA) */
-.joli-kpi-row {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-4);
-  margin-bottom: var(--space-5);
-}
-
-@media (max-width: 1200px) {
-  .joli-kpi-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-
-@media (max-width: 768px) {
-  .joli-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-@media (max-width: 480px) {
-  .joli-kpi-row { grid-template-columns: 1fr; }
-}
-
-/* TARJETAS KPI */
-.joli-kpi-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  padding: 1rem 1.25rem;
-  box-shadow: var(--shadow-sm);
-  min-width: 0;
-  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.joli-kpi-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-text-muted);
-  box-shadow: var(--shadow-md);
-}
-
-.joli-kpi-card.clickable-kpi-card {
-  cursor: pointer;
-  position: relative;
-}
-
-.joli-kpi-card.clickable-kpi-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2);
-}
-
-.joli-kpi-card.clickable-kpi-card.active-filter {
-  border-color: var(--color-primary);
-  background: rgba(16, 185, 129, 0.08);
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
-}
-
-.joli-kpi-label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.joli-kpi-filter-badge {
-  font-size: 9px;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(16, 185, 129, 0.2);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  animation: pulseFilter 2s infinite;
-}
-
-@keyframes pulseFilter {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-.joli-kpi-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-}
-
-.joli-kpi-label {
-  font-size: 11px;
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.joli-kpi-value {
-  font-size: var(--text-2xl);
-  font-weight: var(--weight-extrabold);
-  color: var(--color-text-primary);
-  line-height: 1.2;
-  margin: 0.2rem 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.joli-kpi-subtext {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* CAJA DE ICONOS CROMÁTICA */
-.joli-kpi-icon-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-input);
-  border: 1px solid var(--color-border);
-  flex-shrink: 0;
-  margin-left: 0.5rem;
-}
-
-.joli-kpi-icon-box.icon-blue { color: #3b82f6; border-color: rgba(59, 130, 246, 0.25); background: rgba(59, 130, 246, 0.08); }
-.joli-kpi-icon-box.icon-amber { color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); background: rgba(245, 158, 11, 0.08); }
-.joli-kpi-icon-box.icon-pink { color: #f43f5e; border-color: rgba(244, 63, 94, 0.25); background: rgba(244, 63, 94, 0.08); }
-.joli-kpi-icon-box.icon-emerald { color: #10b981; border-color: rgba(16, 185, 129, 0.25); background: rgba(16, 185, 129, 0.08); }
-.joli-kpi-icon-box.icon-cyan { color: #06b6d4; border-color: rgba(6, 182, 212, 0.25); background: rgba(6, 182, 212, 0.08); }
-
-/* PANELES DE CONTENIDO */
 .joli-panel-card {
-  background-color: var(--color-bg-card);
-  border: 1px solid var(--color-border);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
-
 .joli-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+.joli-panel-title { margin: 0; font-size: var(--font-size-base); font-weight: var(--font-weight-bold); color: var(--text-primary); }
+.joli-panel-body { padding: var(--space-5); color: var(--text-secondary); }
+.joli-panel-body--chart {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--space-2); min-height: 260px; color: var(--text-muted);
 }
 
-.joli-panel-title {
-  font-size: var(--text-base);
-  font-weight: var(--weight-bold);
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-.joli-panel-body {
-  padding: var(--space-5);
-}
-
-/* LISTA DE ACTIVIDAD */
-.joli-activity-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
+.joli-activity-list { list-style: none; margin: 0; padding: 0; }
 .joli-activity-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  display: flex; align-items: center; gap: var(--space-3);
   padding: var(--space-3) var(--space-5);
-  border-bottom: 1px solid var(--color-border);
-  transition: background-color var(--transition-fast);
+  border-bottom: 1px solid var(--border-subtle);
 }
-
-.joli-activity-item:last-child {
-  border-bottom: none;
-}
-
-.joli-activity-item:hover {
-  background-color: var(--color-bg-card-hover);
-}
-
+.joli-activity-item:last-child { border-bottom: none; }
+.joli-activity-item:hover { background-color: var(--bg-hover); }
 .joli-activity-avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background-color: var(--color-bg-input);
-  color: var(--color-text-primary);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  border-radius: var(--radius-full);
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: var(--radius-full);
+  background-color: var(--bg-elevated); color: var(--text-primary);
+  font-size: var(--font-size-xs); font-weight: var(--font-weight-bold);
 }
-
-.joli-activity-info {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.joli-activity-user {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.joli-activity-meta {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
-.joli-activity-time {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
+.joli-activity-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.joli-activity-user { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); color: var(--text-primary); }
+.joli-activity-meta, .joli-activity-time { font-size: var(--font-size-xs); color: var(--text-muted); }
 ```

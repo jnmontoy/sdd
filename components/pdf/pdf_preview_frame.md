@@ -1,51 +1,62 @@
-# Especificación de Componente: Previsualizador PDF en Canvas (`PdfPreviewFrame`)
-## Ecosistema Jolifoods — Metodología Spec-Driven Development (SDD)
+# Especificación de Componente: Previsualizador PDF (`PdfPreviewFrame`)
+## SDD Joli Foods — Spec-Driven Development
 
-El componente `PdfPreviewFrame` renderiza documentos PDF recibidos en formato `Blob` directamente sobre elementos `<canvas>` de HTML5 (utilizando `pdfjs-dist`), simulando hojas físicas apiladas con sombras realistas, paginación continua por scroll y controles de zoom gradual interactivo.
+> **Origen:** patrón tomado de tiendita (entrega y retiro de dotación: comprobantes, certificados y actas). Aquí se describe de forma genérica.
 
-> **Origen y validación en producción**: Extraído del módulo de entrega y retiro de dotación en `tiendita` para comprobantes de nómina, certificados y facturas.
-
----
-
-### 1. Requisitos Técnicos y Dependencias
-
-- **Librería base**: `pdfjs-dist` (`npm install pdfjs-dist`).
-- **Renderizado por Hojas**: Cada página del PDF se renderiza en un Canvas independiente montado dentro de una tarjeta con sombra y numeración flotante.
-- **Controles de Zoom**: Botones de Acercar (`+`), Alejar (`-`) y Reset al 100%, con ajuste fluido por `ResizeObserver`.
-- **Estados de Carga y Error**: Spinner giratorio corporativo durante la rasterización y mensaje constructivo con botón de reintento ante fallos de descarga.
+`PdfPreviewFrame` muestra un PDF recibido como `Blob` dibujando cada página en `<canvas>` con `pdfjs-dist` (PDF.js), como hojas apiladas con sombra, desplazamiento continuo y zoom.
 
 ---
 
-### 2. Implementación TypeScript / React
+### 1. Requisitos técnicos y dependencias
+
+- **Librería**: `pdfjs-dist` (versión 4 o superior).
+- **Worker local (DEBE)**: el *worker* de PDF.js se empaqueta con la app (Vite `?url`), no se descarga de un CDN externo.
+  - **Por qué:** un CDN externo es una dependencia de terceros en tiempo de ejecución (disponibilidad, integridad y política CSP) y debe coincidir exactamente con la versión instalada.
+- **Una hoja por página**: cada página se renderiza a una imagen y se muestra en una tarjeta con su número.
+- **Zoom real**: acercar/alejar cambia el ancho de la hoja (el contenido se reacomoda y el scroll funciona), no un `transform: scale` que encima las páginas.
+- **Liberación de memoria (DEBE)**: al cambiar de documento o desmontar se cancela la carga en curso y se destruye el documento PDF (`loadingTask.destroy()`); así no quedan workers ni memoria retenida.
+- **Estados**: cargando, error con botón "Reintentar" y vacío.
+- **Límite**: para documentos muy largos (más de ~50 páginas) DEBERÍA renderizarse por demanda (solo las páginas visibles, con `IntersectionObserver`).
+
+---
+
+### 2. Implementación React + TypeScript
 
 ```tsx
 // src/components/ui/PdfPreviewFrame.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FileText, Loader2, AlertTriangle, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import './PdfPreviewFrame.css';
 
-// Configuración del worker de PDF.js
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 export interface PdfPreviewFrameProps {
   previewBlob: Blob | null;
-  isLoading: boolean;
+  isLoading?: boolean;
   error?: string | null;
   emptyMessage?: string;
+  /** Escala de rasterizado (calidad). 1.5 equilibra nitidez y memoria. */
+  renderScale?: number;
 }
+
+const MIN_ZOOM = 0.6;
+const MAX_ZOOM = 2.0;
+const ZOOM_STEP = 0.15;
 
 export const PdfPreviewFrame: React.FC<PdfPreviewFrameProps> = ({
   previewBlob,
-  isLoading,
+  isLoading = false,
   error,
-  emptyMessage = 'No hay ningún documento disponible para previsualizar.',
+  emptyMessage = 'No hay ningún documento para previsualizar.',
+  renderScale = 1.5,
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<string[]>([]);
   const [isRendering, setIsRendering] = useState(false);
-  const [scale, setScale] = useState(1.0);
+  const [zoom, setZoom] = useState(1.0);
   const [renderError, setRenderError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0); // "Reintentar" incrementa y vuelve a renderizar
 
   useEffect(() => {
     if (!previewBlob) {
@@ -53,69 +64,72 @@ export const PdfPreviewFrame: React.FC<PdfPreviewFrameProps> = ({
       return;
     }
 
-    let isMounted = true;
+    let cancelled = false;
+    let loadingTask: ReturnType<typeof pdfjsLib.getDocument> | null = null;
     setIsRendering(true);
     setRenderError(null);
 
-    const loadPdf = async () => {
+    (async () => {
       try {
-        const arrayBuffer = await previewBlob.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        const renderedPages: string[] = [];
+        const data = new Uint8Array(await previewBlob.arrayBuffer());
+        loadingTask = pdfjsLib.getDocument({ data });
+        const pdf = await loadingTask.promise;
+        const rendered: string[] = [];
 
         for (let i = 1; i <= pdf.numPages; i++) {
+          if (cancelled) return;
           const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 1.5 });
+          const viewport = page.getViewport({ scale: renderScale });
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d');
-
           if (!context) continue;
-
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
           await page.render({ canvasContext: context, viewport }).promise;
-          renderedPages.push(canvas.toDataURL('image/png'));
+          rendered.push(canvas.toDataURL('image/png'));
+          page.cleanup();
+          canvas.width = 0; // libera la memoria del canvas temporal
         }
 
-        if (isMounted) {
-          setPages(renderedPages);
-          setIsRendering(false);
-        }
-      } catch (err: any) {
-        if (isMounted) {
+        if (!cancelled) setPages(rendered);
+      } catch (err: unknown) {
+        if (!cancelled) {
           console.error('[PdfPreviewFrame] Error al renderizar PDF:', err);
-          setRenderError(err.message || 'Error al procesar el archivo PDF');
-          setIsRendering(false);
+          setRenderError('No fue posible mostrar el documento PDF.');
         }
+      } finally {
+        if (!cancelled) setIsRendering(false);
       }
-    };
-
-    loadPdf();
+    })();
 
     return () => {
-      isMounted = false;
+      cancelled = true;
+      void loadingTask?.destroy(); // cancela la carga y libera el documento y el worker
     };
-  }, [previewBlob]);
+  }, [previewBlob, renderScale, attempt]);
 
-  const zoomIn = () => setScale((s) => Math.min(s + 0.15, 2.0));
-  const zoomOut = () => setScale((s) => Math.max(s - 0.15, 0.6));
-  const zoomReset = () => setScale(1.0);
+  const zoomIn = () => setZoom((z) => Math.min(+(z + ZOOM_STEP).toFixed(2), MAX_ZOOM));
+  const zoomOut = () => setZoom((z) => Math.max(+(z - ZOOM_STEP).toFixed(2), MIN_ZOOM));
 
   if (isLoading || isRendering) {
     return (
-      <div className="pdf-frame-state">
-        <Loader2 className="animate-spin text-emerald-600" size={36} />
-        <p className="pdf-frame-text">Generando vista previa del documento...</p>
+      <div className="pdf-frame-state" role="status">
+        <Loader2 className="pdf-frame-spinner" size={36} aria-hidden="true" />
+        <p className="pdf-frame-text">Generando vista previa del documento…</p>
       </div>
     );
   }
 
   if (error || renderError) {
     return (
-      <div className="pdf-frame-state pdf-frame-error">
-        <AlertTriangle size={36} className="text-amber-500" />
+      <div className="pdf-frame-state pdf-frame-error" role="alert">
+        <AlertTriangle size={36} className="pdf-frame-error-icon" aria-hidden="true" />
         <p className="pdf-frame-text">{error || renderError}</p>
+        {renderError && (
+          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setAttempt((a) => a + 1)}>
+            Reintentar
+          </button>
+        )}
       </div>
     );
   }
@@ -123,39 +137,37 @@ export const PdfPreviewFrame: React.FC<PdfPreviewFrameProps> = ({
   if (!previewBlob || pages.length === 0) {
     return (
       <div className="pdf-frame-state">
-        <FileText size={40} className="text-slate-400" />
+        <FileText size={40} className="pdf-frame-empty-icon" aria-hidden="true" />
         <p className="pdf-frame-text">{emptyMessage}</p>
       </div>
     );
   }
 
   return (
-    <div className="pdf-preview-wrapper" ref={containerRef}>
-      {/* Barra de Controles de Zoom Flotante */}
-      <div className="pdf-zoom-bar">
-        <button type="button" onClick={zoomOut} title="Alejar" aria-label="Alejar">
-          <ZoomOut size={16} />
+    <div className="pdf-preview-wrapper">
+      <div className="btn-group btn-group-sm pdf-zoom-bar" role="group" aria-label="Zoom del documento">
+        <button type="button" onClick={zoomOut} disabled={zoom <= MIN_ZOOM} title="Alejar" aria-label="Alejar">
+          <ZoomOut size={16} aria-hidden="true" />
         </button>
-        <span className="pdf-zoom-label">{Math.round(scale * 100)}%</span>
-        <button type="button" onClick={zoomIn} title="Acercar" aria-label="Acercar">
-          <ZoomIn size={16} />
+        <span className="pdf-zoom-label" aria-live="polite">{Math.round(zoom * 100)}%</span>
+        <button type="button" onClick={zoomIn} disabled={zoom >= MAX_ZOOM} title="Acercar" aria-label="Acercar">
+          <ZoomIn size={16} aria-hidden="true" />
         </button>
-        <button type="button" onClick={zoomReset} title="Restablecer" aria-label="Restablecer">
-          <RotateCcw size={15} />
+        <button type="button" onClick={() => setZoom(1.0)} title="Restablecer zoom" aria-label="Restablecer zoom">
+          <RotateCcw size={15} aria-hidden="true" />
         </button>
       </div>
 
-      {/* Visor con Hojas Apiladas */}
       <div className="pdf-pages-scroll">
         {pages.map((dataUrl, idx) => (
-          <div
-            key={idx}
+          <figure
+            key={`page-${idx + 1}`}
             className="pdf-page-sheet"
-            style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}
+            style={{ width: `min(${Math.round(zoom * 100)}%, ${Math.round(820 * zoom)}px)` }}
           >
-            <img src={dataUrl} alt={`Página ${idx + 1}`} className="pdf-page-image" />
-            <span className="pdf-page-number">Página {idx + 1} de {pages.length}</span>
-          </div>
+            <img src={dataUrl} alt={`Página ${idx + 1} de ${pages.length}`} className="pdf-page-image" />
+            <figcaption className="pdf-page-number">Página {idx + 1} de {pages.length}</figcaption>
+          </figure>
         ))}
       </div>
     </div>
@@ -167,14 +179,17 @@ export const PdfPreviewFrame: React.FC<PdfPreviewFrameProps> = ({
 
 ### 3. Estilos CSS (`PdfPreviewFrame.css`)
 
+La hoja es "papel" (`--surface-paper`, blanco en ambos temas) y la barra de zoom flota sobre el documento (`--overlay-*`).
+
 ```css
 .pdf-preview-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
   min-height: 520px;
-  background: #E2E8F0;
-  border-radius: var(--radius-lg, 10px);
+  background: var(--bg-viewport);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -184,71 +199,85 @@ export const PdfPreviewFrame: React.FC<PdfPreviewFrameProps> = ({
   position: absolute;
   top: 1rem;
   right: 1.5rem;
-  z-index: 20;
+  z-index: var(--z-card);
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  background: rgba(15, 23, 42, 0.85);
+  background: var(--overlay-surface);
   backdrop-filter: blur(8px);
   padding: 0.35rem 0.6rem;
-  border-radius: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-card);
 }
 
 .pdf-zoom-bar button {
   background: transparent;
   border: none;
-  color: #FFFFFF;
+  color: var(--text-on-overlay);
   padding: 4px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
 }
 
-.pdf-zoom-bar button:hover {
-  background: rgba(255, 255, 255, 0.2);
+.pdf-zoom-bar button:hover:not(:disabled) {
+  background: var(--overlay-control-hover);
+}
+
+.pdf-zoom-bar button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pdf-zoom-bar button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-input-focus);
 }
 
 .pdf-zoom-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #F8FAFC;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-on-overlay);
   padding: 0 0.25rem;
+  min-width: 3.2em;
+  text-align: center;
 }
 
 .pdf-pages-scroll {
   flex: 1;
-  overflow-y: auto;
+  overflow: auto;
   padding: 2.5rem 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
+  gap: 2.5rem;
 }
 
 .pdf-page-sheet {
   position: relative;
-  background: #FFFFFF;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  transition: transform 0.15s ease-out;
+  margin: 0;
+  max-width: none;
+  background: var(--surface-paper);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-sm);
+  transition: width var(--transition-fast);
 }
 
 .pdf-page-image {
   display: block;
-  max-width: 100%;
+  width: 100%;
   height: auto;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .pdf-page-number {
   position: absolute;
-  bottom: -1.5rem;
+  bottom: -1.6rem;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 0.75rem;
-  color: #64748B;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
@@ -260,14 +289,31 @@ export const PdfPreviewFrame: React.FC<PdfPreviewFrameProps> = ({
   height: 100%;
   min-height: 400px;
   gap: 0.75rem;
-  background: #F8FAFC;
-  border: 1px dashed #CBD5E1;
-  border-radius: var(--radius-lg, 10px);
+  background: var(--bg-elevated);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+}
+
+.pdf-frame-spinner {
+  color: var(--brand-primary);
+  animation: joliSpin 1s linear infinite;
+}
+
+.pdf-frame-error-icon {
+  color: var(--status-warning);
+}
+
+.pdf-frame-empty-icon {
+  color: var(--text-muted);
 }
 
 .pdf-frame-text {
-  font-size: 0.875rem;
-  color: #64748B;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
   margin: 0;
+}
+
+@keyframes joliSpin {
+  to { transform: rotate(360deg); }
 }
 ```

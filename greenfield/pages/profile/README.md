@@ -1,5 +1,5 @@
 ﻿# Especificación SDD: Módulo de Perfil de Usuario y Seguridad
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
+## Joli Foods — Spec-Driven Development (SDD)
 
 Este directorio define la pantalla de gestión de identidad, credenciales y sesiones remotas del colaborador conectado.
 
@@ -15,5 +15,5 @@ Este directorio define la pantalla de gestión de identidad, credenciales y sesi
 
 ## 2. Componentes UI Vinculados
 
-- **Inputs y Botones**: [`../../components/login/input_field.md`](../../../components/login/input_field.md) y [`../../components/login/button_primary.md`](../../../components/login/button_primary.md)
-- **Top Navbar**: [`../../components/layout/navbar.md`](../../../components/layout/navbar.md)
+- **Inputs y Botones**: [`components/login/input_field.md`](../../../components/login/input_field.md) y [`components/login/button_primary.md`](../../../components/login/button_primary.md)
+- **Top Navbar**: [`components/layout/navbar.md`](../../../components/layout/navbar.md)

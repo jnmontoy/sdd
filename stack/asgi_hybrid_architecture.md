@@ -1,196 +1,151 @@
-# Especificación de Arquitectura Híbrida ASGI: Django + FastAPI
-## Ecosistema Jolifoods — Alto Rendimiento y Cero Problemas N+1
+# Arquitectura híbrida ASGI: Django + FastAPI
 
-Esta especificación detalla el estándar arquitectónico que desacopla responsabilidades:
-- **FastAPI (Capa de Entrega de Datos en JSON)**: Diseñado para ser **siempre ultra rápido** en la entrega de datos, utilizando `ORJSONResponse` para serialización nativa en C, validación declarativa Pydantic v2 y respuestas asíncronas de bajísima latencia sin sobrecarga de middleware.
-- **Django (Capa Exclusiva de Seguridad y Gobierno)**: Actúa como el bastión de **seguridad**, centralizando la autenticación (JWT / SimpleJWT / Azure AD SSO), control de acceso basado en roles y permisos (RBAC), modelo unificado de usuarios, migraciones y panel de administración.
+Un solo proceso ASGI (Uvicorn) atiende dos aplicaciones:
 
----
+- **Django:** autenticación (JWT con SimpleJWT, SSO), usuarios, roles y permisos, modelo de datos, migraciones y administración.
+- **FastAPI:** endpoints de lectura intensiva (listados grandes, tableros, exportaciones), con validación y serialización de Pydantic v2.
 
-### 1. Principios de la Arquitectura Híbrida
-1. **Separación de Responsabilidades**:
-   - **FastAPI**: Capa exclusiva de entrega y serialización de datos JSON a máxima velocidad (`default_response_class=ORJSONResponse`).
-   - **Django**: Capa exclusiva de seguridad, autenticación, control de accesos RBAC y gobierno del modelo de datos.
-2. **Dependencias Esenciales del Stack ASGI de Alto Rendimiento**:
-   - `fastapi>=0.115.0`
-   - `uvicorn[standard]>=0.30.0`
-   - `pydantic>=2.8.0`
-   - `orjson>=3.10.0`
-3. **Un solo puerto, un solo servidor ASGI**: El contenedor backend ejecuta `uvicorn config.asgi:application --host 0.0.0.0 --port 8000`. No se requieren proxies intermedios ni dos puertos diferentes.
-4. **Enrutamiento por Prefijo de Ruta `/fast`**:
-   - Peticiones que contengan `/fast` son dirigidas a la aplicación **FastAPI** (`core.fastapi_app`).
-   - Todas las demás peticiones (`/admin/`, `/api/auth/`, vistas de seguridad Django) son procesadas por la aplicación **Django ASGI** (`get_asgi_application()`).
-5. **Manejo de Conexiones de Base de Datos**: Para evitar fugas de conexiones o `InterfaceError: connection already closed`, se ejecuta `close_old_connections()` de forma asíncrona al inicio de cada petición HTTP.
-6. **Cero N+1 y Ultra Velocidad en FastAPI**: Los endpoints FastAPI utilizan `select_related()` y `prefetch_related()` en Django ORM con `sync_to_async`, o proyecciones raw `.values()` serializadas directamente con `orjson`.
+> **Nota de versión (verificado con FastAPI 0.162):** cuando el endpoint declara su modelo o su tipo de retorno, FastAPI serializa directamente con Pydantic. Esa es la vía rápida recomendada. `ORJSONResponse`, que antes se usaba como clase de respuesta por defecto, quedó obsoleto y no se debe usar en código nuevo.
+
+La decisión, sus alternativas y sus costos están en [ADR 0001](../memory/adrs/0001_arquitectura_hibrida_fastapi_django.md).
 
 ---
 
-### 2. Implementación Canónica: `asgi.py`
+## 1. Cuándo usar cada capa
+
+| Use Django (`/api/v1/...`) | Use FastAPI (`/fast/v1/...`) |
+| :--- | :--- |
+| Escrituras, formularios, CRUD con permisos por objeto | Lecturas de alto volumen o muy frecuentes (tableros, polling) |
+| Todo lo de autenticación y sesión | Agregaciones y exportaciones |
+| Admin y migraciones | Endpoints donde la latencia medida importa |
+
+**Por qué no todo en FastAPI:** Django aporta autenticación, administración, migraciones y permisos ya probados. **Por qué no todo en Django:** con DRF, serializar miles de filas es notablemente más lento que con Pydantic v2. Si un proyecto no tiene lecturas pesadas, DEBERÍA usar solo Django: la capa FastAPI agrega complejidad.
+
+---
+
+## 2. Enrutamiento
+
+Implementación: [`asgi_template.py`](./asgi_template.py) (se copia como `backend/config/asgi.py`).
+
+| Ruta | Destino | Detalle |
+| :--- | :--- | :--- |
+| `/fast/...` | FastAPI | Se quita el prefijo: `/fast/v1/ventas` llega como `/v1/ventas`, con `root_path=/fast` para que `/fast/docs` funcione. |
+| `/health/...` | FastAPI | Sin modificar; sondas de [`healthcheck.py`](./healthcheck.py). |
+| Resto | Django | `/api/v1/...`, `/admin/`, etc. |
+
+Reglas del enrutador:
+
+- La coincidencia DEBE ser por prefijo exacto (`/fast` o `/fast/`). Buscar la subcadena `'/fast' in path` envía a FastAPI rutas como `/api/v1/breakfast/`.
+- Ante un error de FastAPI NO DEBE reintentarse con Django: la respuesta pudo empezar a enviarse y un segundo inicio de respuesta rompe el protocolo ASGI.
+- Para las peticiones de FastAPI que usan el ORM se llama a `close_old_connections()` antes y después. Django solo lo hace en sus propias peticiones; sin esto aparecen errores `connection already closed` cuando la conexión expira (`CONN_MAX_AGE`).
+
+---
+
+## 3. App FastAPI: seguridad igual que en Django
+
+`backend/config/fastapi_app.py` (el generador `init_project.py` crea una versión mínima):
 
 ```python
-"""
-Configuración ASGI Híbrida Universal para Proyectos Jolifoods.
-Combina Django ASGI con FastAPI bajo un único proceso.
-"""
 import os
-import logging
-from django.core.asgi import get_asgi_application
+
 from asgiref.sync import sync_to_async
-from django.db import close_old_connections
-
-# 1. Configurar entorno Django antes de importar componentes
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-django_application = get_asgi_application()
-
-# 2. Importar aplicación FastAPI del proyecto
-try:
-    from config.fastapi_app import app as fastapi_application
-except ImportError:
-    from core.fastapi_app import app as fastapi_application
-
-logger = logging.getLogger("asgi.hybrid")
-
-async def application(scope, receive, send):
-    path = scope.get('path', '')
-
-    # Refrescar y limpiar conexiones inactivas a la DB
-    if scope.get('type') == 'http':
-        await sync_to_async(close_old_connections)()
-
-    # Enrutamiento hacia la capa ultra-rápida FastAPI
-    if scope.get('type') == 'http' and '/fast' in path:
-        try:
-            parts = path.split('/fast', 1)
-            sub_path = parts[1]
-
-            # Normalizar URL: quitar trailing slash para evitar 307 redirects innecesarios
-            if sub_path.endswith('/') and len(sub_path) > 1:
-                sub_path = sub_path[:-1]
-
-            if not sub_path.startswith('/'):
-                sub_path = '/' + sub_path
-
-            scope['path'] = sub_path
-            # Preservar el prefijo raíz para OpenAPI docs (/fast/docs)
-            scope['root_path'] = parts[0] + '/fast'
-
-            await fastapi_application(scope, receive, send)
-        except Exception as e:
-            logger.error(f"Error ASGI en FastAPI ({path}): {str(e)}", exc_info=True)
-            # En caso de excepción no controlada, intentar resolver vía Django
-            await django_application(scope, receive, send)
-    else:
-        # Enrutamiento hacia Django Core (Seguridad y Admin)
-        await django_application(scope, receive, send)
-```
-
----
-
-### 3. Implementación Canónica: `fastapi_app.py`
-
-```python
-"""
-Aplicación FastAPI Integrada para Consultas Masivas y Entrega Ultra Rápida de Datos JSON.
-Utiliza ORJSONResponse para serialización nativa en C a microsegundos.
-"""
-from fastapi import FastAPI, Depends, HTTPException, Query, status
-from fastapi.responses import ORJSONResponse
+from django.contrib.auth import get_user_model
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime
-from asgiref.sync import sync_to_async
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import AccessToken
 
-app = FastAPI(
-    title="Jolifoods Fast API Layer",
-    description="Capa ultra rápida de entrega de datos JSON optimizada con orjson y cero N+1",
-    version="1.0.0",
-    docs_url="/docs",
-    openapi_url="/openapi.json",
-    default_response_class=ORJSONResponse  # Serialización ultra rápida en C por defecto
-)
+from config.healthcheck import router as health_router
 
-# Configuración CORS permisiva interna
+app = FastAPI(title="API de lectura", docs_url="/docs")
+
+# Mismos orígenes que Django. Con allow_credentials=True NO se puede usar "*":
+# el navegador lo rechaza y además abriría la API a cualquier sitio.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Authorization", "Content-Type", "X-CSRFToken"],
 )
 
-# Esquema Pydantic para respuesta de salud
-class HealthCheckResponse(BaseModel):
+bearer = HTTPBearer(auto_error=False)
+
+
+@sync_to_async
+def _usuario_activo(user_id):
+    return get_user_model().objects.filter(pk=user_id, is_active=True).first()
+
+
+async def usuario_actual(cred: HTTPAuthorizationCredentials | None = Depends(bearer)):
+    """Valida el mismo access token que emite Django (BP-05: privado por defecto)."""
+    if cred is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "No autenticado")
+    try:
+        token = AccessToken(cred.credentials)
+    except TokenError:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token inválido o vencido")
+    usuario = await _usuario_activo(token["user_id"])
+    if usuario is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Usuario inactivo")
+    return usuario
+
+
+app.include_router(health_router)  # /health/live y /health/ready (públicas)
+
+
+class Salud(BaseModel):
     status: str
-    timestamp: datetime
-    service: str
 
-@app.get("/health", response_model=HealthCheckResponse)
-async def health_check():
-    return {
-        "status": "ok",
-        "timestamp": datetime.now(),
-        "service": "Jolifoods Fast Layer (orjson ultra-fast engine)"
-    }
+
+@app.get("/v1/health", tags=["Salud"])
+async def fast_health() -> Salud:  # el tipo de retorno activa la serialización directa de Pydantic
+    return Salud(status="ok")
+
+
+# Todo router de negocio se declara con la dependencia: no hay endpoints privados "olvidados".
+privado = APIRouter(prefix="/v1", dependencies=[Depends(usuario_actual)])
+# @privado.get("/ventas/resumen") ...
+app.include_router(privado)
 ```
+
+Los permisos finos (BP-19) se validan con la misma función que usa Django (por ejemplo `tiene_permiso(usuario, "ventas.ver")`), envuelta en `sync_to_async`.
 
 ---
 
-### 4. Directrices de Prevención Anti-N+1 en Consultas FastAPI
+## 4. Consultas al ORM desde FastAPI
 
-Al consultar modelos Django dentro de endpoints FastAPI, se debe seguir estrictamente una de las dos estrategias:
+El ORM de Django es síncrono. Dentro de `async def` DEBE llamarse con `sync_to_async`; si no, Django lanza `SynchronousOnlyOperation`.
 
-#### Estrategia A: `select_related` y `prefetch_related` con `sync_to_async`
+**Opción A, objetos con relaciones precargadas:**
+
 ```python
 @sync_to_async
-def get_usuarios_optimizados(skip: int, limit: int):
-    from apps.usuarios.models import Usuario
-    # select_related resuelve la FK 'rol' en el mismo JOIN SQL
+def listar_usuarios(offset: int, limit: int):
+    from apps.auth_core.models import Usuario
     return list(
-        Usuario.objects.select_related('rol')
-        .filter(activo=True)
-        .order_by('-fecha_creacion')[skip:skip+limit]
+        Usuario.objects.filter(is_active=True)
+        .select_related("sede")
+        .prefetch_related("roles")
+        .order_by("-date_joined")[offset:offset + limit]
     )
 ```
 
-#### Estrategia B: Proyección Directa con `.values()` (Máxima Velocidad)
-Para lecturas masivas y exportaciones, `.values()` salta la instanciación de objetos del modelo Django, reduciendo el consumo de memoria en más del 70%:
+**Opción B, proyección con `.values()`** para lecturas masivas: evita crear instancias de modelo y suele reducir bastante el tiempo y la memoria. Mídalo en su caso antes de asumir una cifra.
+
 ```python
 @sync_to_async
-def get_usuarios_values():
-    from apps.usuarios.models import Usuario
-    return list(
-        Usuario.objects.values(
-            'id', 'cedula', 'nombre', 'email', 'activo', 'rol__nombre'
-        )
-    )
+def usuarios_para_exportar():
+    from apps.auth_core.models import Usuario
+    return list(Usuario.objects.values("id", "numero_documento", "first_name", "email", "is_active"))
 ```
 
----
+Para cruzar colecciones en memoria se indexa una de ellas en un diccionario. Así el costo pasa de O(N×M) a O(N+M) (BP-11):
 
-### 5. Prohibición de Ciclos `for` Anidados (Algoritmos O(1) para Respuestas en Microsegundos)
-
-Para que FastAPI cumpla su estándar de ser la capa de entrega de datos en JSON **ultra rápida**, los endpoints y servicios tienen prohibido anidar bucles `for` ($O(N^2)$ o $O(N \times M)$) para cruzar o transformar colecciones.
-
-1. **Regla de Oro**: Ninguna transformación de datos en memoria debe realizar búsquedas secuenciales dentro de bucles.
-2. **Uso Mandatorio de Diccionarios Hash ($O(1)$)**: Si se deben relacionar o cruzar dos listas de datos (ej. clientes con pedidos, o usuarios con roles), la colección secundaria debe pre-indexarse en un `dict` o `defaultdict(list)` por clave foránea. Esto garantiza complejidad lineal **$O(N + M)$** en lugar de cuadrática $O(N \times M)$.
-3. **Prohibición de Queries en Bucles**: Jamás ejecutar llamadas `get()`, `filter()` o consultas a base de datos dentro de un bucle `for`. Se deben precargar todas las entidades necesarias en lote con `filter(id__in=ids)` e indexarlas en memoria antes de la serialización JSON.
-
-#### Ejemplo Canónico de Procesamiento en FastAPI:
 ```python
-from collections import defaultdict
-from typing import List, Dict, Any
-
-def enriquecer_datos_ultra_rapido(usuarios: List[Dict[str, Any]], roles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    # 1. Pre-indexar roles en Hash Map O(1) tiempo constante
-    roles_map = {r["id"]: r["nombre"] for r in roles}
-
-    # 2. Enriquecer usuarios en un solo paso lineal O(N) sin anidar for
-    return [
-        {
-            **u,
-            "rol_nombre": roles_map.get(u["rol_id"], "Sin Rol")
-        }
-        for u in usuarios
-    ]
+def enriquecer(usuarios: list[dict], sedes: list[dict]) -> list[dict]:
+    sede_por_id = {s["id"]: s["nombre"] for s in sedes}
+    return [{**u, "sede_nombre": sede_por_id.get(u["sede_id"], "Sin sede")} for u in usuarios]
 ```

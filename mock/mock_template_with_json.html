@@ -5,10 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Plantilla Maestra No-Code — Ecosistema Jolifoods SDD</title>
   
-  <!-- Dependencias Externas CDN (Sin compilación ni terminal) -->
+  <!-- Dependencias externas por CDN (sin compilación ni terminal).
+       Requieren conexión a internet la primera vez. Sin red, la página sigue funcionando:
+       la tipografía cae a la fuente del sistema, los iconos no se dibujan (los botones
+       conservan su aria-label) y algunas utilidades de Bootstrap se pierden.
+       Versiones fijadas para que el resultado sea reproducible (no usar @latest). -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
   
   <style>
     /* ==========================================================================
@@ -78,6 +82,10 @@
       --status-error-bg: rgba(244, 63, 94, 0.15);
       --status-warning-bg: rgba(245, 158, 11, 0.15);
       --status-info-bg: rgba(14, 165, 233, 0.15);
+
+      /* --- Acentos auxiliares (solo para halos de iconos y filtros) --- */
+      --accent-blue: #3b82f6;
+      --accent-indigo: #6366f1;
     }
 
     /* --------------------------------------------------------------------------
@@ -288,9 +296,9 @@
       letter-spacing: 0.05em;
       padding: 2px 7px;
       border-radius: var(--radius-pill);
-      background: rgba(16, 185, 129, 0.15);
-      color: #10b981;
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      background: color-mix(in srgb, var(--brand-primary) 15%, transparent);
+      color: var(--brand-primary);
+      border: 1px solid color-mix(in srgb, var(--brand-primary) 30%, transparent);
       white-space: nowrap;
     }
 
@@ -334,8 +342,8 @@
       width: 28px;
       height: 28px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: #ffffff;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-hover));
+      color: var(--text-on-brand);
       font-weight: 700;
       font-size: 0.75rem;
       display: flex;
@@ -417,9 +425,9 @@
     }
 
     .expandable-filter-item:last-child { border-right: none; }
-    .expandable-filter-item:hover:not(.is-open) { background: rgba(255, 255, 255, 0.04); }
-    .expandable-filter-item.has-active-val { background: rgba(99, 102, 241, 0.14); }
-    .expandable-filter-item.is-open { background: var(--surface-elevated, #1b1b36); }
+    .expandable-filter-item:hover:not(.is-open) { background: var(--bg-hover); }
+    .expandable-filter-item.has-active-val { background: color-mix(in srgb, var(--accent-indigo) 14%, transparent); }
+    .expandable-filter-item.is-open { background: var(--surface-elevated); }
 
     .filter-trigger-btn {
       display: inline-flex;
@@ -444,9 +452,9 @@
     .trigger-badge {
       display: inline-flex;
       align-items: center;
-      background: rgba(99, 102, 241, 0.22);
-      color: #c7d2fe;
-      border: 1px solid rgba(99, 102, 241, 0.45);
+      background: color-mix(in srgb, var(--accent-indigo) 22%, transparent);
+      color: var(--text-primary);
+      border: 1px solid color-mix(in srgb, var(--accent-indigo) 45%, transparent);
       font-size: 0.72rem;
       font-weight: 600;
       padding: 0.15rem 0.65rem;
@@ -516,7 +524,7 @@
 
     .filter-expanded-select:focus {
       border-color: var(--primary) !important;
-      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25) !important;
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-indigo) 25%, transparent) !important;
     }
 
     .filter-expanded-close {
@@ -527,7 +535,7 @@
       height: 22px;
       border-radius: var(--radius-sm, 5px);
       border: none;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--bg-hover);
       color: var(--text-muted);
       cursor: pointer;
       flex-shrink: 0;
@@ -535,8 +543,8 @@
     }
 
     .filter-expanded-close:hover {
-      background: rgba(239, 68, 68, 0.18);
-      color: #ef4444;
+      background: color-mix(in srgb, var(--status-error) 18%, transparent);
+      color: var(--status-error);
     }
 
     .action-icon-btn {
@@ -554,8 +562,8 @@
     }
 
     .action-icon-btn:hover {
-      background: rgba(239, 68, 68, 0.12);
-      color: #ef4444;
+      background: color-mix(in srgb, var(--status-error) 12%, transparent);
+      color: var(--status-error);
     }
 
     /* REJILLA DE CARDS KPI */
@@ -577,8 +585,8 @@
       transition: all 200ms ease;
     }
 
-    .joli-kpi-card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.2); }
-    .joli-kpi-card.active-filter { border-color: #10b981; background: rgba(16, 185, 129, 0.08); }
+    .joli-kpi-card:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+    .joli-kpi-card.active-filter { border-color: var(--brand-primary); background: color-mix(in srgb, var(--brand-primary) 8%, transparent); }
     .joli-kpi-label { font-size: 0.74rem; color: var(--text-muted); font-weight: 500; }
     .joli-kpi-value { font-size: 1.38rem; font-weight: 800; color: var(--text-primary); margin: 0.2rem 0; }
     .joli-kpi-subtext { font-size: 0.7rem; color: var(--text-muted); }
@@ -592,10 +600,10 @@
       justify-content: center;
     }
 
-    .icon-blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-    .icon-emerald { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-    .icon-amber { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-    .icon-pink { background: rgba(244, 63, 94, 0.15); color: #f43f5e; }
+    .icon-blue { background: color-mix(in srgb, var(--accent-blue) 15%, transparent); color: var(--accent-blue); }
+    .icon-emerald { background: color-mix(in srgb, var(--brand-primary) 15%, transparent); color: var(--brand-primary); }
+    .icon-amber { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+    .icon-pink { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
 
     /* TOOLBAR DE TABLA Y CAJA COMPACTA DE ACCIONES */
     .joli-datatable-wrapper {
@@ -686,7 +694,7 @@
     .joli-table tbody tr:hover { background: var(--bg-hover); }
 
     /* ==========================================================================
-       COLUMNAS REDIMENSIONABLES Y FILTROS TIPO EXCEL (ESTÁNDAR BI CARTERA)
+       COLUMNAS REDIMENSIONABLES Y FILTROS TIPO EXCEL POR COLUMNA
        ========================================================================== */
     .th-content-wrapper {
       display: flex;
@@ -714,7 +722,7 @@
     }
     .resizable-th-resizer:hover,
     .resizable-th-resizer:active {
-      background-color: #10b981;
+      background-color: var(--brand-primary);
     }
 
     .filter-toggle-btn {
@@ -736,8 +744,8 @@
       background: var(--bg-hover);
     }
     .filter-toggle-btn.has-filter {
-      color: #10b981;
-      background: rgba(16, 185, 129, 0.15);
+      color: var(--brand-primary);
+      background: color-mix(in srgb, var(--brand-primary) 15%, transparent);
     }
     .filter-active-dot {
       position: absolute;
@@ -746,7 +754,7 @@
       width: 5px;
       height: 5px;
       border-radius: 50%;
-      background: #10b981;
+      background: var(--brand-primary);
     }
 
     /* Popover Desplegable Tipo Excel */
@@ -861,13 +869,13 @@
       font-size: 0.72rem;
     }
     .btn-popover-clear:hover {
-      color: #ef4444;
-      border-color: #ef4444;
+      color: var(--status-error);
+      border-color: var(--status-error);
     }
     .btn-popover-apply {
-      background: #10b981;
+      background: var(--brand-primary);
       border: none;
-      color: #ffffff;
+      color: var(--text-on-brand);
       padding: 0.3rem 0.75rem;
       border-radius: 4px;
       cursor: pointer;
@@ -898,7 +906,7 @@
     .col-visibility-btn:hover,
     .col-visibility-btn.active {
       color: var(--text-primary);
-      border-color: #10b981;
+      border-color: var(--brand-primary);
     }
     .col-btn-badge {
       padding: 1px 5px;
@@ -933,7 +941,7 @@
     .col-visibility-header .link-btn {
       background: none;
       border: none;
-      color: #10b981;
+      color: var(--brand-primary);
       font-size: 0.7rem;
       cursor: pointer;
       padding: 0;
@@ -967,15 +975,15 @@
       padding: 0 8px;
       font-size: 0.75rem;
       font-weight: 600;
-      color: #ef4444;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--status-error);
+      background: color-mix(in srgb, var(--status-error) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--status-error) 30%, transparent);
       border-radius: var(--radius-sm);
       cursor: pointer;
       transition: all 0.15s ease;
     }
     .clear-column-filters-btn:hover {
-      background: rgba(239, 68, 68, 0.2);
+      background: color-mix(in srgb, var(--status-error) 20%, transparent);
     }
 
 
@@ -1005,8 +1013,8 @@
     }
 
     .btn-row-action:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .btn-row-view:hover { color: #3b82f6; background: rgba(59, 130, 246, 0.12); }
-    .btn-row-delete:hover { color: #ef4444; background: rgba(239, 68, 68, 0.12); }
+    .btn-row-view:hover { color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 12%, transparent); }
+    .btn-row-delete:hover { color: var(--status-error); background: color-mix(in srgb, var(--status-error) 12%, transparent); }
     .row-action-divider { width: 1px; height: 14px; background: var(--border-color); }
 
     /* BADGES */
@@ -1019,9 +1027,9 @@
       font-size: 0.72rem;
       font-weight: 600;
     }
-    .badge-joli-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-    .badge-joli-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-    .badge-joli-danger { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .badge-joli-success { background: color-mix(in srgb, var(--brand-primary) 15%, transparent); color: var(--brand-primary); }
+    .badge-joli-warning { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+    .badge-joli-danger { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
 
     /* ==========================================================================
        RIGHT DRAWER (PANEL LATERAL DERECHO) — Regla de Oro Jolifoods
@@ -1071,7 +1079,7 @@
       font-size: 0.82rem; cursor: pointer;
     }
     .btn-drawer-save {
-      background: #10b981; border: none; color: #ffffff;
+      background: var(--brand-primary); border: none; color: var(--text-on-brand);
       padding: 0.45rem 1.25rem; border-radius: var(--radius-md); font-weight: 600;
       font-size: 0.82rem; cursor: pointer;
     }
@@ -1099,7 +1107,7 @@
       width: 54px; height: 54px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;
     }
-    .joli-modal-icon-wrapper.danger { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .joli-modal-icon-wrapper.danger { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
     .joli-confirm-modal-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.5rem 0; }
     .joli-confirm-modal-message { font-size: 0.82rem; color: var(--text-muted); margin: 0 0 1rem 0; }
     .joli-confirm-modal-actions { display: flex; width: 100%; gap: 0.75rem; margin-top: 1.25rem; }
@@ -1109,12 +1117,12 @@
       border-radius: var(--radius-md); font-size: 0.82rem; cursor: pointer;
     }
     .joli-btn-modal-primary.danger {
-      flex: 1; padding: 0.55rem 1rem; background: #ef4444; border: none;
-      color: #fff; border-radius: var(--radius-md); font-size: 0.82rem; cursor: pointer; font-weight: 600;
+      flex: 1; padding: 0.55rem 1rem; background: var(--status-error); border: none;
+      color: var(--text-on-brand); border-radius: var(--radius-md); font-size: 0.82rem; cursor: pointer; font-weight: 600;
     }
 
     /* ==========================================================================
-       CENTRO DE MULTI-NOTIFICACIONES DESPLEGABLE (ESTÁNDAR TIENDITA / VIBRA)
+       CENTRO DE MULTI-NOTIFICACIONES DESPLEGABLE
        ========================================================================== */
     .notification-container {
       position: relative;
@@ -1142,12 +1150,12 @@
     .notification-bell-btn.active {
       background: var(--surface-active);
       color: var(--text-primary);
-      border-color: rgba(16, 185, 129, 0.5);
+      border-color: color-mix(in srgb, var(--brand-primary) 50%, transparent);
     }
 
     .notification-bell-btn.has-unread {
-      color: #f59e0b;
-      border-color: rgba(245, 158, 11, 0.4);
+      color: var(--status-warning);
+      border-color: color-mix(in srgb, var(--status-warning) 40%, transparent);
     }
 
     .bell-badge-count {
@@ -1158,14 +1166,14 @@
       height: 18px;
       min-width: 18px;
       border-radius: 50%;
-      background: #ef4444;
-      color: #ffffff;
+      background: var(--status-error);
+      color: var(--text-on-brand);
       font-size: 10px;
       font-weight: 800;
       display: grid;
       place-items: center;
       border: 2px solid var(--background);
-      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.5);
+      box-shadow: 0 2px 6px color-mix(in srgb, var(--status-error) 50%, transparent);
       line-height: 1;
       animation: notifPulse 2.5s infinite ease-in-out;
     }
@@ -1226,9 +1234,9 @@
     .notif-counter-pill {
       font-size: 10px;
       font-weight: 700;
-      background: rgba(239, 68, 68, 0.15);
-      color: #ef4444;
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: color-mix(in srgb, var(--status-error) 15%, transparent);
+      color: var(--status-error);
+      border: 1px solid color-mix(in srgb, var(--status-error) 30%, transparent);
       padding: 2px 7px;
       border-radius: 999px;
     }
@@ -1274,8 +1282,8 @@
 
     .notif-tab-badge {
       font-size: 9px;
-      background: #ef4444;
-      color: #ffffff;
+      background: var(--status-error);
+      color: var(--text-on-brand);
       padding: 1px 5px;
       border-radius: 8px;
       font-weight: 800;
@@ -1306,8 +1314,8 @@
     }
 
     .notif-item.unread {
-      background: rgba(59, 130, 246, 0.03);
-      border-left: 3px solid #3b82f6;
+      background: color-mix(in srgb, var(--accent-blue) 3%, transparent);
+      border-left: 3px solid var(--accent-blue);
     }
 
     .notif-icon-box {
@@ -1321,10 +1329,10 @@
       margin-top: 2px;
     }
 
-    .notif-icon-box.critical { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-    .notif-icon-box.warning  { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-    .notif-icon-box.info     { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-    .notif-icon-box.success  { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .notif-icon-box.critical { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+    .notif-icon-box.warning  { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+    .notif-icon-box.info     { background: color-mix(in srgb, var(--accent-blue) 15%, transparent); color: var(--accent-blue); }
+    .notif-icon-box.success  { background: color-mix(in srgb, var(--brand-primary) 15%, transparent); color: var(--brand-primary); }
 
     .notif-content {
       flex: 1;
@@ -1378,7 +1386,7 @@
       height: 24px;
       border-radius: 5px;
       border: 1px solid var(--border-color);
-      background: rgba(255, 255, 255, 0.04);
+      background: var(--bg-hover);
       color: var(--text-muted);
       display: flex;
       align-items: center;
@@ -1402,7 +1410,7 @@
     }
 
     .notif-empty-state i {
-      color: #10b981;
+      color: var(--brand-primary);
       margin-bottom: 8px;
     }
 
@@ -1443,7 +1451,7 @@
     }
 
     /* ==========================================================================
-       MENÚ DE PERFIL Y SALIDA DE SESIÓN (ESTÁNDAR VIBRA / TIENDITA)
+       MENÚ DE PERFIL Y SALIDA DE SESIÓN
        ========================================================================== */
     .user-profile-menu-container {
       position: relative;
@@ -1468,15 +1476,15 @@
     .user-profile-badge:hover,
     .user-profile-badge.active {
       background: var(--surface-active);
-      border-color: rgba(16, 185, 129, 0.4);
+      border-color: color-mix(in srgb, var(--brand-primary) 40%, transparent);
     }
 
     .user-avatar-circle {
       width: 28px;
       height: 28px;
       border-radius: 50%;
-      background: rgba(16, 185, 129, 0.2);
-      color: #10b981;
+      background: color-mix(in srgb, var(--brand-primary) 20%, transparent);
+      color: var(--brand-primary);
       font-weight: 700;
       font-size: 11px;
       display: flex;
@@ -1493,7 +1501,7 @@
       height: 8px;
       border-radius: 50%;
       border: 2px solid var(--surface-card);
-      background: #10b981;
+      background: var(--brand-primary);
     }
 
     .chevron-icon {
@@ -1539,8 +1547,8 @@
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: rgba(16, 185, 129, 0.15);
-      color: #10b981;
+      background: color-mix(in srgb, var(--brand-primary) 15%, transparent);
+      color: var(--brand-primary);
       font-weight: 800;
       font-size: 13px;
       display: flex;
@@ -1578,8 +1586,8 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.4px;
-      background: rgba(16, 185, 129, 0.15);
-      color: #10b981;
+      background: color-mix(in srgb, var(--brand-primary) 15%, transparent);
+      color: var(--brand-primary);
       padding: 1px 5px;
       border-radius: 4px;
       width: fit-content;
@@ -1622,12 +1630,12 @@
     }
 
     .dropdown-item.logout {
-      color: #ef4444;
+      color: var(--status-error);
     }
 
     .dropdown-item.logout:hover {
-      background: rgba(239, 68, 68, 0.15);
-      color: #f87171;
+      background: color-mix(in srgb, var(--status-error) 15%, transparent);
+      color: var(--status-error);
     }
 
     /* ==========================================================================
@@ -1682,7 +1690,7 @@
     }
 
     .size-select:focus {
-      border-color: rgba(16, 185, 129, 0.5);
+      border-color: color-mix(in srgb, var(--brand-primary) 50%, transparent);
     }
 
     .pagination-buttons {
@@ -1709,7 +1717,7 @@
     .page-nav-btn:hover:not(:disabled) {
       background: var(--surface-active);
       color: var(--text-primary);
-      border-color: rgba(16, 185, 129, 0.4);
+      border-color: color-mix(in srgb, var(--brand-primary) 40%, transparent);
     }
 
     .page-nav-btn:disabled {
@@ -1746,17 +1754,65 @@
     }
 
     .page-num-btn.active {
-      background: #10b981;
-      border-color: #10b981;
-      color: #ffffff;
+      background: var(--brand-primary);
+      border-color: var(--brand-primary);
+      color: var(--text-on-brand);
       font-weight: 700;
-      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+      box-shadow: 0 2px 6px color-mix(in srgb, var(--brand-primary) 35%, transparent);
     }
 
     .page-ellipsis {
       padding: 0 4px;
       color: var(--text-muted);
       font-size: 12px;
+    }
+
+    /* ==========================================================================
+       ACCESIBILIDAD Y AVISO NO BLOQUEANTE
+       ========================================================================== */
+    .joli-btn-modal-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+      outline: 2px solid var(--border-focus);
+      outline-offset: 2px;
+    }
+
+    .mock-toast {
+      position: fixed;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      z-index: var(--z-toast);
+      max-width: 420px;
+      padding: 0.75rem 1rem;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-strong);
+      border-left: 4px solid var(--brand-primary);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-popover);
+      font-size: var(--font-size-sm);
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: opacity var(--transition-base), transform var(--transition-base);
+    }
+
+    .mock-toast.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
@@ -1769,7 +1825,7 @@
       <div class="topheader-left">
         <div class="topheader-brand">
           <img src="../assets/Jolifoods.svg" alt="Jolifoods" class="topheader-logo" onerror="this.style.display='none'; document.getElementById('altBrandText').classList.remove('d-none');">
-          <span class="fw-bold fs-6 d-none" id="altBrandText" style="color: #10b981;">JOLIFOODS</span>
+          <span class="fw-bold fs-6 d-none" id="altBrandText" style="color: var(--brand-primary);">JOLIFOODS</span>
         </div>
 
         <div class="topheader-brand-divider">/</div>
@@ -1782,17 +1838,21 @@
 
       <div class="top-header-right">
         <!-- Toggle Tema Noche / Día -->
-        <button class="icon-btn-header" id="themeToggleBtn" title="Cambiar Tema" onclick="toggleTheme()">
+        <button type="button" class="icon-btn-header" id="themeToggleBtn" title="Cambiar tema" aria-label="Cambiar tema claro u oscuro" onclick="toggleTheme()">
           <i data-lucide="moon" id="themeIcon"></i>
         </button>
 
-        <!-- CENTRO DE MULTI-NOTIFICACIONES CON POPOVER INTERACTIVO (TIENDITA / VIBRA) -->
+        <!-- CENTRO DE MULTI-NOTIFICACIONES CON POPOVER INTERACTIVO -->
         <div class="notification-container" id="notifContainer">
           <button 
             type="button" 
             class="notification-bell-btn has-unread" 
             id="notifBellBtn"
-            title="Centro de Alertas y Notificaciones"
+            title="Centro de alertas y notificaciones"
+            aria-label="Abrir centro de notificaciones"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-controls="notifPopover"
             onclick="toggleNotifications(event)"
           >
             <i data-lucide="bell"></i>
@@ -1800,7 +1860,7 @@
           </button>
 
           <!-- Ventana Popover Desplegable -->
-          <div class="notification-popover" id="notifPopover">
+          <div class="notification-popover" id="notifPopover" role="region" aria-label="Centro de notificaciones">
             <div class="notif-header">
               <div class="notif-title-row">
                 <span class="notif-header-title">Centro de Notificaciones</span>
@@ -1839,30 +1899,33 @@
           </div>
         </div>
 
-        <!-- MENÚ DE PERFIL DEL USUARIO CON OPCIÓN DE SALIR (TIENDITA / VIBRA) -->
+        <!-- MENÚ DE PERFIL DEL USUARIO CON OPCIÓN DE SALIR -->
         <div class="user-profile-menu-container" id="userProfileContainer">
           <button 
             type="button" 
             class="user-profile-badge" 
             id="userProfileBtn" 
             onclick="toggleUserProfile(event)"
-            title="Opciones de Cuenta y Sesión"
+            title="Opciones de cuenta y sesión"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-controls="userProfileDropdown"
           >
-            <div class="user-avatar-circle">
-              JM
+            <div class="user-avatar-circle" aria-hidden="true">
+              UE
               <span class="status-indicator-dot"></span>
             </div>
-            <span class="d-none d-sm-inline font-sm fw-medium">Joan Montoya</span>
+            <span class="d-none d-sm-inline font-sm fw-medium">Usuario Ejemplo</span>
             <i data-lucide="chevron-down" class="chevron-icon" id="userChevronIcon" style="width: 14px; height: 14px;"></i>
           </button>
 
           <!-- Dropdown Flotante de Usuario -->
           <div class="profile-dropdown-menu" id="userProfileDropdown">
             <div class="profile-dropdown-header">
-              <div class="dropdown-avatar-lg">JM</div>
+              <div class="dropdown-avatar-lg" aria-hidden="true">UE</div>
               <div class="dropdown-user-info">
-                <span class="dropdown-user-name">Joan Montoya</span>
-                <span class="dropdown-user-email">joan.montoya@jolifoods.com</span>
+                <span class="dropdown-user-name">Usuario Ejemplo</span>
+                <span class="dropdown-user-email">usuario@ejemplo.com</span>
                 <span class="dropdown-user-role-badge">ADMINISTRADOR</span>
               </div>
             </div>
@@ -1915,18 +1978,18 @@
                 <i data-lucide="chevron-down" class="trigger-arrow" style="width: 12px; height: 12px;"></i>
               </button>
               <div class="filter-expanded-content">
-                <select class="filter-expanded-select" id="selectFilterZona" onchange="filterByField(this.value)">
+                <select class="filter-expanded-select" id="selectFilterZona" aria-label="Filtrar por zona" onchange="filterByField(this.value)">
                   <option value="">Todas</option>
                   <option value="Norte">Norte</option>
                   <option value="Sur">Sur</option>
                 </select>
-                <button type="button" class="filter-expanded-close" onclick="closeExpandableFilter('filterZona')" title="Cerrar filtro">
+                <button type="button" class="filter-expanded-close" onclick="closeExpandableFilter('filterZona')" title="Cerrar filtro" aria-label="Cerrar filtro de zona">
                   <i data-lucide="x" style="width: 12px; height: 12px;"></i>
                 </button>
               </div>
             </div>
           </div>
-          <button type="button" class="action-icon-btn" onclick="resetFilters()" title="Limpiar Filtros">
+          <button type="button" class="action-icon-btn" onclick="resetFilters()" title="Limpiar Filtros" aria-label="Limpiar todos los filtros">
             <i data-lucide="filter-x" style="width: 14px; height: 14px;"></i>
           </button>
         </div>
@@ -1942,7 +2005,7 @@
             <span class="small text-muted me-1" id="recordCountText">Cargando registros...</span>
             <div class="toolbar-search-box">
               <i data-lucide="search" style="width: 13px; height: 13px; opacity: 0.6;"></i>
-              <input type="text" id="searchInput" placeholder="Buscar registros..." oninput="handleSearch(this.value)">
+              <input type="search" id="searchInput" aria-label="Buscar registros" placeholder="Buscar registros..." oninput="handleSearch(this.value)">
             </div>
             <!-- Botón Dinámico de Limpiar Filtros de Columna -->
             <button type="button" class="clear-column-filters-btn d-none" id="clearColFiltersBtn" onclick="clearAllColumnFilters()" title="Limpiar todos los filtros de columna">
@@ -1951,7 +2014,7 @@
             </button>
             <!-- Selector de Visibilidad de Columnas (Columns3) -->
             <div class="col-visibility-wrapper" id="colVisibilityWrapper">
-              <button type="button" class="col-visibility-btn" onclick="toggleColVisibilityMenu(event)" title="Configurar columnas visibles">
+              <button type="button" class="col-visibility-btn" onclick="toggleColVisibilityMenu(event)" title="Configurar columnas visibles" aria-haspopup="true" aria-controls="colVisibilityPopover">
                 <i data-lucide="columns-3" style="width: 14px; height: 14px;"></i>
                 <span>Columnas</span>
                 <span class="col-btn-badge" id="colVisibleBadge">6/6</span>
@@ -1973,37 +2036,30 @@
 
           <!-- Caja Compacta de Iconos Agrupados en Toolbar -->
           <div class="compact-action-box">
-            <button type="button" class="btn-compact-action" onclick="openDrawerForNew()" title="Nuevo Registro (+)">
+            <button type="button" class="btn-compact-action" onclick="openDrawerForNew()" title="Nuevo registro" aria-label="Nuevo registro">
               <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
             </button>
             <div class="compact-action-divider"></div>
-            <button type="button" class="btn-compact-action text-success" onclick="alert('Exportando a Excel oficial (.xlsx)...')" title="Exportar a Excel">
+            <button type="button" class="btn-compact-action text-success" onclick="showToast('Simulación: aquí se descargaría el archivo Excel (.xlsx) con los filtros activos.')" title="Exportar a Excel" aria-label="Exportar a Excel">
               <i data-lucide="file-spreadsheet" style="width: 14px; height: 14px;"></i>
             </button>
             <div class="compact-action-divider"></div>
-            <button type="button" class="btn-compact-action" onclick="simulateLoading()" title="Recargar">
+            <button type="button" class="btn-compact-action" onclick="reloadData()" title="Recargar" aria-label="Recargar datos">
               <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
             </button>
           </div>
         </div>
 
-        <!-- Tabla -->
-        <div class="table-responsive">
-          <table class="joli-table">
-            <thead id="tableHead"></thead>
-            <tbody id="tableBody"></tbody>
-          </table>
-        </div>
-
-        <!-- COMPONENTE MAESTRO: PAGINADOR CORPORATIVO (Ver .sdd/components/pagination/pagination.md) -->
-        <nav class="joli-pagination-container" aria-label="Navegación de registros">
+        <!-- PAGINADOR SUPERIOR: va ARRIBA de la tabla, pegado a la toolbar
+             (convención del SDD; ver .sdd/components/pagination/pagination.md) -->
+        <nav class="joli-pagination-container" style="border-top: none; border-bottom: 1px solid var(--border-color);" aria-label="Navegación de registros">
           <div class="pagination-summary">
             Mostrando <span class="highlight" id="pageStart">1</span> a <span class="highlight" id="pageEnd">8</span> de <span class="highlight" id="pageTotal">25</span> registros
           </div>
           <div class="pagination-controls">
             <div class="pagination-size-selector">
               <span class="size-label">Filas por pág:</span>
-              <select class="size-select" id="pageSizeSelect" onchange="handlePageSizeChange(this.value)">
+              <select class="size-select" id="pageSizeSelect" aria-label="Filas por página" onchange="handlePageSizeChange(this.value)">
                 <option value="5">5</option>
                 <option value="8" selected>8</option>
                 <option value="12">12</option>
@@ -2015,40 +2071,51 @@
             </div>
           </div>
         </nav>
+
+        <!-- Tabla -->
+        <div class="table-responsive">
+          <table class="joli-table">
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
       </div>
 
     </div>
 
   </div>
 
+  <!-- Aviso no bloqueante (reemplaza alert()) -->
+  <div id="mockToast" class="mock-toast" role="status" aria-live="polite"></div>
+
   <!-- RIGHT DRAWER (Panel Lateral Derecho) -->
   <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
-  <aside class="joli-drawer-container" id="rightDrawer">
+  <aside class="joli-drawer-container" id="rightDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
     <div class="drawer-header">
       <div>
-        <h3 class="drawer-title" id="drawerTitle">Nuevo Registro</h3>
+        <h2 class="drawer-title h5" id="drawerTitle">Nuevo Registro</h2>
         <p class="drawer-subtitle" id="drawerSubtitle">Captura de información en el sistema</p>
       </div>
-      <button type="button" class="drawer-close-btn" onclick="closeDrawer()">
+      <button type="button" class="drawer-close-btn" onclick="closeDrawer()" aria-label="Cerrar panel" title="Cerrar panel">
         <i data-lucide="chevron-right" style="width: 18px; height: 18px;"></i>
       </button>
     </div>
     <div class="drawer-body">
       <form id="drawerForm" onsubmit="handleDrawerSubmit(event)">
         <div>
-          <label class="drawer-form-label">Identificador</label>
+          <label class="drawer-form-label" for="inputCodigo">Identificador <span aria-hidden="true" style="color: var(--status-error);">*</span></label>
           <input type="text" id="inputCodigo" class="drawer-input" required>
         </div>
         <div>
-          <label class="drawer-form-label">Descripción</label>
+          <label class="drawer-form-label" for="inputNombre">Descripción <span aria-hidden="true" style="color: var(--status-error);">*</span></label>
           <input type="text" id="inputNombre" class="drawer-input" required>
         </div>
         <div>
-          <label class="drawer-form-label">Medición</label>
+          <label class="drawer-form-label" for="inputValor">Medición <span aria-hidden="true" style="color: var(--status-error);">*</span></label>
           <input type="text" id="inputValor" class="drawer-input" required>
         </div>
         <div>
-          <label class="drawer-form-label">Estado</label>
+          <label class="drawer-form-label" for="inputEstado">Estado</label>
           <select id="inputEstado" class="drawer-input">
             <option value="OPTIMO">OPTIMO (Verde)</option>
             <option value="ALERTA">ALERTA (Amarillo)</option>
@@ -2064,38 +2131,41 @@
   </aside>
 
   <!-- CONFIRMMODAL CANÓNICO JOLIFOODS -->
-  <div class="joli-modal-overlay" id="confirmActionModal" role="dialog" aria-modal="true">
+  <div class="joli-modal-overlay" id="confirmActionModal" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" aria-describedby="confirmModalText">
     <div class="joli-confirm-modal-container">
-      <button type="button" class="joli-modal-close-icon" onclick="closeConfirmModal()">
+      <button type="button" class="joli-modal-close-icon" onclick="closeConfirmModal()" aria-label="Cerrar diálogo" title="Cerrar">
         <i data-lucide="x" style="width: 18px; height: 18px;"></i>
       </button>
-      <div class="joli-modal-icon-wrapper danger">
+      <div class="joli-modal-icon-wrapper danger" aria-hidden="true">
         <i data-lucide="alert-octagon" style="width: 32px; height: 32px;"></i>
       </div>
       <div class="joli-confirm-modal-content">
-        <h3 class="joli-confirm-modal-title" id="confirmModalTitle">¿Confirmar Acción?</h3>
+        <h2 class="joli-confirm-modal-title h5" id="confirmModalTitle">¿Confirmar Acción?</h2>
         <p class="joli-confirm-modal-message" id="confirmModalText">Esta acción es irreversible y será registrada en la auditoría.</p>
         <div class="text-start mt-2 w-100">
-          <label class="drawer-form-label mb-1">Motivo técnico obligatorio:</label>
-          <textarea class="drawer-input" id="confirmJustification" rows="2" placeholder="Escribe la justificación (mínimo 10 caracteres)..."></textarea>
-          <div class="text-danger small mt-1 d-none" id="justificationError">Debes ingresar al menos 10 caracteres justificando la acción.</div>
+          <label class="drawer-form-label mb-1 d-flex justify-content-between" for="confirmJustification">
+            <span>Motivo obligatorio</span>
+            <span id="justificationCounter" aria-live="polite">0 / 10 mín.</span>
+          </label>
+          <textarea class="drawer-input" id="confirmJustification" rows="2" style="width: 100%;" aria-describedby="justificationError" oninput="updateJustificationState()" placeholder="Escribe la justificación (mínimo 10 caracteres)..."></textarea>
+          <div class="small mt-1 d-none" style="color: var(--status-error);" id="justificationError">Debes ingresar al menos 10 caracteres justificando la acción.</div>
         </div>
       </div>
       <div class="joli-confirm-modal-actions">
         <button type="button" class="joli-btn-modal-secondary" onclick="closeConfirmModal()">Cancelar</button>
-        <button type="button" class="joli-btn-modal-primary danger" onclick="executeDestructiveAction()">Confirmar</button>
+        <button type="button" class="joli-btn-modal-primary danger" id="confirmActionBtn" disabled onclick="executeDestructiveAction()">Confirmar</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL CANÓNICO DE CONFIRMACIÓN DE CIERRE DE SESIÓN (ESTÁNDAR TIENDITA / VIBRA) -->
-  <div class="joli-modal-overlay" id="logoutConfirmModal">
+  <!-- MODAL CANÓNICO DE CONFIRMACIÓN DE CIERRE DE SESIÓN -->
+  <div class="joli-modal-overlay" id="logoutConfirmModal" role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle">
     <div class="joli-confirm-modal-container">
-      <div class="joli-modal-icon-wrapper danger">
+      <div class="joli-modal-icon-wrapper danger" aria-hidden="true">
         <i data-lucide="log-out" style="width: 26px; height: 26px;"></i>
       </div>
       <div>
-        <h3 class="joli-confirm-modal-title">Cerrar Sesión</h3>
+        <h2 class="joli-confirm-modal-title h5" id="logoutModalTitle">Cerrar Sesión</h2>
         <p class="joli-confirm-modal-message">
           ¿Estás seguro de que deseas salir del ecosistema Jolifoods? Deberás iniciar sesión nuevamente para acceder a los módulos operativos.
         </p>
@@ -2109,32 +2179,106 @@
 
   <!-- JAVASCRIPT CON ARREGLOS JSON AUTÓNOMOS -->
   <script>
+    /* ==========================================================================
+       UTILIDADES COMUNES
+       ========================================================================== */
+    // Dibuja los iconos solo si la librería cargó (sin red, la página sigue funcionando).
+    function refreshIcons() {
+      if (window.lucide && typeof window.lucide.createIcons === "function") {
+        window.lucide.createIcons();
+      }
+    }
+
+    // Escapa texto antes de insertarlo con innerHTML (los datos del drawer los escribe el usuario).
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    // Aviso no bloqueante (sustituye a alert()).
+    let toastTimer = null;
+    function showToast(message) {
+      const el = document.getElementById("mockToast");
+      if (!el) return;
+      el.textContent = message;
+      el.classList.add("is-visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove("is-visible"), 4000);
+    }
+
+    // Foco: se guarda el disparador y se devuelve al cerrar; Tab queda atrapado en el diálogo abierto.
+    let lastFocusedElement = null;
+    const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    function openDialog(container, initialFocusSelector) {
+      lastFocusedElement = document.activeElement;
+      const target = (initialFocusSelector && container.querySelector(initialFocusSelector)) || container.querySelector(FOCUSABLE);
+      if (target) setTimeout(() => target.focus(), 50);
+    }
+
+    function restoreFocus() {
+      if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+        lastFocusedElement.focus();
+      }
+      lastFocusedElement = null;
+    }
+
+    function getOpenDialog() {
+      return document.querySelector(".joli-modal-overlay.is-open") || document.querySelector(".joli-drawer-container.is-open");
+    }
+
+    document.addEventListener("keydown", (e) => {
+      const dialog = getOpenDialog();
+      if (e.key === "Escape") {
+        if (dialog && dialog.id === "confirmActionModal") closeConfirmModal();
+        else if (dialog && dialog.id === "logoutConfirmModal") closeLogoutModal();
+        else if (dialog && dialog.id === "rightDrawer") closeDrawer();
+        else { closeNotifications(); closeUserProfile(); closeExcelFilterPopover(); closeColVisibilityMenu(); }
+        return;
+      }
+      if (e.key === "Tab" && dialog) {
+        const items = Array.from(dialog.querySelectorAll(FOCUSABLE)).filter(el => el.offsetParent !== null);
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    });
+
+    /* ==========================================================================
+       DATOS DE EJEMPLO (FICTICIOS) — reemplazar por los del módulo
+       ========================================================================== */
     const INITIAL_RECORDS = [
-      { id: 1, codigo: "REG-001", fecha: "Hoy, 10:30 AM", nombre: "Operación Principal Lote 1", valor: "24.5 Unid", estado: "OPTIMO" },
+      { id: 1, codigo: "REG-001", fecha: "Hoy, 10:30 AM", nombre: "Línea de Mezclado Lote 1", valor: "24.5 Unid", estado: "OPTIMO" },
       { id: 2, codigo: "REG-002", fecha: "Hoy, 10:15 AM", nombre: "Planta de Empaque Central", valor: "18.2 Unid", estado: "ALERTA" },
-      { id: 3, codigo: "REG-003", fecha: "Hoy, 09:45 AM", nombre: "Línea de Maduración y Frío", valor: "22.0 Unid", estado: "OPTIMO" },
-      { id: 4, codigo: "REG-004", fecha: "Hoy, 08:30 AM", nombre: "Almacén de Insumos Agro", valor: "31.4 Unid", estado: "CRITICO" },
-      { id: 5, codigo: "REG-005", fecha: "Ayer, 05:20 PM", nombre: "Despacho Contenedores Puerto", valor: "14.8 Unid", estado: "OPTIMO" },
-      { id: 6, codigo: "REG-006", fecha: "Ayer, 04:10 PM", nombre: "Cámara Térmica Zona Norte", valor: "29.1 Unid", estado: "OPTIMO" },
-      { id: 7, codigo: "REG-007", fecha: "Ayer, 02:40 PM", nombre: "Recepción de Fruta Finca La Aurora", valor: "42.0 Unid", estado: "ALERTA" },
+      { id: 3, codigo: "REG-003", fecha: "Hoy, 09:45 AM", nombre: "Horno Continuo Línea 2", valor: "22.0 Unid", estado: "OPTIMO" },
+      { id: 4, codigo: "REG-004", fecha: "Hoy, 08:30 AM", nombre: "Almacén de Materias Primas", valor: "31.4 Unid", estado: "CRITICO" },
+      { id: 5, codigo: "REG-005", fecha: "Ayer, 05:20 PM", nombre: "Despacho Centro de Distribución", valor: "14.8 Unid", estado: "OPTIMO" },
+      { id: 6, codigo: "REG-006", fecha: "Ayer, 04:10 PM", nombre: "Cuarto Frío Zona Norte", valor: "29.1 Unid", estado: "OPTIMO" },
+      { id: 7, codigo: "REG-007", fecha: "Ayer, 02:40 PM", nombre: "Recepción de Materia Prima Proveedor A", valor: "42.0 Unid", estado: "ALERTA" },
       { id: 8, codigo: "REG-008", fecha: "Ayer, 11:15 AM", nombre: "Control Calidad Lote Selección", valor: "16.5 Unid", estado: "OPTIMO" },
-      { id: 9, codigo: "REG-009", fecha: "28 Sep, 03:50 PM", nombre: "Lavado y Clasificación Mecánica", valor: "27.3 Unid", estado: "OPTIMO" },
+      { id: 9, codigo: "REG-009", fecha: "28 Sep, 03:50 PM", nombre: "Molienda y Tamizado de Especias", valor: "27.3 Unid", estado: "OPTIMO" },
       { id: 10, codigo: "REG-010", fecha: "28 Sep, 01:25 PM", nombre: "Bodega de Envasado Al Vacío", valor: "19.8 Unid", estado: "CRITICO" },
-      { id: 11, codigo: "REG-011", fecha: "28 Sep, 10:05 AM", nombre: "Monitoreo Atmosférico Invernadero", valor: "21.6 Unid", estado: "OPTIMO" },
-      { id: 12, codigo: "REG-012", fecha: "27 Sep, 04:30 PM", nombre: "Sistema Riego Tecnificado Sector B", valor: "35.0 Unid", estado: "OPTIMO" },
+      { id: 11, codigo: "REG-011", fecha: "28 Sep, 10:05 AM", nombre: "Monitoreo Ambiental Área de Proceso", valor: "21.6 Unid", estado: "OPTIMO" },
+      { id: 12, codigo: "REG-012", fecha: "27 Sep, 04:30 PM", nombre: "Sistema de Dosificación Sector B", valor: "35.0 Unid", estado: "OPTIMO" },
       { id: 13, codigo: "REG-013", fecha: "27 Sep, 02:15 PM", nombre: "Mantenimiento Preventivo Calderas", valor: "12.4 Unid", estado: "ALERTA" },
       { id: 14, codigo: "REG-014", fecha: "27 Sep, 09:40 AM", nombre: "Carga de Pallets Despacho Urgente", valor: "28.9 Unid", estado: "OPTIMO" },
-      { id: 15, codigo: "REG-015", fecha: "26 Sep, 06:10 PM", nombre: "Auditoría Sanitaria ICA Lote 3", valor: "23.1 Unid", estado: "OPTIMO" },
-      { id: 16, codigo: "REG-016", fecha: "26 Sep, 03:20 PM", nombre: "Silos de Grano y Concentrado", valor: "44.2 Unid", estado: "CRITICO" },
-      { id: 17, codigo: "REG-017", fecha: "26 Sep, 11:00 AM", nombre: "Transporte Refrigerado TermoKing", valor: "17.7 Unid", estado: "OPTIMO" },
+      { id: 15, codigo: "REG-015", fecha: "26 Sep, 06:10 PM", nombre: "Inspección Sanitaria Lote 3", valor: "23.1 Unid", estado: "OPTIMO" },
+      { id: 16, codigo: "REG-016", fecha: "26 Sep, 03:20 PM", nombre: "Silos de Azúcar y Harina", valor: "44.2 Unid", estado: "CRITICO" },
+      { id: 17, codigo: "REG-017", fecha: "26 Sep, 11:00 AM", nombre: "Transporte Refrigerado Ruta 4", valor: "17.7 Unid", estado: "OPTIMO" },
       { id: 18, codigo: "REG-018", fecha: "25 Sep, 04:45 PM", nombre: "Tratamiento de Aguas Residuales", valor: "30.5 Unid", estado: "ALERTA" },
-      { id: 19, codigo: "REG-019", fecha: "25 Sep, 01:30 PM", nombre: "Inspección de Semillas Certificadas", valor: "26.0 Unid", estado: "OPTIMO" },
-      { id: 20, codigo: "REG-020", fecha: "25 Sep, 08:50 AM", nombre: "Línea de Congelación Rápida IQF", valor: "15.3 Unid", estado: "OPTIMO" },
+      { id: 19, codigo: "REG-019", fecha: "25 Sep, 01:30 PM", nombre: "Inspección de Insumos Certificados", valor: "26.0 Unid", estado: "OPTIMO" },
+      { id: 20, codigo: "REG-020", fecha: "25 Sep, 08:50 AM", nombre: "Línea de Deshidratación de Hierbas", valor: "15.3 Unid", estado: "OPTIMO" },
       { id: 21, codigo: "REG-021", fecha: "24 Sep, 05:15 PM", nombre: "Punto de Pesaje Báscula Camionera", valor: "38.6 Unid", estado: "OPTIMO" },
-      { id: 22, codigo: "REG-022", fecha: "24 Sep, 02:00 PM", nombre: "Túnel de Pre-Enfriamiento Fruta", valor: "20.4 Unid", estado: "ALERTA" },
+      { id: 22, codigo: "REG-022", fecha: "24 Sep, 02:00 PM", nombre: "Túnel de Enfriamiento de Producto", valor: "20.4 Unid", estado: "ALERTA" },
       { id: 23, codigo: "REG-023", fecha: "24 Sep, 10:20 AM", nombre: "Filtro Biológico Área Procesamiento", valor: "13.9 Unid", estado: "OPTIMO" },
       { id: 24, codigo: "REG-024", fecha: "23 Sep, 03:40 PM", nombre: "Empaque Secundario Corrugado", valor: "33.8 Unid", estado: "OPTIMO" },
-      { id: 25, codigo: "REG-025", fecha: "23 Sep, 09:10 AM", nombre: "Despacho Exportación Buenaventura", valor: "48.1 Unid", estado: "OPTIMO" }
+      { id: 25, codigo: "REG-025", fecha: "23 Sep, 09:10 AM", nombre: "Despacho Nacional Bodega Principal", valor: "48.1 Unid", estado: "OPTIMO" }
     ];
 
     let currentRecords = [...INITIAL_RECORDS];
@@ -2186,7 +2330,7 @@
     let globalSearchTerm = '';
 
     /* ==========================================================================
-       COLUMNAS REDIMENSIONABLES (ESTÁNDAR BI CARTERA: useResizable)
+       COLUMNAS REDIMENSIONABLES (patrón useResizable)
        ========================================================================== */
     let isResizing = false;
     let currentResizingCol = null;
@@ -2248,7 +2392,7 @@
     }
 
     /* ==========================================================================
-       FILTROS TIPO EXCEL POR COLUMNA (ESTÁNDAR BI CARTERA: ChecklistPopover)
+       FILTROS TIPO EXCEL POR COLUMNA (patrón ChecklistPopover)
        ========================================================================== */
     function toggleColumnFilterPopover(colKey, event) {
       event.stopPropagation();
@@ -2301,7 +2445,7 @@
           </button>
         </div>
         <div>
-          <input type="text" class="popover-search-input" id="popoverSearchInput" placeholder="Buscar valores..." oninput="handlePopoverSearch(this.value)">
+          <input type="text" class="popover-search-input" id="popoverSearchInput" aria-label="Buscar valores de la columna" placeholder="Buscar valores..." oninput="handlePopoverSearch(this.value)">
         </div>
         <div class="popover-check-item" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.3rem;">
           <label style="display: flex; align-items: center; width: 100%; cursor: pointer;">
@@ -2316,7 +2460,7 @@
               <div class="popover-check-item">
                 <label style="display: flex; align-items: center; flex: 1; cursor: pointer; overflow: hidden;">
                   <input type="checkbox" class="popover-item-checkbox" value="${encodeURIComponent(val)}" ${isChecked ? 'checked' : ''} onchange="updateSelectAllState()">
-                  <span class="popover-check-label" title="${val}">${val}</span>
+                  <span class="popover-check-label" title="${escapeHtml(val)}">${escapeHtml(val)}</span>
                 </label>
                 <span class="popover-check-count">(${count})</span>
               </div>
@@ -2330,7 +2474,7 @@
       `;
 
       th.appendChild(popover);
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function handlePopoverSearch(q) {
@@ -2534,7 +2678,7 @@
                 <div class="th-content-wrapper">
                   <span class="th-label ${col.align === 'right' ? 'w-100 text-end' : col.align === 'center' ? 'w-100 text-center' : ''}">${col.label}</span>
                   ${col.filterable !== false ? `
-                    <button type="button" class="filter-toggle-btn ${hasFilter ? 'has-filter' : ''} ${isOpen ? 'is-open' : ''}" id="filter-btn-${col.key}" onclick="toggleColumnFilterPopover('${col.key}', event)" title="Filtrar por ${col.label}">
+                    <button type="button" class="filter-toggle-btn ${hasFilter ? 'has-filter' : ''} ${isOpen ? 'is-open' : ''}" id="filter-btn-${col.key}" onclick="toggleColumnFilterPopover('${col.key}', event)" title="Filtrar por ${col.label}" aria-label="Filtrar por ${col.label}">
                       <i data-lucide="filter" style="width: 11px; height: 11px;"></i>
                       ${hasFilter ? `<span class="filter-active-dot"></span>` : ''}
                     </button>
@@ -2546,7 +2690,7 @@
           }).join('')}
         </tr>
       `;
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function renderTable() {
@@ -2573,7 +2717,7 @@
             </td>
           </tr>
         `;
-        lucide.createIcons();
+        refreshIcons();
         renderPagination(0, 0, 0, 1, 1);
         return;
       }
@@ -2581,30 +2725,30 @@
       tbody.innerHTML = pageData.map(r => `
         <tr>
           ${visibleColumns.includes('codigo') ? `
-            <td data-col="codigo" class="fw-semibold font-mono text-primary" style="width: ${colWidths.codigo}px;">${r.codigo}</td>
+            <td data-col="codigo" class="fw-semibold font-mono" style="width: ${colWidths.codigo}px;">${escapeHtml(r.codigo)}</td>
           ` : ''}
           ${visibleColumns.includes('fecha') ? `
-            <td data-col="fecha" class="text-muted" style="width: ${colWidths.fecha}px;">${r.fecha}</td>
+            <td data-col="fecha" class="text-muted" style="width: ${colWidths.fecha}px;">${escapeHtml(r.fecha)}</td>
           ` : ''}
           ${visibleColumns.includes('nombre') ? `
-            <td data-col="nombre" class="fw-medium" style="width: ${colWidths.nombre}px;">${r.nombre}</td>
+            <td data-col="nombre" class="fw-medium" style="width: ${colWidths.nombre}px;">${escapeHtml(r.nombre)}</td>
           ` : ''}
           ${visibleColumns.includes('valor') ? `
-            <td data-col="valor" style="text-align: right; width: ${colWidths.valor}px;" class="fw-bold font-mono">${r.valor}</td>
+            <td data-col="valor" style="text-align: right; width: ${colWidths.valor}px;" class="fw-bold font-mono">${escapeHtml(r.valor)}</td>
           ` : ''}
           ${visibleColumns.includes('estado') ? `
             <td data-col="estado" style="width: ${colWidths.estado}px;">
-              <span class="badge-pill-joli ${r.estado === 'OPTIMO' ? 'badge-joli-success' : r.estado === 'ALERTA' ? 'badge-joli-warning' : 'badge-joli-danger'}">${r.estado}</span>
+              <span class="badge-pill-joli ${r.estado === 'OPTIMO' ? 'badge-joli-success' : r.estado === 'ALERTA' ? 'badge-joli-warning' : 'badge-joli-danger'}">${escapeHtml(r.estado)}</span>
             </td>
           ` : ''}
           ${visibleColumns.includes('acciones') ? `
             <td data-col="acciones" style="text-align: center; width: ${colWidths.acciones}px;">
-              <div class="row-actions-group">
-                <button type="button" class="btn-row-action btn-row-view" onclick="openDrawerForDetail(${r.id})" title="Ver detalle en panel lateral">
+              <div class="btn-group btn-group-sm row-actions-group" role="group" aria-label="Acciones de fila">
+                <button type="button" class="btn-row-action btn-row-view" onclick="openDrawerForDetail(${r.id})" title="Ver detalle en panel lateral" aria-label="Ver detalle de ${escapeHtml(r.codigo)}">
                   <i data-lucide="eye" style="width: 13px; height: 13px;"></i>
                 </button>
                 <span class="row-action-divider"></span>
-                <button type="button" class="btn-row-action btn-row-delete" onclick="openConfirmAction('${r.codigo}')" title="Desactivar registro">
+                <button type="button" class="btn-row-action btn-row-delete" onclick="openConfirmAction(${r.id})" title="Desactivar registro" aria-label="Desactivar ${escapeHtml(r.codigo)}">
                   <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
                 </button>
               </div>
@@ -2612,7 +2756,7 @@
           ` : ''}
         </tr>
       `).join("");
-      lucide.createIcons();
+      refreshIcons();
 
       renderPagination(totalItems, startIndex + 1, endIndex, totalPages, currentPage);
     }
@@ -2644,26 +2788,26 @@
       }
 
       buttonsContainer.innerHTML = `
-        <button type="button" class="page-nav-btn" onclick="goToPage(1)" ${curPage === 1 ? 'disabled' : ''} title="Primera página">
+        <button type="button" class="page-nav-btn" onclick="goToPage(1)" ${curPage === 1 ? 'disabled' : ''} title="Primera página" aria-label="Primera página">
           <i data-lucide="chevrons-left" style="width: 14px; height: 14px;"></i>
         </button>
-        <button type="button" class="page-nav-btn" onclick="goToPage(${curPage - 1})" ${curPage === 1 ? 'disabled' : ''} title="Página anterior">
+        <button type="button" class="page-nav-btn" onclick="goToPage(${curPage - 1})" ${curPage === 1 ? 'disabled' : ''} title="Página anterior" aria-label="Página anterior">
           <i data-lucide="chevron-left" style="width: 14px; height: 14px;"></i>
         </button>
         <div class="page-numbers-group">
           ${pages.map(p => p === 'ellipsis' 
             ? `<span class="page-ellipsis">…</span>` 
-            : `<button type="button" class="page-num-btn ${p === curPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`
+            : `<button type="button" class="page-num-btn ${p === curPage ? 'active' : ''}" ${p === curPage ? 'aria-current="page"' : ''} onclick="goToPage(${p})">${p}</button>`
           ).join('')}
         </div>
-        <button type="button" class="page-nav-btn" onclick="goToPage(${curPage + 1})" ${curPage >= totalPages ? 'disabled' : ''} title="Página siguiente">
+        <button type="button" class="page-nav-btn" onclick="goToPage(${curPage + 1})" ${curPage >= totalPages ? 'disabled' : ''} title="Página siguiente" aria-label="Página siguiente">
           <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
         </button>
-        <button type="button" class="page-nav-btn" onclick="goToPage(${totalPages})" ${curPage >= totalPages ? 'disabled' : ''} title="Última página">
+        <button type="button" class="page-nav-btn" onclick="goToPage(${totalPages})" ${curPage >= totalPages ? 'disabled' : ''} title="Última página" aria-label="Última página">
           <i data-lucide="chevrons-right" style="width: 14px; height: 14px;"></i>
         </button>
       `;
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function goToPage(page) {
@@ -2683,17 +2827,22 @@
     }
 
 
+    let editingRecordId = null; // null = creación; número = edición
+
     function openDrawerForNew() {
+      editingRecordId = null;
       document.getElementById("drawerTitle").innerText = "Nuevo Registro";
       document.getElementById("inputCodigo").value = `REG-${String(currentRecords.length + 1).padStart(3, '0')}`;
       document.getElementById("inputNombre").value = "";
       document.getElementById("inputValor").value = "";
+      document.getElementById("inputEstado").value = "OPTIMO";
       showDrawer();
     }
 
     function openDrawerForDetail(id) {
       const r = currentRecords.find(item => item.id === id);
       if (!r) return;
+      editingRecordId = r.id;
       document.getElementById("drawerTitle").innerText = `Detalle: ${r.codigo}`;
       document.getElementById("inputCodigo").value = r.codigo;
       document.getElementById("inputNombre").value = r.nombre;
@@ -2703,13 +2852,20 @@
     }
 
     function showDrawer() {
-      document.getElementById("rightDrawer").classList.add("is-open");
+      const drawer = document.getElementById("rightDrawer");
+      drawer.classList.add("is-open");
+      drawer.setAttribute("aria-hidden", "false");
       document.getElementById("drawerBackdrop").classList.add("is-open");
+      openDialog(drawer, "#inputNombre");
     }
 
     function closeDrawer() {
-      document.getElementById("rightDrawer").classList.remove("is-open");
+      const drawer = document.getElementById("rightDrawer");
+      if (!drawer.classList.contains("is-open")) return;
+      drawer.classList.remove("is-open");
+      drawer.setAttribute("aria-hidden", "true");
       document.getElementById("drawerBackdrop").classList.remove("is-open");
+      restoreFocus();
     }
 
     function handleDrawerSubmit(e) {
@@ -2718,21 +2874,44 @@
       const nombre = document.getElementById("inputNombre").value.trim();
       const valor = document.getElementById("inputValor").value.trim();
       const estado = document.getElementById("inputEstado").value;
-      currentRecords.unshift({ id: Date.now(), codigo, fecha: "Hoy, ahora", nombre, valor, estado });
+      if (editingRecordId === null) {
+        currentRecords = [{ id: Date.now(), codigo, fecha: "Hoy, ahora", nombre, valor, estado }, ...currentRecords];
+        showToast(`Registro ${codigo} creado (simulación, no se guarda en ningún servidor).`);
+      } else {
+        currentRecords = currentRecords.map(r => r.id === editingRecordId ? { ...r, codigo, nombre, valor, estado } : r);
+        showToast(`Registro ${codigo} actualizado (simulación).`);
+      }
       applyFiltersAndRender();
       closeDrawer();
     }
 
-    function openConfirmAction(codigo) {
-      selectedItemForAction = codigo;
-      document.getElementById("confirmModalText").innerText = `¿Está seguro de desactivar el registro ${codigo}? Esta acción será auditada.`;
+    function updateJustificationState() {
+      const len = document.getElementById("confirmJustification").value.trim().length;
+      const counter = document.getElementById("justificationCounter");
+      counter.textContent = `${len} / 10 mín.`;
+      counter.style.color = len >= 10 ? "var(--status-success)" : "var(--text-secondary)";
+      document.getElementById("confirmActionBtn").disabled = len < 10;
+      if (len >= 10) document.getElementById("justificationError").classList.add("d-none");
+    }
+
+    function openConfirmAction(id) {
+      const r = currentRecords.find(item => item.id === id);
+      if (!r) return;
+      selectedItemForAction = r.id;
+      document.getElementById("confirmModalText").innerText = `¿Está seguro de desactivar el registro ${r.codigo}? Esta acción será auditada.`;
       document.getElementById("confirmJustification").value = "";
       document.getElementById("justificationError").classList.add("d-none");
-      document.getElementById("confirmActionModal").classList.add("is-open");
+      updateJustificationState();
+      const modal = document.getElementById("confirmActionModal");
+      modal.classList.add("is-open");
+      openDialog(modal, "#confirmJustification");
     }
 
     function closeConfirmModal() {
-      document.getElementById("confirmActionModal").classList.remove("is-open");
+      const modal = document.getElementById("confirmActionModal");
+      if (!modal.classList.contains("is-open")) return;
+      modal.classList.remove("is-open");
+      restoreFocus();
     }
 
     function executeDestructiveAction() {
@@ -2741,10 +2920,29 @@
         document.getElementById("justificationError").classList.remove("d-none");
         return;
       }
-      currentRecords = currentRecords.filter(r => r.codigo !== selectedItemForAction);
+      const target = currentRecords.find(r => r.id === selectedItemForAction);
+      currentRecords = currentRecords.filter(r => r.id !== selectedItemForAction);
       applyFiltersAndRender();
       closeConfirmModal();
-      alert(`Registro ${selectedItemForAction} desactivado con justificación: "${just}"`);
+      showToast(`Registro ${target ? target.codigo : ""} desactivado. Motivo registrado (simulación).`);
+    }
+
+    // Filtro superior por zona: en este mock los registros no traen zona; se muestra el
+    // valor elegido en el badge del filtro. Al integrar, enviar el parámetro al backend.
+    function filterByField(value) {
+      const item = document.getElementById("filterZona");
+      const badge = document.getElementById("badgeFilterZona");
+      if (!item || !badge) return;
+      item.classList.toggle("has-active-val", Boolean(value));
+      badge.textContent = value || "";
+      showToast(value ? `Filtro de zona: ${value} (simulación).` : "Filtro de zona retirado.");
+    }
+
+    // Recarga simulada: restaura el dataset inicial.
+    function reloadData() {
+      currentRecords = [...INITIAL_RECORDS];
+      applyFiltersAndRender();
+      showToast("Datos recargados (simulación).");
     }
 
     function toggleExpandableFilter(id) {
@@ -2772,11 +2970,14 @@
     }
 
     function resetFilters() {
-      currentRecords = [...INITIAL_RECORDS];
+      // Limpia filtros y búsqueda; no restaura registros (para eso está "Recargar").
       columnFilters = {};
       globalSearchTerm = '';
+      currentSortField = null;
       const searchInput = document.getElementById("searchInput");
       if (searchInput) searchInput.value = '';
+      const zona = document.getElementById("selectFilterZona");
+      if (zona && zona.value) { zona.value = ''; filterByField(''); }
       applyFiltersAndRender();
     }
 
@@ -2788,18 +2989,18 @@
       html.setAttribute("data-bs-theme", next);
       html.style.colorScheme = next;
       document.getElementById("themeIcon").setAttribute("data-lucide", next === "dark" ? "moon" : "sun");
-      lucide.createIcons();
+      refreshIcons();
     }
 
     /* ==========================================================================
-       GESTIÓN DEL CENTRO DE MULTI-NOTIFICACIONES (TIENDITA / VIBRA)
+       GESTIÓN DEL CENTRO DE MULTI-NOTIFICACIONES
        ========================================================================== */
     const MOCK_NOTIFICATIONS = [
       {
         id: 1,
         category: "operacion",
         title: "Nueva Solicitud de Pedido",
-        detail: "El usuario Carlos Duque solicitó despacho de 50 cajas para Sucursal Norte.",
+        detail: "Un usuario del área comercial solicitó despacho de 50 cajas para Sucursal Norte.",
         timeAgo: "Hace 12 min",
         severity: "info",
         isRead: false
@@ -2835,8 +3036,10 @@
       if (isOpen) {
         closeNotifications();
       } else {
+        closeUserProfile();
         popover.classList.add("is-open");
         btn.classList.add("active");
+        btn.setAttribute("aria-expanded", "true");
         renderNotifications();
       }
     }
@@ -2845,7 +3048,7 @@
       const popover = document.getElementById("notifPopover");
       const btn = document.getElementById("notifBellBtn");
       if (popover) popover.classList.remove("is-open");
-      if (btn) btn.classList.remove("active");
+      if (btn) { btn.classList.remove("active"); btn.setAttribute("aria-expanded", "false"); }
     }
 
     function switchNotifTab(category) {
@@ -2904,7 +3107,7 @@
             <div class="notif-empty-desc">No hay alertas pendientes en la categoría ${activeNotifTab}.</div>
           </div>
         `;
-        lucide.createIcons();
+        refreshIcons();
         return;
       }
 
@@ -2915,19 +3118,19 @@
           </div>
           <div class="notif-content">
             <div class="notif-topline">
-              <span class="notif-item-title">${item.title}</span>
+              <span class="notif-item-title">${escapeHtml(item.title)}</span>
               <span class="notif-time">${item.timeAgo}</span>
             </div>
-            <p class="notif-detail">${item.detail}</p>
+            <p class="notif-detail">${escapeHtml(item.detail)}</p>
           </div>
           <div class="notif-actions">
-            <button type="button" class="notif-action-btn" onclick="markOneNotifRead(${item.id})" title="Marcar como leída">
+            <button type="button" class="notif-action-btn" onclick="markOneNotifRead(${item.id})" title="Marcar como leída" aria-label="Marcar como leída">
               <i data-lucide="check" style="width: 13px; height: 13px;"></i>
             </button>
           </div>
         </div>
       `).join("");
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function markOneNotifRead(id) {
@@ -2941,7 +3144,7 @@
     }
 
     /* ==========================================================================
-       GESTIÓN DEL PERFIL DE USUARIO Y SALIDA SEGURA (TIENDITA / VIBRA)
+       GESTIÓN DEL PERFIL DE USUARIO Y SALIDA SEGURA
        ========================================================================== */
     function toggleUserProfile(e) {
       if (e) e.stopPropagation();
@@ -2958,6 +3161,7 @@
       } else {
         dropdown.classList.add("is-open");
         btn.classList.add("active");
+        btn.setAttribute("aria-expanded", "true");
         if (chevron) chevron.classList.add("rotate");
       }
     }
@@ -2967,27 +3171,35 @@
       const btn = document.getElementById("userProfileBtn");
       const chevron = document.getElementById("userChevronIcon");
       if (dropdown) dropdown.classList.remove("is-open");
-      if (btn) btn.classList.remove("active");
+      if (btn) { btn.classList.remove("active"); btn.setAttribute("aria-expanded", "false"); }
       if (chevron) chevron.classList.remove("rotate");
     }
 
     function handleProfileNav(target) {
       closeUserProfile();
-      alert(`Navegando a la sección ${target.toUpperCase()} del colaborador.`);
+      showToast(`Simulación: aquí se navegaría a la sección ${target}.`);
     }
 
     function openLogoutModal() {
+      // Se guarda el botón de perfil como disparador antes de cerrar el menú.
+      const trigger = document.getElementById("userProfileBtn");
       closeUserProfile();
-      document.getElementById("logoutConfirmModal").classList.add("is-open");
+      const modal = document.getElementById("logoutConfirmModal");
+      modal.classList.add("is-open");
+      openDialog(modal);
+      lastFocusedElement = trigger;
     }
 
     function closeLogoutModal() {
-      document.getElementById("logoutConfirmModal").classList.remove("is-open");
+      const modal = document.getElementById("logoutConfirmModal");
+      if (!modal.classList.contains("is-open")) return;
+      modal.classList.remove("is-open");
+      restoreFocus();
     }
 
     function confirmLogoutAction() {
       closeLogoutModal();
-      alert("Sesión finalizada exitosamente. Redirigiendo a pantalla de Login...");
+      showToast("Simulación: sesión cerrada; en la app real se redirige al login.");
     }
 
     // Cerrar popovers al hacer clic afuera
@@ -3014,7 +3226,7 @@
       renderTableHead();
       applyFiltersAndRender();
       renderNotifications();
-      lucide.createIcons();
+      refreshIcons();
     });
   </script>
 </body>

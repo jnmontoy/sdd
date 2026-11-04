@@ -1,20 +1,7 @@
-# Cursor Rules — SDD Jolifoods Engineering Standard
-# Auto-generado para agentes de IA que operan en este proyecto
+# Reglas para Cursor (resumen de AGENTS.md; si hay diferencia, manda AGENTS.md)
 
-# 1. Reglas Generales
-- Lee siempre `AGENTS.md` y `memory/learnings/bug_lessons.md` antes de generar código.
-- Todas las respuestas, explicaciones y comentarios deben ser en ESPAÑOL.
-- Rutas 100% relativas a BASE_DIR (prohibido rutas absolutas de Windows/Linux).
-- Prohibido tocar credenciales en .env o exponer secretos.
-
-# 2. Frontend
-- Prohibido inventar clases CSS nuevas o archivos .css improvisados. Reutilizar tokens de variables.css y componentes SDD.
-- Prohibido centrar o encoger la vista (no max-w-xl). Layout 100% horizontal de borde a borde.
-- Formularios CRUD en Right Drawer (560px), no modales flotantes.
-- Endpoints consumidos exclusivamente desde src/services/endpoints.ts.
-
-# 3. Backend
-- FastAPI bajo /fast/ para alta velocidad JSON, Django para autenticación y ORM.
-- Prohibido N+1: usar select_related, prefetch_related o .values().
-- Prohibido bucles con .save(): usar bulk_create y bulk_update con transacciones atómicas.
-- Todo endpoint nuevo debe registrarse en backend/config/endpoints_registry.json y validarse con validate_endpoints.py.
+- Lea AGENTS.md y memory/learnings/ antes de generar código. Responda en español.
+- Seguridad: no toque secretos (.env); instale paquetes solo dentro de .venv; sin rutas absolutas ni URLs fijas; tokens nunca en localStorage.
+- Backend: transaction.atomic() para escrituras dependientes; select_related/prefetch_related (sin N+1); sin consultas dentro de ciclos; bulk_create/bulk_update para lotes; vistas privadas por defecto; registrar cada endpoint en backend/config/endpoints_registry.json.
+- Frontend: reutilizar componentes del SDD y tokens de variables.css (sin colores fijos); pantallas a todo el ancho; CRUD en drawer derecho; acciones de fila en btn-group con aria-label; rutas desde src/services/endpoints.ts.
+- Pruebas: backend en pruebas/ (pytest), React con Vitest junto al componente, E2E en pruebas/e2e. No dar nada por terminado sin la salida real de las pruebas.

@@ -1,7 +1,7 @@
 # Componente: Alertas y Feedback de Login (`UI-COMP-LOGIN-FEEDBACK`)
 ## Ubicación SDD: `.sdd/components/login/feedback_alerts.md`
 
-Este documento especifica los componentes visuales de alerta en línea y el modal de sesión expirada utilizando **CSS puro** gobernado por `variables.css`.
+Este documento especifica los componentes visuales de alerta en línea y los avisos flotantes del login utilizando **CSS puro** gobernado por `variables.css`.
 
 ---
 
@@ -9,7 +9,7 @@ Este documento especifica los componentes visuales de alerta en línea y el moda
 
 ### 1.1. Estructura HTML / JSX
 ```html
-<div class="login-alert login-alert-error" role="alert" aria-live="polite">
+<div class="login-alert login-alert-error" role="alert">
   <svg class="login-alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <circle cx="12" cy="12" r="10" stroke-width="2" />
     <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round" />
@@ -73,9 +73,9 @@ Este documento especifica los componentes visuales de alerta en línea y el moda
 
 /* Variante Advertencia (Rate Limit) */
 .login-alert-warning {
-  background-color: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.3);
-  color: #fde68a;
+  background-color: var(--status-warning-bg);
+  border-color: var(--status-warning);
+  color: var(--text-primary);
 }
 
 .login-alert-warning .login-alert-icon {
@@ -85,181 +85,72 @@ Este documento especifica los componentes visuales de alerta en línea y el moda
 
 ---
 
-## 2. Modal de Sesión Expirada (`SessionExpiredModal`)
+## 2. Aviso de Sesión Expirada
 
-### 2.1. Estructura HTML / JSX
-```html
-<div class="login-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-exp-title">
-  <div class="login-modal-box">
-    <div class="login-modal-badge">
-      <svg class="login-modal-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" stroke-width="2" />
-        <polyline points="12 6 12 12 16 14" stroke-width="2" stroke-linecap="round" />
-      </svg>
-    </div>
-    
-    <h3 id="modal-exp-title" class="login-modal-title">Tu sesión ha finalizado</h3>
-    <p class="login-modal-desc">
-      Por políticas de seguridad corporativa, tu sesión caducó por inactividad. Inicia sesión nuevamente para continuar tu trabajo.
-    </p>
-
-    <div class="login-modal-actions">
-      <button type="button" class="login-btn-primary">
-        Volver a Iniciar Sesión
-      </button>
-    </div>
-  </div>
-</div>
-```
-
-### 2.2. Hoja de Estilos en CSS Puro
-```css
-.login-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-modal);
-  background-color: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  box-sizing: border-box;
-}
-
-.login-modal-box {
-  width: 100%;
-  max-width: 400px;
-  background-color: var(--bg-card);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
-  padding: 2rem;
-  text-align: center;
-  box-sizing: border-box;
-  animation: modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.login-modal-badge {
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 1.25rem auto;
-  border-radius: var(--radius-full);
-  background-color: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--status-warning);
-}
-
-.login-modal-icon {
-  width: 28px;
-  height: 28px;
-}
-
-.login-modal-title {
-  margin: 0 0 0.5rem 0;
-  font-family: var(--font-family);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-}
-
-.login-modal-desc {
-  margin: 0 0 1.5rem 0;
-  font-family: var(--font-family);
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  line-height: var(--line-height-normal);
-}
-
-.login-modal-actions {
-  display: flex;
-  justify-content: center;
-}
-
-@keyframes modalEnter {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-```
+El aviso de sesión vencida NO se define en este archivo: el componente canónico es [`SessionExpirationModal`](../modal/session_expiration_modal.md) (React, `role="alertdialog"`, foco atrapado, `data-testid="session-expiration-modal"`), que monta `AuthContext` al recibir el evento `session-expired`. Mantener una única implementación evita dos modales con textos y comportamientos distintos.
 
 ---
 
 ## 3. Notificaciones Flotantes en Login con Sonner (`ToastNotification`)
 
-Para la retroalimentación reactiva y no bloqueante durante el flujo de autenticación, el sistema utiliza el complemento **Sonner** encapsulado en [`../toast/toast_notification.md`](../toast/toast_notification.md).
+Para la retroalimentación no bloqueante durante el flujo de autenticación se usa **Sonner** encapsulado en [`../toast/toast_notification.md`](../toast/toast_notification.md). Los errores de credenciales DEBERÍAN mostrarse además en el banner en línea (§1), que queda junto al formulario y es anunciado por lectores de pantalla.
 
 ### 3.1. Montaje del Contenedor Toaster
-En la vista o layout del Login (`LoginPage.tsx`), se debe montar el contenedor corporativo `<CorporateToaster />`:
+Si la página de login se renderiza fuera del layout autenticado, monta allí `<CorporateToaster />`:
 
 ```tsx
 import { CorporateToaster } from '../ui/ToastNotification';
 
-export const LoginPage: React.FC = () => {
-  return (
-    <main className="gy-login-viewport">
-      <CorporateToaster />
-      {/* Contenido del Login */}
-    </main>
-  );
-};
+export const LoginPage: React.FC = () => (
+  <main className="login-viewport">
+    <CorporateToaster />
+    <LoginForm />
+  </main>
+);
 ```
 
 ### 3.2. Matriz de Eventos y Toasts en Login
 | Evento de Login | Método Sonner | Severidad | Duración | Mensaje / Título | Descripción de Ejemplo |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Campos Incompletos** | `showToast.warning()` | Advertencia | 5000 ms | *"Campo requerido"* | *"Por favor ingresa tu número de documento."* |
-| **Credenciales Inválidas** | `showToast.error()` | Error | 6000 ms | *"Fallo de autenticación"* | *"El número de documento o la contraseña ingresada son incorrectos."* |
-| **Rate Limit / Bloqueo (429)** | `showToast.warning()` | Advertencia | 7000 ms | *"Acceso temporalmente bloqueado"* | *"Demasiados intentos fallidos. Por seguridad espera 60 segundos."* |
-| **Error de Red / Servidor (500)** | `showToast.error()` | Error | 7000 ms | *"Error de conexión"* | *"No se pudo conectar con el servidor de autenticación."* |
-| **Autenticación Exitosa** | `showToast.success()` | Éxito | 3500 ms | *"¡Inicio de sesión exitoso!"* | *"Bienvenido al sistema, [Nombre de Usuario]."* |
-| **Cambio de Tema (Dark/Light)** | `showToast.info()` | Informativo | 3500 ms | *"Tema actualizado"* | *"Modo oscuro activado / Modo claro activado"* |
+| **Credenciales Inválidas (400/401)** | `showToast.error()` | Error | 6000 ms | *"Fallo de autenticación"* | *"El número de documento o la contraseña son incorrectos."* |
+| **Rate Limit / Bloqueo (429)** | `showToast.warning()` | Advertencia | 7000 ms | *"Acceso temporalmente bloqueado"* | *"Demasiados intentos fallidos. Espera un momento antes de reintentar."* |
+| **Error de Red / Servidor (5xx)** | `showToast.error()` | Error | 7000 ms | *"Error de conexión"* | *"No se pudo conectar con el servidor de autenticación."* |
+| **Autenticación Exitosa** | `showToast.success()` | Éxito | 3500 ms | *"Inicio de sesión exitoso"* | *"Bienvenido, [Nombre de Usuario]."* |
 
 ### 3.3. Ejemplo de Implementación en el Manejador Submit
+El mensaje de error es siempre genérico: NO DEBE mostrar `err.message` ni el detalle del servidor (podría revelar si un documento existe o detalles internos).
+
 ```tsx
+import { isAxiosError } from 'axios';
+import { useAuth } from '../../context/AuthContext';
 import { showToast } from '../ui/ToastNotification';
 
-const handleSubmit = async (data: LoginFormData) => {
-  if (!data.documento.trim()) {
-    showToast.warning('Campo requerido', {
-      description: 'Por favor ingresa tu número de documento.',
-    });
+const { login } = useAuth();
+
+const handleSubmit = async (numeroDocumento: string, password: string) => {
+  if (!numeroDocumento.trim()) {
+    showToast.warning('Campo requerido', { description: 'Por favor ingresa tu número de documento.' });
     return;
   }
 
+  setIsLoading(true);
   try {
-    setIsLoading(true);
-    const res = await api.login(data);
-
-    if (res.success && res.user) {
-      showToast.success('¡Inicio de sesión exitoso!', {
-        description: `Bienvenido, ${res.user.nombre}.`,
-      });
-      onLoginSuccess(res.user);
-    } else {
-      showToast.error('Fallo de autenticación', {
-        description: res.message || 'Credenciales inválidas.',
-      });
-    }
-  } catch (err: any) {
-    if (err.response?.status === 429) {
+    const user = await login({ numero_documento: numeroDocumento.trim(), password });
+    showToast.success('Inicio de sesión exitoso', { description: `Bienvenido, ${user.nombre}.` });
+  } catch (err: unknown) {
+    const status = isAxiosError(err) ? err.response?.status : undefined;
+    if (status === 429) {
       showToast.warning('Acceso temporalmente bloqueado', {
         description: 'Demasiados intentos. Espera un momento antes de reintentar.',
       });
+    } else if (status === 400 || status === 401) {
+      showToast.error('Fallo de autenticación', {
+        description: 'El número de documento o la contraseña son incorrectos.',
+      });
     } else {
-      showToast.error('Error de acceso', {
-        description: err.message || 'No fue posible validar tus credenciales.',
+      showToast.error('Error de conexión', {
+        description: 'No se pudo conectar con el servidor de autenticación.',
       });
     }
   } finally {
@@ -267,4 +158,3 @@ const handleSubmit = async (data: LoginFormData) => {
   }
 };
 ```
-

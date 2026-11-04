@@ -1,141 +1,42 @@
-# Catálogo de Innovaciones y Mejores Prácticas de Proyectos del Ecosistema
-## Referencia de Ingeniería Cruzada — Jolifoods / Greenyard (SDD)
+# Fuentes y procedencia de los patrones del SDD
 
-Este documento documenta **lo mejor de cada uno de los proyectos desarrollados en la organización** (`bi`, `app_tic`, `tiendita`, `vibra`, `contenedores`, `porterias`, `color`, `instalador Joli`). Su propósito es que cualquier desarrollador técnico o líder senior cuente con las bases conceptuales, arquitectónicas y de código para reutilizar estas soluciones en proyectos futuros sin inventar la rueda.
+Este documento registra **de qué proyecto interno de Joli Foods salió cada patrón** que hoy el SDD describe de forma genérica. Sirve para trazabilidad (saber dónde ver una implementación real y a quién preguntar), no como norma: la norma es el componente o protocolo genérico enlazado en cada fila.
 
----
-
-## 🗺️ Mapa de Excelencia Técnica por Proyecto
-
-```text
-┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│      BI      │   │   APP_TIC    │   │   TIENDITA   │   │ CONTENEDORES │
-│ Tutoriales   │   │ MCP & Agentes│   │ Firma, PDF & │   │ Biometría    │
-│ Divididos &  │   │ Hitos/Sprints│   │ Escáner QR   │   │ Facial       │
-│ Data Quality │   │ Grid Integral│   │ Dotaciones   │   │ WebRTC       │
-└──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
-       ▲                  ▲                  ▲                  ▲
-       │                  │                  │                  │
- ──────┴──────────────────┴──────────────────┴──────────────────┴──────
-       │                  │                  │                  │
-       ▼                  ▼                  ▼                  ▼
-┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│  PORTERÍAS   │   │    VIBRA     │   │    COLOR     │   │  INSTALADOR  │
-│ Modo Kiosco  │   │ Calendario   │   │ ColorLab &   │   │ Empaquetado  │
-│ PWA Tablets  │   │ Cuadrillas & │   │ Mezcla de    │   │ Offline      │
-│ Check-in Ráp │   │ Novedades    │   │ Pigmentos    │   │ Desktop .exe │
-└──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
-```
+Reglas de uso:
+* Para construir, se usa el **componente o protocolo genérico**, no el código del proyecto de origen.
+* Que un patrón haya funcionado en un proyecto no lo convierte en obligatorio para otro: se evalúa si el problema es el mismo.
+* Las advertencias de cada fila son parte del patrón; ignorarlas reproduce errores ya conocidos.
 
 ---
 
-## 1. Proyecto `bi` (Business Intelligence & Datahub)
+## 1. Tabla de procedencia
 
-### 🌟 Innovaciones Destacadas:
-1. **Tutorial Interactivo Dividido (`SplitTutorialModal`)**:
-   - **Problema resuelto**: Los usuarios de negocio no sabían conectar Power BI o Excel a la base de datos PostgreSQL.
-   - **Solución**: Un modal con vista dividida (Split Screen). A la izquierda, datos de conexión con botón "Copiar" en un clic; a la derecha, carrusel guiado con capturas de pantalla, zoom interactivo (`ImageLightbox`) y resaltado automático de botones entre comillas.
-   - **Selector de Tutorial (`TutorialChooserModal`)**: Diálogo previo que permite al usuario escoger entre Power BI o Excel antes de iniciar el recorrido.
-2. **Módulo de Calidad de Datos (`Data Quality - DQ`)**:
-   - Reglas de validación en tiempo real para detectar registros huérfanos, inconsistencias de formato y anomalías en tablas maestras.
-3. **Gestión de Tickets PQRS**:
-   - Módulo integrado para registrar, clasificar y dar seguimiento a peticiones, quejas, reclamos y solicitudes de analítica.
-4. **Autenticación Híbrida y Fallback Controlado de Token en URL (`TokenAuthentication`)**:
-   - Prioriza la cabecera `Authorization: Token <key>` pero ofrece fallback seguro mediante query param `?token=` para herramientas externas que no pueden inyectar headers (como consultas Power BI Desktop, conectores Excel y endpoints de descarga directa de archivos pesados), optimizado con caché en memoria (`LocMemCache`) de 60s y sliding session de 7 días.
-
----
-
-## 2. Proyecto `app_tic` (Gestión Ágil de Proyectos TIC)
-
-### 🌟 Innovaciones Destacadas:
-1. **Gobernanza de Proyectos en Cuadrícula (`GridTIC`)**:
-   - Seguimiento integral de proyectos mediante 6 entidades enlazadas: **Hitos, Sprints, Decisiones de Arquitectura (ADRs), Compromisos, Tareas y Línea de Tiempo**.
-2. **Integración Nativa con Agentes de IA vía MCP (Model Context Protocol)**:
-   - Exposición de endpoints de control y herramientas que permiten a agentes autónomos consultar tareas pendientes, crear decisiones y auditar el avance del sprint sin intervención humana manual.
-3. **Módulo ACPM (Acciones Correctivas, Preventivas y de Mejora)**:
-   - Registro con consecutivo formal, seguimiento de causas raíz y subida de evidencias hacia `backend/media/`.
+| Patrón genérico | Problema que resuelve | Componente / protocolo en el SDD | Origen | Advertencias |
+|---|---|---|---|---|
+| Tutorial de vista dividida con selector previo | Guiar paso a paso (p. ej. conectar Power BI o Excel a una base de datos) con capturas ampliables y datos copiables. | [`components/tutorial/split_tutorial_walkthrough.md`](../components/tutorial/split_tutorial_walkthrough.md) | `bi` (tutoriales de conexión) | NO mostrar credenciales permanentes en el panel; usar credenciales de solo lectura, temporales o un enlace al gestor de secretos. |
+| Calidad de datos (reglas de validación sobre tablas maestras) | Detectar registros huérfanos, formatos inconsistentes y anomalías. | Sin componente genérico todavía. | `bi` (módulo DQ) | Candidato a especificar en `model/`. |
+| Token en URL como respaldo para conectores externos | Herramientas que no pueden enviar cabeceras (conectores de Power BI/Excel, descargas directas). | Excepción documentada en BP-18 (normativa 00). | `bi` (`TokenAuthentication` con respaldo `?token=`) | Es una **excepción de seguridad**, no un patrón general: los tokens en URL quedan en logs, historial y cabecera `Referer`. Si se usa: token de solo lectura, alcance mínimo, vida corta y revocable, y registro de su uso. Para sesiones de usuario aplica el modelo canónico (access token en memoria + refresh en cookie `HttpOnly`). |
+| Seguimiento de proyectos con hitos, sprints, decisiones (ADR), compromisos, tareas y línea de tiempo | Gobierno de proyectos de TI. | Inspira [`memory/`](../memory/README.md) y el protocolo 15 (ADR). | `app_tic` | — |
+| Herramientas para agentes de IA vía MCP (*Model Context Protocol*) | Que un agente consulte o registre tareas y decisiones sin intervención manual. | Sin componente genérico; ver protocolo 15 §4. | `app_tic` | Toda herramienta MCP con escritura DEBE autenticarse y quedar auditada como cualquier API. |
+| Acciones correctivas y preventivas (ACPM) con consecutivo y evidencias | Registro formal de no conformidades. | [`components/upload/file_uploader_pro.md`](../components/upload/file_uploader_pro.md), [`model/archivos/`](../model/archivos/spec_model_archivos_media.md) | `app_tic` | — |
+| Roles en tabla propia con permisos en `JSONField` y unión de permisos del usuario | Cambiar roles y accesos sin migraciones ni cierre de sesión. | [`components/roles/roles_admin_sidebar.md`](../components/roles/roles_admin_sidebar.md), [`pages/roles/`](./pages/roles/01_roles_permisos_especificacion.md), BP-19 | `tiendita` | El refresco de permisos cada 5 s del proyecto original genera carga constante; el SDD recomienda refrescar al enfocar la ventana, al recibir 403 o con polling largo (ver [`js_polling_architecture.md`](../components/realtime/js_polling_architecture.md)). El backend DEBE validar permisos en cada petición; el refresco en el cliente solo afecta la interfaz. |
+| Firma manuscrita en canvas con recorte automático | Capturar firmas limpias para actas y entregas. | [`components/signature/signature_modal.md`](../components/signature/signature_modal.md), [`multi_party_signature.md`](../components/signature/multi_party_signature.md) | `tiendita` (entrega de dotaciones) | Una firma manuscrita digitalizada **no es** una firma digital certificada (Ley 527 de 1999); su valor probatorio depende del proceso y de la evidencia asociada. Es dato personal. |
+| Visor de PDF en canvas | Ver documentos sin depender del visor del navegador. | [`components/pdf/pdf_preview_frame.md`](../components/pdf/pdf_preview_frame.md) | `tiendita` | — |
+| Lector de códigos de barras y QR por cámara | Captura rápida de códigos en bodega o portería. | [`components/scanner/scanner_modal.md`](../components/scanner/scanner_modal.md) | `tiendita` | La cámara requiere HTTPS (o `localhost`) y permiso del usuario. |
+| Captura facial con guía de encuadre | Fotografía de identificación de conductores u operarios. | [`components/biometrics/facial_scanner.md`](../components/biometrics/facial_scanner.md) | `contenedores` | El rostro es un **dato biométrico sensible** (Ley 1581 de 2012): requiere autorización expresa, finalidad declarada y almacenamiento protegido. El componente captura imagen; no hace reconocimiento facial. |
+| Inspección física con evidencia fotográfica | Registro del estado de contenedores (sellos, pisos, paredes). | [`components/upload/file_uploader_pro.md`](../components/upload/file_uploader_pro.md), BP-08 | `contenedores` | — |
+| Aplicación instalable (PWA) en modo kiosco | Tablets en porterías con pantalla completa y tolerancia a cortes breves de red. | [`components/pwa/pwa_install_banner.md`](../components/pwa/pwa_install_banner.md) | `porterias` | El banner solo invita a instalar; el funcionamiento sin conexión requiere un *service worker* y una estrategia de sincronización que el SDD no especifica todavía. |
+| Interfaz de registro rápido con botones grandes | Operación con guantes o en terminales resistentes. | Sin componente genérico todavía. | `porterias` | Al especificarlo, usar objetivos táctiles de al menos 44×44 px (WCAG 2.2, criterio 2.5.5) y textos legibles a distancia. |
+| Calendario mensual de turnos y novedades | Ver turnos, permisos, incapacidades y vacaciones. | [`components/calendar/corporate_calendar.md`](../components/calendar/corporate_calendar.md) | `vibra` | Las incapacidades son datos de salud (sensibles): mostrar solo el tipo de novedad a quien no tenga permiso. |
+| Menú de perfil de usuario y centro de notificaciones con pestañas | Acceso a perfil, cierre de sesión confirmado y avisos por categoría. | [`user_profile_dropdown.md`](../components/layout/user_profile_dropdown.md), [`notification_popover.md`](../components/notification/notification_popover.md) | `vibra`, `tiendita` | — |
+| Filtros tipo Excel por columna, KPIs que filtran y paginador sobre la tabla | Exploración de tablas grandes con el modelo mental de una hoja de cálculo. | [`data_table.md`](../components/data_table/data_table.md), [`checklist_popover.md`](../components/data_table/checklist_popover.md), [`kpi_cards.md`](../components/kpi/kpi_cards.md), [`pagination.md`](../components/pagination/pagination.md) | `bi` (módulo de cartera) | — |
+| Extracción de colores desde imágenes y modelo de mezcla sustractiva de pigmentos | Formular tonos a partir de fotos. | Sin componente genérico (lógica de dominio). | `color` | Es lógica específica del negocio; no se generaliza. Las fórmulas resultantes son información confidencial. |
+| Empaquetado de aplicaciones Python como ejecutable de escritorio (PyInstaller) | Equipos de planta sin internet ni permisos para instalar Python. | Sin plantilla en el SDD. | instalador interno de Joli | Los ejecutables generados por PyInstaller suelen ser marcados por antivirus; requieren firma de código. El uso de `autorun.inf` está deshabilitado por defecto en Windows moderno y no es un mecanismo de instalación fiable. |
 
 ---
 
-## 3. Proyecto `tiendita` (Entrega de Dotaciones y Beneficios)
+## 2. Cómo agregar una nueva procedencia
 
-### 🌟 Innovaciones Destacadas:
-1. **Estabilización Dinámica de Permisos y Gobernanza de Roles (`RolesAdminSidebar` + `MisPermisosView`)**:
-   - **Problema resuelto**: Cada vez que se creaba un nuevo rol o se modificaban accesos a un módulo, era necesario editar Enums en código, aplicar migraciones y pedirle a los usuarios que cerraran e iniciaran sesión.
-   - **Solución Canónica**: Tabla propia e independiente para roles (`roles` / modelo `Rol`) con `permisos: JSONField` que mapea cada bandera booleana. Se cruza con usuarios mediante relación **Muchos a Muchos (`ManyToManyField`)**. El endpoint `GET /api/mis-permisos/` realiza la unión booleana de todos los roles asignados, y el frontend (`AuthContext`) refresca en tiempo real cada 5s los permisos, agregando o retirando módulos al instante sin deslogueo. Incluye el panel lateral interactivo [`RolesAdminSidebar`](../components/roles/roles_admin_sidebar.md) para edición visual.
-2. **Firma Digital Táctil con Auto-Recorte (`SignatureModal`)**:
-   - Captura sobre Canvas con algoritmo `cropToSignature` que elimina los espacios vacíos y genera un PNG transparente Base64 optimizado para almacenamiento.
-3. **Visor de Documentos PDF en Canvas (`PdfPreviewFrame`)**:
-   - Renderizado con `pdfjs-dist` en elementos `<canvas>` simulando hojas físicas apiladas con sombras, zoom escalonado (`ZoomControls`) y navegación sin depender del plugin nativo del navegador.
-4. **Lector de Código de Barras y QR por Cámara (`ScannerModal`)**:
-   - Integración con `html5-qrcode` para lectura instantánea de etiquetas de dotación o cédulas con cierre automático al detectar lectura válida.
-5. **Selector de Modalidad de Entrega (`EntregaTypeModal`)**:
-   - Flujo diferenciado si la entrega es presencial en planta o despacho a domicilio.
-
----
-
-## 4. Proyecto `contenedores` (Inspección y Logística de Carga)
-
-### 🌟 Innovaciones Destacadas:
-1. **Escáner Biométrico Facial WebRTC (`FacialScanner`)**:
-   - Captura de video en tiempo real con cortinilla SVG oscura y guía ovalada central que asegura que el rostro del conductor u operario esté debidamente encuadrado e iluminado antes de disparar la foto.
-2. **Inspección Física y Control de Cubicaje**:
-   - Registro de estado estructural de contenedores (cerraduras, sellos, pisos, paredes) con captura fotográfica móvil directa hacia `backend/media/` y cálculo de capacidad volumétrica.
-
----
-
-## 5. Proyecto `porterias` (Control de Acceso y Vigilancia)
-
-### 🌟 Innovaciones Destacadas:
-1. **Modo Kiosco y Aplicación PWA Offline (`PwaInstallBanner`)**:
-   - Diseñado para operar en tablets Android/iOS en casetas de seguridad con pantalla táctil, arranque a pantalla completa (*standalone*) y soporte ante micro-cortes de red.
-2. **Check-in y Check-out Ultrarrápido de Vehículos**:
-   - Interfaz con botones gigantes y teclado numérico adaptado para operarios con guantes o terminales móviles rugerizadas.
-
----
-
-## 6. Proyecto `vibra` (Talento Humano y Clima Organizacional)
-
-### 🌟 Innovaciones Destacadas:
-1. **Calendario Corporativo de Turnos (`CorporateCalendar`)**:
-   - Rejilla mensual inteligente que visualiza turnos rotativos, novedades operativas, permisos, incapacidades y vacaciones mediante códigos de color semánticos.
-2. **Perfil del Colaborador y Reconocimientos**:
-   - Visualización de historial de novedades y cuadro de distinciones de colaboradores.
-
----
-
-## 7. Proyecto `color` (Laboratorio de Color y Pigmentos - ColorLab)
-
-### 🌟 Innovaciones Destacadas:
-1. **Extractor de Paletas y Píxeles desde Imágenes**:
-   - Permite al usuario cargar fotos de productos, frutas o materias primas y extraer los códigos RGB/Hex exactos mediante Canvas interactivo.
-2. **Algoritmo de Mezcla de Pigmentos Reales (`pigmentos.py`)**:
-   - A diferencia de la mezcla aditiva digital (donde rojo + verde da amarillo), modela la **mezcla sustractiva de colorantes físicos/alimentarios**, calculando la fórmula exacta de gotas o gramos de pigmento base para reproducir el tono deseado.
-
----
-
-## 8. Proyecto `instalador Joli` (Empaquetador y Despliegue Desktop)
-
-### 🌟 Innovaciones Destacadas:
-1. **Empaquetado Offline en un Solo Archivo (`.spec` / PyInstaller)**:
-   - Permite compilar aplicaciones web/Python en un archivo ejecutable `.exe` autosuficiente con entorno de ejecución embebido para equipos de planta que no tienen acceso a internet ni permisos para instalar Python/Node.
-2. **Automatización de Instalación (`autorun.inf` & `build.py`)**:
-   - Creación de memorias USB o carpetas compartidas con instalación automatizada en un clic.
-
----
-
-## 💡 Matriz de Reutilización para Desarrolladores Técnicos y Seniors
-
-| Si necesitas en tu nuevo proyecto... | Reutiliza la arquitectura de: | Componente canónico en SDD: |
-| :--- | :--- | :--- |
-| Enseñar a conectar Power BI/Excel o guiar paso a paso con fotos | **`bi`** | [`components/tutorial/split_tutorial_walkthrough.md`](../components/tutorial/split_tutorial_walkthrough.md) |
-| Automatizar tareas con agentes de IA y registrar ADRs/sprints | **`app_tic`** | [`greenfield/12_protocolo_ciclo_de_vida_sdlc_y_mejora_continua.md`](12_protocolo_ciclo_de_vida_sdlc_y_mejora_continua.md) |
-| Capturar firmas táctiles limpias y previsualizar PDFs | **`tiendita`** | [`components/signature/signature_modal.md`](../components/signature/signature_modal.md) y [`pdf_preview_frame.md`](../components/pdf/pdf_preview_frame.md) |
-| Validar identidad facial por cámara o escanear QR/Barcode | **`contenedores`** y **`tiendita`** | [`components/biometrics/facial_scanner.md`](../components/biometrics/facial_scanner.md) y [`scanner_modal.md`](../components/scanner/scanner_modal.md) |
-| Estabilizar permisos dinámicos y gobernar roles en tiempo real | **`tiendita`** | [`components/roles/roles_admin_sidebar.md`](../components/roles/roles_admin_sidebar.md) y [`pages/usuarios/01_usuarios_crud_especificacion.md`](pages/usuarios/01_usuarios_crud_especificacion.md) |
-| Autenticar con fallback de token en URL para descargas masivas o BI | **`bi`** | `TokenAuthentication` en `bi/backend/core/authentication.py` |
-| Instalar la app como app nativa en tablets de planta | **`porterias`** | [`components/pwa/pwa_install_banner.md`](../components/pwa/pwa_install_banner.md) |
-| Gestionar cuadrillas, turnos rotativos y vacaciones | **`vibra`** | [`components/calendar/corporate_calendar.md`](../components/calendar/corporate_calendar.md) |
-| Formular colores reales o mezclar tintes desde fotos | **`color`** | Algoritmos de mezcla sustractiva en `pigmentos.py` |
-| Desplegar en computadores sin internet ni Python instalado | **`instalador Joli`** | Plantilla de empaquetado `Instalador_JoliFoods.spec` |
-
+1. Describir el patrón de forma genérica en `components/`, `model/` o en un protocolo.
+2. Agregar una fila a la tabla con el problema, el enlace genérico, el proyecto de origen y las advertencias conocidas.
+3. En el documento genérico, si se quiere citar el origen, usar una sola nota: `> **Origen:** patrón tomado de <proyecto> (<módulo>). Aquí se describe de forma genérica.`

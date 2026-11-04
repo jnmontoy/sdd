@@ -1,68 +1,118 @@
-# Protocolo de Migraciones de Base de Datos Zero-Downtime y Disaster Recovery
-## Ecosistema Corporativo Jolifoods / Greenyard — Metodología SDD
+# Protocolo 08: migraciones de base de datos sin interrupción y recuperación ante desastres
 
-Este protocolo rige las modificaciones estructurales en bases de datos PostgreSQL en producción, garantizando disponibilidad 24/7 sin bloqueos de tabla (*zero table lock*) y la política de recuperación ante desastres (**RPO/RTO**).
+Reglas para cambiar la estructura de bases de datos PostgreSQL en producción **sin detener el servicio ni bloquear tablas por tiempo prolongado**, y la política de respaldo y recuperación (**RPO/RTO**).
 
----
+Las palabras **DEBE / DEBERÍA / PUEDE** siguen la RFC 2119.
 
-## 1. Patrón "Expand and Contract" (Regla Inflexible de Despliegue)
-
-Queda estrictamente prohibido aplicar migraciones DDL destructivas (renombrar columnas, eliminar campos o añadir restricciones `NOT NULL` sin valor por defecto) en un solo paso.
-
-```
-       PASO 1 (Expand)                PASO 2 (Migrate Data)             PASO 3 (Contract)
-┌───────────────────────────┐     ┌───────────────────────────┐     ┌───────────────────────────┐
-│ Añadir nueva columna como │ ──> │ Tarea Celery en segundo   │ ──> │ Desplegar código v2.      │
-│ NULLABLE. El código nuevo │     │ plano copia datos de la   │     │ Eliminar columna antigua  │
-│ escribe en ambas columnas.│     │ columna vieja a la nueva. │     │ en migración posterior.   │
-└───────────────────────────┘     └───────────────────────────┘     └───────────────────────────┘
-```
-
-### Reglas Técnicas para PostgreSQL:
-1. **Creación de Índices sin Bloqueo**:
-   - Todo índice nuevo en tablas con más de 10,000 filas debe crearse con la cláusula `CONCURRENTLY`:
-     ```sql
-     CREATE INDEX CONCURRENTLY idx_usuarios_documento ON core_usuario(numero_documento);
-     ```
-2. **Adición de Columnas con Valor por Defecto**:
-   - En PostgreSQL >= 11, `ALTER TABLE ... ADD COLUMN campo TYPE DEFAULT valor;` no reescribe la tabla si el default es constante. En versiones previas o con funciones dinámicas, la columna debe nacer `NULLABLE` y poblarse asíncronamente.
-3. **Timeout de Bloqueo de Cerradura (`lock_timeout`)**:
-   - En scripts de migración Django, fijar `SET lock_timeout = '3s';`. Si la migración no puede adquirir la cerradura en 3 segundos para no congelar las transacciones del usuario, la migración aborta y reintenta más tarde.
+> **Alcance**: aplica a tablas con tráfico en producción. En desarrollo, o en tablas pequeñas sin uso concurrente, una migración directa es aceptable.
+> **Estado de implementación en el SDD**: este protocolo es normativo; el SDD no incluye scripts de respaldo/restauración ni configuración de archivado WAL.
 
 ---
 
-## 2. Lotes Controlados para Migración de Datos Masivos
+## 1. Patrón *Expand & Contract* (ampliar y luego contraer)
 
-Para actualizar millones de registros históricos, se prohíbe terminantemente ejecutar un `UPDATE` masivo en una sola transacción SQL. Debe utilizarse un script Celery que itere por lotes de claves primarias:
+Los cambios destructivos (renombrar o eliminar columnas, cambiar tipos, volver obligatorio un campo existente) NO DEBEN aplicarse en un solo despliegue. **Por qué:** durante un despliegue conviven la versión vieja y la nueva del código; si la base de datos cambia de golpe, la versión vieja falla.
+
+```text
+ 1. EXPANDIR          2. ESCRIBIR EN AMBAS     3. RELLENAR           4. LEER LO NUEVO       5. CONTRAER
+ Agregar columna  ->  El código escribe en ->  Copiar datos      ->  El código lee y   ->  Migración posterior
+ nueva (nula).        la vieja y la nueva.     históricos por        escribe solo la       elimina la columna
+                                               lotes.                nueva.                vieja.
+```
+
+Cada paso es un despliegue separado y reversible hasta el paso 5. Ejemplo: renombrar `nombre` a `razon_social` implica 4–5 despliegues, no una migración `RenameField`.
+
+---
+
+## 2. Reglas técnicas para PostgreSQL con Django
+
+1. **Índices sin bloqueo de escritura.** En tablas grandes o con escritura frecuente, los índices DEBERÍAN crearse con `CONCURRENTLY`. En Django se usa `AddIndexConcurrently` y la migración debe declararse no atómica, porque `CREATE INDEX CONCURRENTLY` no puede ejecutarse dentro de una transacción:
+
+   ```python
+   from django.contrib.postgres.operations import AddIndexConcurrently
+   from django.db import migrations, models
+
+
+   class Migration(migrations.Migration):
+       atomic = False
+       dependencies = [("core", "0012_previa")]
+       operations = [
+           AddIndexConcurrently(
+               model_name="usuario",
+               index=models.Index(fields=["numero_documento"], name="idx_usuario_documento"),
+           ),
+       ]
+   ```
+
+   Si la creación concurrente falla, deja un índice marcado `INVALID` que hay que eliminar (`DROP INDEX CONCURRENTLY`) antes de reintentar.
+
+2. **Columnas con valor por defecto.** Desde PostgreSQL 11, `ADD COLUMN ... DEFAULT <constante>` no reescribe la tabla si el valor por defecto no es volátil. Con un valor volátil (p. ej. `now()` o `gen_random_uuid()`), la columna DEBE nacer nula y rellenarse por lotes.
+
+3. **Volver obligatoria una columna existente (`NOT NULL`).** `SET NOT NULL` recorre toda la tabla con bloqueo exclusivo. Alternativa sin bloqueo prolongado (PostgreSQL 12+):
+   1. `ADD CONSTRAINT ... CHECK (col IS NOT NULL) NOT VALID;`
+   2. `VALIDATE CONSTRAINT ...;` (no bloquea escrituras)
+   3. `ALTER COLUMN col SET NOT NULL;` (usa la restricción validada y no recorre la tabla)
+   4. Eliminar la restricción `CHECK` auxiliar.
+
+4. **Tiempo máximo de espera de bloqueo.** Las migraciones sobre tablas con tráfico DEBERÍAN fijar `lock_timeout` para no encolar a los usuarios detrás de un `ALTER TABLE` que espera. En Django, como primera operación de la migración (las migraciones son transaccionales en PostgreSQL, así que `SET LOCAL` aplica solo a ella):
+
+   ```python
+   migrations.RunSQL("SET LOCAL lock_timeout = '3s';", reverse_sql=migrations.RunSQL.noop),
+   ```
+
+   Si no obtiene el bloqueo en 3 s, la migración falla y se reintenta en un momento de menos tráfico (el reintento es manual o del *pipeline*; Django no reintenta solo).
+
+5. **Probar la migración** con un volumen de datos similar al de producción en staging antes de aplicarla.
+
+---
+
+## 3. Migración de datos por lotes
+
+Para actualizar muchos registros NO DEBE usarse un único `UPDATE` sobre toda la tabla. **Por qué:** una transacción gigante mantiene bloqueos, genera mucho WAL (registro de escritura anticipada) y retrasa réplicas.
+
+Se usa un comando de gestión o una tarea de Celery que recorra por clave primaria, con una transacción por lote:
 
 ```python
-def migrar_datos_en_lotes(batch_size=1000):
-    """Evita bloqueos de tabla y sobrecarga del WAL en PostgreSQL."""
+import time
+
+from django.db import transaction
+from django.db.models import F
+
+from core.models import Modelo
+
+
+def migrar_en_lotes(batch_size: int = 1000, pausa_s: float = 0.1) -> int:
+    """Copia columna_vieja -> columna_nueva por lotes. Idempotente: se puede relanzar."""
     ultimo_id = 0
+    total = 0
     while True:
-        registros = list(
-            Modelo.objects.filter(id__gt=ultimo_id)
-            .order_by('id')[:batch_size]
-            .values_list('id', flat=True)
+        ids = list(
+            Modelo.objects.filter(id__gt=ultimo_id, columna_nueva__isnull=True)
+            .order_by("id")
+            .values_list("id", flat=True)[:batch_size]
         )
-        if not registros:
-            break
-        
-        # Procesar lote
-        Modelo.objects.filter(id__in=registros).update(nueva_columna=...)
-        ultimo_id = registros[-1]
+        if not ids:
+            return total
+        with transaction.atomic():
+            total += Modelo.objects.filter(id__in=ids).update(columna_nueva=F("columna_vieja"))
+        ultimo_id = ids[-1]
+        time.sleep(pausa_s)  # deja respirar a la base de datos y a las réplicas
 ```
 
 ---
 
-## 3. Política de Recuperación ante Desastres (Disaster Recovery)
+## 4. Respaldo y recuperación ante desastres
 
-Toda base de datos del ecosistema Jolifoods debe cumplir los siguientes parámetros de resiliencia:
+Cada base de datos de producción DEBE tener objetivos definidos y probados:
 
-| Parámetro | Definición | Meta Corporativa | Mecanismo de Garantía |
-| :--- | :--- | :--- | :--- |
-| **RPO (Recovery Point Objective)** | Máxima pérdida de datos admisible en tiempo | **< 15 minutos** | WAL Archiving continuo (Write-Ahead Logging) hacia almacenamiento S3/Object Storage secundario. |
-| **RTO (Recovery Time Objective)** | Tiempo máximo para restaurar el servicio tras un desastre | **< 30 minutos** | Snapshot diario automatizado + script de restauración en un solo comando (`restore_db.sh`). |
+| Parámetro | Definición | Meta de referencia | Mecanismo necesario |
+|---|---|---|---|
+| **RPO** (*Recovery Point Objective*) | Máxima pérdida de datos aceptable, medida en tiempo. | ≤ 15 minutos | Archivado continuo del WAL (p. ej. con pgBackRest o WAL-G) a almacenamiento externo, además del respaldo completo. |
+| **RTO** (*Recovery Time Objective*) | Tiempo máximo para restablecer el servicio. | ≤ 4 horas (ajustar según criticidad del sistema) | Respaldo completo diario automatizado + procedimiento de restauración documentado y ensayado. |
 
-### Simulacro de Restauración (Drill):
-- Cada trimestre debe ejecutarse una restauración completa en un ambiente de staging estéril, verificando integridad referencial y suma de comprobación (*checksum*).
+Las metas son **objetivos**, no garantías: solo se consideran cumplidas cuando un simulacro lo demuestra. Cada proyecto DEBE acordarlas con el dueño del proceso de negocio y con infraestructura.
+
+### Simulacro de restauración
+* Al menos cada trimestre, restaurar en un entorno aislado y medir el tiempo real (RTO observado) y el punto de recuperación alcanzado (RPO observado).
+* Verificar integridad: conteos por tabla, restricciones de integridad referencial y una muestra de registros recientes.
+* Registrar el resultado (fecha, tiempos, problemas) como evidencia; si no se cumple la meta, se abre una acción correctiva.

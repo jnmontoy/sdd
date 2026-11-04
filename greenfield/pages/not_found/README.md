@@ -1,5 +1,5 @@
 ﻿# Especificación SDD: Páginas de Error (404, 403, 500)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
+## Joli Foods — Spec-Driven Development (SDD)
 
 Este directorio define el estándar para el manejo visual de rutas inexistentes, accesos no autorizados y fallos del servidor.
 

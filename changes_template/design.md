@@ -1,37 +1,43 @@
-# Diseño Técnico y Contratos: [Nombre Breve del Cambio]
+# Diseño técnico y contratos: [Nombre breve del cambio]
 
-## 🏗️ 1. Arquitectura y Componentes Involucrados
+## 1. Componentes involucrados
 
-### Componentes UI Reutilizados (`.sdd/components/`)
-> Prohibido inventar CSS ad-hoc. Especificar qué suites oficiales se integran:
-* **Tabla / Data Table**: `components/data_table/data_table.md` (si aplica)
-* **Acciones / Toolbars**: `components/button/icon_action_group.md` (28px / 26px)
-* **Formularios / Detalle**: `components/drawer/drawer.md` (Right Drawer 560px)
-* **Modales de Seguridad**: `components/modal/confirm_modal.md` (con justificación >= 10 caracteres)
-* **Notificaciones**: `components/toast/toast_notification.md` (Sonner tokens Jolifoods)
+### Componentes de interfaz reutilizados (`.sdd/components/`)
+> Se DEBERÍA ensamblar con componentes existentes y tokens de `variables.css`. Si hace falta un estilo nuevo, se justifica aquí y se propone como mejora del componente, no como CSS suelto del módulo.
+
+* **Tabla**: `components/data_table/data_table.md` (si aplica)
+* **Acciones**: `components/button/icon_action_group.md` (barra 28 px / fila 26 px con `btn-group`)
+* **Formulario / detalle**: `components/drawer/drawer.md` (tamaño `md` por defecto)
+* **Confirmaciones**: `components/modal/confirm_modal.md` (motivo mínimo 10 caracteres)
+* **Avisos**: `components/toast/toast_notification.md`
 
 ---
 
-## 🔌 2. Contratos de Endpoints (API)
+## 2. Contratos de endpoints
 
-### Registro en `endpoints_registry.json`
-> Todo endpoint nuevo o modificado debe registrarse formalmente aquí:
+### Registro en `backend/config/endpoints_registry.json`
+> Todo endpoint nuevo o modificado se registra; el validador `pruebas/validate_endpoints.py` lo lee. Ver la plantilla en `.sdd/stack/endpoints_registry_template.json` para el formato exacto de campos.
 
 ```json
 {
+  "name": "Recursos: crear",
+  "module": "ejemplo",
   "path": "/api/v1/ejemplo/recurso/",
   "method": "POST",
-  "name": "ejemplo:crear_recurso",
+  "expected_status": 201,
   "auth_required": true,
-  "roles_allowed": ["ADMIN", "SUPERVISOR"],
-  "rate_limit": "120/m",
-  "description": "Crea un nuevo registro validado."
+  "mutates": true,
+  "max_latency_ms": 500,
+  "description": "Crea un nuevo registro validado. Roles: ADMIN, SUPERVISOR."
 }
 ```
 
-### Esquema Pydantic / Serializer de Entrada (Request)
+> `mutates: true` hace que el validador lo omita salvo que se ejecute con `--incluir-mutaciones` (hacerlo solo contra un entorno de pruebas).
+
+### Esquema de entrada (Pydantic v2 o serializador DRF)
 ```python
 from pydantic import BaseModel, Field
+
 
 class RecursoCreateRequest(BaseModel):
     nombre: str = Field(..., min_length=3, max_length=120)
@@ -39,38 +45,49 @@ class RecursoCreateRequest(BaseModel):
     activo: bool = True
 ```
 
-### Esquema de Salida (Response)
+### Esquema de salida
 ```python
+from datetime import datetime
+
+from pydantic import BaseModel
+
+
 class RecursoResponse(BaseModel):
     id: int
     nombre: str
     cantidad: int
     activo: bool
-    creado_en: str
+    creado_en: datetime  # se serializa en ISO 8601
 ```
 
----
+### ¿Es un cambio que rompe compatibilidad?
+> Si elimina o renombra campos, cambia tipos o vuelve obligatorio un parámetro, sigue el protocolo 09 (nueva versión o deprecación con cabeceras `Deprecation`/`Sunset`).
 
-## 🗄️ 3. Impacto en Base de Datos y Modelos
-> Especificar si requiere migración de base de datos (`makemigrations` con Zero-Downtime Expand & Contract - BP-08 de Greenfield).
-
-* **Tabla Afectada**: `ejemplo_recurso`
-* **Nuevos Campos**:
-  * `codigo_lote` (CharField 50 nullable inicial)
-* **Transaccionalidad (BP-12)**:
-  * Toda mutación que afecte más de una tabla debe envolverse en `with transaction.atomic():`.
-* **Persistencia en Bloque (BP-13)**:
-  * Prohibido `.save()` individual en bucles; usar `bulk_create` / `bulk_update`.
+* [Sí / No — justificación]
 
 ---
 
-## 🛡️ 4. Casos de Borde y Manejo de Errores (Edge Cases)
-> Respuestas a preguntas clave (*Grill-Me*) previas a la codificación:
+## 3. Impacto en base de datos
+> Si hay migración en producción con tablas grandes o tráfico, seguir el patrón *Expand & Contract* del [protocolo 08](../greenfield/08_protocolo_migraciones_zero_downtime.md).
 
-| Escenario / Caso de Borde | Comportamiento Esperado | Código HTTP / Error |
+* **Tabla afectada**: `ejemplo_recurso`
+* **Campos nuevos**: `codigo_lote` (CharField 50, nulo en la primera migración)
+* **Transacciones (BP-12)**: operaciones con 2 o más escrituras dependientes dentro de `transaction.atomic()`.
+* **Escritura en bloque (BP-13)**: colecciones con `bulk_create` / `bulk_update`, no `.save()` en bucles.
+* **Consultas**: relaciones con `select_related` / `prefetch_related` para evitar N+1 (una consulta por fila).
+
+---
+
+## 4. Casos de borde
+| Escenario | Comportamiento esperado | Código HTTP / resultado |
 | :--- | :--- | :--- |
-| **Usuario sin permisos RBAC** | Denegar acceso con mensaje informativo sin exponer trazas internas. | `403 Forbidden` |
-| **Registro duplicado por concurrencia** | Capturar `IntegrityError` y retornar aviso claro al usuario. | `409 Conflict` |
-| **Payload corrupto o campos vacíos** | Validación inmediata con detalle de campo fallido. | `422 Unprocessable Entity` |
-| **Tabla sin registros (Estado Vacío)** | Renderizar `EmptyState` con botón CTA constructivo. | `200 OK []` |
-| **Conexión de red caída (Offline/Timeout)** | Mostrar toast Sonner persistente con botón "Reintentar". | Error UI |
+| Usuario sin permiso | Mensaje claro sin trazas internas | `403 Forbidden` |
+| Sesión vencida | Interceptor intenta 1 refresh; si falla, `SessionExpirationModal` | `401 Unauthorized` |
+| Duplicado por concurrencia | Capturar `IntegrityError`, aviso claro | `409 Conflict` |
+| Datos inválidos | Detalle por campo | `400` (DRF) / `422` (FastAPI) |
+| Sin registros | `EmptyState` con acción sugerida | `200 OK` con lista vacía |
+| Red caída o tiempo agotado | Toast persistente con "Reintentar" | Error de interfaz |
+
+## 5. Riesgos y reversión
+* **Riesgo principal**: [...]
+* **Cómo se revierte**: [revert del commit / feature flag / migración inversa]

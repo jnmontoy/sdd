@@ -22,10 +22,10 @@ graph TD
     A0 -->|Desarrollador| B2["Ruta Técnica: Arquitectura React + FastAPI + Docker"]
     B1 --> B["Paso 1: Identificar Tema de Negocio y Arquetipo"]
     B2 --> B
-    B --> C["Paso 2: Recomendar Modal vs Drawer"]
+    B --> C["Paso 2: Experiencia de creación y edición (drawer por defecto)"]
     C --> D["Paso 3: Menú de Componentes de Tabla"]
     D --> E["Paso 4: Confirmar Controles Corporativos (ConfirmModal, etc.)"]
-    E --> F["Generación de Código / Prototipo 10/10 en SDD"]
+    E --> F["Generación de código o prototipo"]
 ```
 
 ---
@@ -47,7 +47,7 @@ graph TD
 ### Paso 1: Identificar el Arquetipo de Página
 Una vez confirmado el perfil y el tema, la IA presenta las 4 opciones de diseño:
 
-> *"Para estructurar tu módulo con el estándar Jolifoods, ¿qué tipo de pantalla deseas construir?"*
+> *"Para estructurar tu módulo, ¿qué tipo de pantalla deseas construir?"*
 
 - **[A] Gestión de Entidad / CRUD Operativo (Recomendado)**: Listado con tabla, filtros tipo Excel, buscador en vivo y opciones para crear, editar, inspeccionar y dar de baja registros.
 - **[B] Tablero de Control / Dashboard**: Métricas KPI superiores clickeables, gráficos interactivos, telemetría y bitácora de actividad reciente.
@@ -57,31 +57,26 @@ Una vez confirmado el perfil y el tema, la IA presenta las 4 opciones de diseño
 
 ---
 
-### Paso 2: Recomendar la Experiencia de Creación y Edición (Modal vs Drawer)
+### Paso 2: Experiencia de creación y edición
 
-La IA asesora a la persona sobre el contenedor ideal para capturar o editar datos:
-
-> *"Para crear o editar registros en este módulo, ¿cómo prefieres la experiencia de usuario? Te comparto las dos opciones recomendadas:"*
+Convención del SDD (DEBERÍA): **crear y editar registros en el panel lateral derecho (drawer)**. **Por qué:** el usuario conserva a la vista la tabla de la que viene, puede consultar otros registros y el patrón es el mismo en todas las aplicaciones. La IA informa esta opción como predeterminada y solo ofrece las alternativas si el usuario las pide o el caso lo justifica (quedando registrado en el `design.md` del cambio o en un ADR):
 
 ```text
 ----------------------------------------------------------------------------------------------------
-           OPCIONES DE EXPERIENCIA PARA FORMULARIOS DE CAPTURA / EDICIÓN
+           EXPERIENCIA PARA FORMULARIOS DE CAPTURA / EDICIÓN
 ----------------------------------------------------------------------------------------------------
- (1) [Recomendado para 1 a 6 campos rápidos] Ventana Modal Centrada (ModalDialog)
-     -> ¿Cuándo usarlo?: Operaciones breves, creación de usuarios simples, asignación de roles,
-        cambio de estado o captura de datos puntuales.
-     -> Ventajas: Diálogo centrado con backdrop blur que enfoca la atención del usuario en una sola tarea.
-     -> Ref: .sdd/components/modal/modal_dialog.md
-
- (2) [Recomendado para formularios extensos o consultas activas] Panel Lateral Deslizable (Drawer)
-     -> ¿Cuándo usarlo?: Entidades con muchos campos, auditorías con observaciones, o cuando el
-        usuario necesita consultar datos de la tabla que está de fondo mientras llena el formulario.
-     -> Ventajas: Slide-over lateral desde la derecha (sm: 400px, md: 600px, lg: 840px) con scroll
-        independiente y pie con botones fijos (Estándar corporativo de alta densidad).
+ (1) [Predeterminado] Panel lateral derecho (Drawer)
+     -> Tamaños: sm 400px (detalle breve), md 600px (formulario estándar), lg 840px (formularios
+        extensos o pestañas). Cabecera fija, cuerpo con scroll propio, pie con Guardar / Cancelar.
      -> Ref: .sdd/components/drawer/drawer.md
 
- (3) Pantalla Completa Dedicada (/nuevo y /editar/:id)
-     -> ¿Cuándo usarlo?: Entidades complejas con más de 15 campos, múltiples pestañas y anexos documentales.
+ (2) [Excepción, solo a pedido] Modal centrado (ModalDialog)
+     -> Para un dato puntual (p. ej. un motivo o una fecha) que no justifica abrir un panel.
+        Confirmaciones críticas usan ConfirmModal, no formularios.
+     -> Ref: .sdd/components/modal/modal_dialog.md
+
+ (3) [Excepción, solo a pedido] Página dedicada (/nuevo y /editar/:id)
+     -> Entidades muy extensas con varias pestañas y anexos, donde el contexto de la tabla no aporta.
 ----------------------------------------------------------------------------------------------------
 ```
 
@@ -99,7 +94,7 @@ Si la página incluye una tabla, la IA presenta el **Menú de Capacidades de Tab
 ====================================================================================================
  [x] (1) Filtros de Columna Tipo Excel (ChecklistPopover en cada <th>)
          -> Menú emergente con orden A-Z/Z-A, buscador interactivo, casillas con conteo (N) y botón 'Solo'.
- [x] (2) Paginador Superior Integrado en Toolbar (Pagination - Estándar bi/cartera)
+ [x] (2) Paginador Superior Integrado en Toolbar (Pagination)
          -> Ubicado ARRIBA de la tabla en toolbar superior, con resumen 'Mostrando X a Y de Z', elipsis de páginas y selector de filas (10, 20, 50, 100).
  [x] (3) Exportador Limpio a Excel (ExportExcelButton)
          -> Genera .xlsx con anchos auto-ajustados respetando estrictamente los filtros aplicados.
@@ -111,7 +106,7 @@ Si la página incluye una tabla, la IA presenta el **Menú de Capacidades de Tab
          -> Aparece automáticamente cuando hay filtros activos con contador (N) para limpiar en un clic.
  [x] (7) Cabeceras Fijas (Sticky Headers)
          -> Encabezados sticky que no se pierden al desplazarse verticalmente.
- [x] (8) Tarjetas de Resumen KPI Superiores (Estándar BI Cartera)
+ [x] (8) Tarjetas de Resumen KPI Superiores 
          -> 3 a 5 tarjetas superiores que actúan como filtros cruzados rápidos al hacer clic sobre ellas.
 ====================================================================================================
 ```
@@ -120,20 +115,20 @@ Si la página incluye una tabla, la IA presenta el **Menú de Capacidades de Tab
 
 ### Paso 4: Confirmar la Normativa de Controles Internos y Layout
 
-La IA asegura la adherencia estricta a las normas corporativas Jolifoods:
-1. **Layout Full-Width por Defecto (Cero Sidebar)**: Toda pantalla es de ancho completo a menos que el usuario pida explícitamente navegación lateral. El título de pantalla/módulo va siempre en el **TopHeader a la izquierda (`.topheader-left`)** junto a la marca Jolifoods (sin `<h1>` gigantes en el cuerpo).
+La IA informa las convenciones que aplicará (DEBERÍA; se pueden ajustar si el usuario lo pide o con un ADR):
+1. **Layout Full-Width por Defecto (Cero Sidebar)**: Toda pantalla es de ancho completo a menos que el usuario pida explícitamente navegación lateral. El título de pantalla/módulo va en el **TopHeader a la izquierda (`.topheader-left`)** junto a la marca, marcado como el `<h1>` de la página (único encabezado principal, sin repetir un título grande en el cuerpo).
 2. **Paginación Superior y Card hasta Abajo (Estándar SDD)**: El paginador se ubica **ARRIBA DE LA TABLA** en la toolbar superior (`.table-header-toolbar.pagination-container`), y la card contenedora (`.main-card-container`) tiene `flex: 1` ocupando todo el espacio vertical disponible hasta el fondo del viewport visible.
-3. **Estilo Corporativo en Controles de Formulario e Inputs**: Todo `<input>`, `<select>` y `<textarea>` dentro de modales o del Right Drawer debe implementar `.form-field` / `.drawer-form-field`, etiquetas en mayúsculas discretas (`.form-label`) y contenedor `.input-control` / `.drawer-input-control` con bordes, radios y halo de foco de acento corporativo (prohibido inputs nativos del navegador).
-4. **Textos Contextuales en Botones**: El botón principal del footer en formularios debe reflejar la entidad (ej. *"Guardar Partido"*, *"Guardar Registro"*), prohibido textos fijos desfasados como *"Guardar Notas"*.
-5. **Acciones Agrupadas Obligatorias**:
+3. **Estilo Corporativo en Controles de Formulario e Inputs**: Todo `<input>`, `<select>` y `<textarea>` dentro de modales o del Right Drawer debe implementar `.form-field` / `.drawer-form-field`, etiquetas en mayúsculas discretas (`.form-label`) y contenedor `.input-control` / `.drawer-input-control` con bordes, radios y halo de foco de acento corporativo (no inputs nativos sin estilo).
+4. **Textos Contextuales en Botones**: El botón principal del footer en formularios debe reflejar la entidad (ej. *"Guardar Registro"*), evitando textos genéricos o que no correspondan a la entidad.
+5. **Acciones agrupadas**:
    - En Toolbar: Caja compacta de 28px (`.compact-action-box`) con iconos `+`, `FileSpreadsheet` verde y `RefreshCw`.
-   - En Filas de Tabla: Contenedor unificado de 26px (`.row-actions-group`) con divisor de 1px (prohibido botones sueltos).
-6. **Cero Texto Verde o Azul en Códigos/IDs**: Los identificadores y números usan fuente monoespaciada con color de texto neutro. El color verde queda reservado **exclusivamente para badges de estado positivo**.
+   - En Filas de Tabla: Grupo Bootstrap `btn-group btn-group-sm row-actions-group` de 26px con `role="group"`; botones solo-icono con `aria-label` (no botones sueltos).
+6. **Cero Texto Verde o Azul en Códigos/IDs**: Los identificadores y números usan fuente monoespaciada con color de texto neutro. El verde se reserva para estados positivos.
 7. **Cero Selects Planos**: Todos los catálogos o claves foráneas utilizarán `SelectFilter` (Searchable Select interactivo con soporte de teclado).
-8. **Cero Confirmaciones Nativas**: Suspensiones, bajas o reinicios de clave utilizarán el `ConfirmModal` canónico Jolifoods con justificación de 10+ caracteres, portal y spinner.
+8. **Cero Confirmaciones Nativas**: Suspensiones, bajas o reinicios de clave utilizarán el `ConfirmModal` con justificación de 10+ caracteres, portal y spinner.
 9. **Cero Alertas Bloqueantes**: Mensajes de éxito o fallos de red se notificarán mediante `ToastNotification`.
 10. **Respaldo ante Pantalla Vacía**: Si no hay datos o los filtros no coinciden, se desplegará el componente `EmptyState`.
-11. **Paquete Modular No-Code en 4 Archivos**: Para prototipos en `mock/<modulo>/`, la entrega se divide estrictamente en 4 archivos independientes (`.html`, `.css`, `.js`, `datos_*.md`), prohibiendo archivos monolíticos.
+11. **Paquete Modular No-Code en 4 Archivos**: Para prototipos en `mock/<modulo>/`, la entrega DEBERÍA dividirse en 4 archivos independientes (`.html`, `.css`, `.js`, `datos_*.md`), en lugar de un único archivo.
 
 ---
 
@@ -144,23 +139,23 @@ La IA asegura la adherencia estricta a las normas corporativas Jolifoods:
 **Usuario**:
 > *"Vamos a crear una página para la gestión de proveedores con una tabla"*
 
-**Respuesta obligatoria del Asistente**:
-> *"¡Con gusto! Para estructurar la página de **Gestión de Proveedores** con los más altos estándares de Jolifoods, definamos la experiencia de usuario:
+**Respuesta sugerida del asistente**:
+> *"¡Con gusto! Para estructurar la página de **Gestión de Proveedores** con las convenciones del SDD, definamos la experiencia de usuario:
 >
 > 1. **Layout y Encabezado**:
 >    - Full-Width (sin sidebar) con título 'Gestión de Proveedores' integrado en el TopHeader a la izquierda (`.topheader-left`) junto al logotipo.
 >
 > 2. **Formulario de Creación / Edición**:
->    - ¿Prefieres abrirlo en un **Panel Lateral Deslizable (Drawer)** (recomendado para inspeccionar y editar sin perder de vista la tabla) o en una **Ventana Modal Centrada**?
+>    - Se abrirá en el **panel lateral derecho (drawer)**, para editar sin perder de vista la tabla. Si prefieres otra experiencia, dímelo.
 >
 > 3. **Componentes para la Tabla de Proveedores**:
 >    He preparado la configuración recomendada:
 >    - [x] Toolbar compacta con acciones agrupadas en 28px (`+`, Excel verde, Refrescar)
->    - [x] Acciones por fila agrupadas en contenedor unificado de 26px (`.row-actions-group`)
+>    - [x] Acciones por fila agrupadas en contenedor unificado de 26px (`btn-group btn-group-sm`)
 >    - [x] Códigos y NITs en tipografía monoespaciada neutra (sin textos verdes)
 >    - [x] Filtros por columna tipo Excel (`ChecklistPopover` en NIT, Ciudad, Estado)
 >    - [x] Selector de columnas visibles (`Columns3`)
->    - [x] Paginador server-side (`Pagination` 10, 25, 50, 100)
+>    - [x] Paginador arriba de la tabla, paginación en servidor (`Pagination` 10, 25, 50, 100)
 >    - [x] 3 KPIs superiores (Total Proveedores, Activos, Bloqueados) como filtros rápidos
 >    - [x] Diálogo corporativo (`ConfirmModal`) con justificación obligatoria para dar de baja proveedores
 >

@@ -1,22 +1,26 @@
 # Suite de Modales Profesionales Avanzados (`ProModal`)
 ## Componente UI Canónico — Spec-Driven Development (SDD)
 
-Este componente eleva la interacción de ventanas modales más allá de simples alertas o popups genéricos. Ofrece tres modalidades de alto rigor empresarial:
+Este documento describe tres variantes de modal para casos que `ConfirmModal` no cubre. Todas reutilizan `useModalA11y` de [`modal_dialog.md`](./modal_dialog.md) §2 para foco, Escape y bloqueo de scroll:
 1. **Modal de Confirmación con Doble Factor / Contraseña** (Acciones destructivas o autorizaciones de alto impacto).
-2. **Modal Multi-Paso (Wizard / Stepper Integrado)** (Procesos guiados complejos sin recargar la página).
-3. **Modal de Vista Dividida (Split-Screen / Master-Detail)** (Inspección lateral con previsualización o edición simultánea).
+2. **Modal Multi-Paso (Wizard)** (procesos guiados que no son creación/edición CRUD; para CRUD extenso se usa el drawer con [`stepper_wizard.md`](../stepper/stepper_wizard.md)).
+3. **Modal de Vista Dividida (Master-Detail)** (inspección o cotejo de solo lectura con previsualización).
 
 ---
 
 ## 1. Modal con Doble Verificación de Seguridad (`SecurityConfirmModal`)
 
-Para borrados permanentes, anulaciones de facturas o cambios de privilegios de superusuario, se exige confirmación explícita mediante contraseña o escritura de frase clave.
+Para borrados permanentes, anulaciones de documentos o cambios de privilegios de superusuario, se pide confirmación explícita con contraseña, frase clave u OTP.
+
+- **Regla:** la verificación (contraseña/OTP) DEBE validarla el backend en el mismo endpoint de la acción (o con un token de reautenticación de vida corta); el frontend NO DEBE comparar contraseñas ni guardarlas en estado más allá del envío.
+- **Por qué:** una verificación solo en cliente se omite llamando directamente a la API.
+- La frase clave (`expectedPhrase`) sí PUEDE validarse en el cliente: es una barrera contra clics accidentales, no un control de seguridad.
 
 ```text
 ┌────────────────────────────────────────────────────────┐
 │ ⚠️ Confirmación de Seguridad Crítica               [✕] │
 ├────────────────────────────────────────────────────────┤
-│ ¿Está seguro de anular el lote de producción #9482?     │
+│ ¿Está seguro de anular el lote de producción #0001?     │
 │ Esta acción es irreversible y notificará a auditoría.  │
 │                                                        │
 │ Para confirmar, ingrese su contraseña actual:          │
@@ -72,7 +76,7 @@ export interface WizardModalProps {
   isOpen: boolean;
   onClose: () => void;
   steps: WizardStep[];
-  onComplete: (data: any) => Promise<void>;
+  onComplete: (data: Record<string, unknown>) => Promise<void>;
   title: string;
 }
 ```
@@ -93,16 +97,21 @@ Diseñado para auditorías o comparativas: el panel izquierdo muestra la lista o
 }
 
 .split-modal-sidebar {
-  border-right: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
+  border-right: 1px solid var(--border-subtle);
   padding: 20px;
-  background-color: var(--color-bg-surface-elevated, #1a2234);
+  background-color: var(--bg-elevated);
   overflow-y: auto;
 }
 
 .split-modal-content {
   padding: 24px;
-  background-color: var(--color-bg-surface, #0f172a);
+  background-color: var(--bg-card);
   overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .split-modal-container { grid-template-columns: 1fr; }
+  .split-modal-sidebar { border-right: none; border-bottom: 1px solid var(--border-subtle); }
 }
 ```
 
@@ -110,7 +119,8 @@ Diseñado para auditorías o comparativas: el panel izquierdo muestra la lista o
 
 ## 4. Estándar de Comportamiento y Accesibilidad (A11y)
 
-1. **Backdrop Blur y Esc**: Desenfoque de fondo (`backdrop-filter: blur(6px)`) con cierre opcional mediante la tecla `Escape`.
-2. **Focus Trap**: El foco del teclado se mantiene confinado dentro de la ventana activa mediante `tabindex` y listeners de navegación.
-3. **Bloqueo de Scroll en `body`**: Al abrir el modal, se fija `overflow: hidden` en el documento raíz para evitar desplazamientos involuntarios.
-4. **Cero `window.alert()` / `window.confirm()`**: Quedan terminantemente prohibidas las alertas nativas del navegador.
+1. **Rol y nombre:** `role="dialog"` (o `alertdialog` en `SecurityConfirmModal`), `aria-modal="true"` y `aria-labelledby` apuntando al título.
+2. **Escape:** cierra el modal salvo mientras `isLoading` sea verdadero; en el wizard, si hay datos capturados, DEBERÍA pedir confirmación antes de descartarlos.
+3. **Foco:** atrapado dentro del modal y devuelto al disparador al cerrar (`useModalA11y`). En el wizard, al cambiar de paso el foco va al título del paso.
+4. **Bloqueo de scroll** del `body` mientras está abierto.
+5. **Sin diálogos nativos:** NO DEBEN usarse `window.alert()` / `window.confirm()` (ver [`confirm_modal.md`](./confirm_modal.md)).

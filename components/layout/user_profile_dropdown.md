@@ -232,18 +232,18 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   align-items: center;
   gap: 8px;
   padding: 4px 10px 4px 5px;
-  background: var(--surface-card, #14142b);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.09));
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
   border-radius: 9999px;
   cursor: pointer;
-  color: var(--text-primary, #ffffff);
+  color: var(--text-primary);
   transition: all 0.18s ease;
   font-family: inherit;
 }
 
 .user-profile-badge:hover,
 .user-profile-badge.active {
-  background: var(--surface-active, #2b2b55);
+  background: var(--surface-active);
   border-color: rgba(16, 185, 129, 0.4);
 }
 
@@ -269,7 +269,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  border: 2px solid var(--surface-card, #14142b);
+  border: 2px solid var(--surface-card);
 }
 
 .status-indicator-dot.online {
@@ -279,11 +279,11 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
 .user-display-name {
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.85));
+  color: var(--text-secondary);
 }
 
 .chevron-icon {
-  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+  color: var(--text-muted);
   transition: transform 0.2s ease;
 }
 
@@ -297,8 +297,8 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   top: calc(100% + 10px);
   right: 0;
   width: 260px;
-  background: var(--surface-card, #14142b);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
   border-radius: 14px;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(16px);
@@ -341,7 +341,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
 .dropdown-user-name {
   font-size: 13px;
   font-weight: 700;
-  color: var(--text-primary, #ffffff);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -349,7 +349,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
 
 .dropdown-user-email {
   font-size: 11px;
-  color: var(--text-muted, rgba(255, 255, 255, 0.6));
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -373,7 +373,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
 
 .dropdown-divider {
   height: 1px;
-  background: var(--border-color, rgba(255, 255, 255, 0.08));
+  background: var(--border-color);
   margin: 0;
 }
 
@@ -395,7 +395,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.8));
+  color: var(--text-secondary);
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
@@ -404,8 +404,8 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
 }
 
 .dropdown-item:hover {
-  background: var(--surface-active, #2b2b55);
-  color: var(--text-primary, #ffffff);
+  background: var(--surface-active);
+  color: var(--text-primary);
 }
 
 /* Botón de Cerrar Sesión */

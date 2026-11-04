@@ -1,39 +1,44 @@
-# Especificación de Componente: Panel Deslizable Lateral Derecho (Right Drawer / Slide-Over)
-## Ecosistema Jolifoods — Guía de Implementación SDD
+# Especificación de Componente: Panel Lateral Derecho (`Drawer` / Slide-Over)
+## Guía de implementación SDD
 
-> [!CAUTION]
-> **REGLA DE ORO DE EXPERIENCIA DE USUARIO (UX) — JOLIFOODS**:
-> **TODO FORMULARIO DE CREACIÓN O EDICIÓN CRUD DEBE ABRIRSE EN EL SIDEBAR DERECHO (RIGHT DRAWER)**.
-> Queda **TERMINANTEMENTE PROHIBIDO** abrir formularios de captura o edición en modales flotantes centrados o redirigir a páginas separadas (`/crear`, `/editar`), a menos que la persona o el requerimiento lo pida específicamente.
-> El Right Drawer (`.joli-drawer-container` / `.drawer-container`) garantiza que el usuario nunca pierda el contexto visual de la tabla principal mientras crea o edita información.
+### Regla de uso: CRUD en el panel lateral derecho
 
----
-
-### 1. Requisitos de Negocio y Estructura Visual
-1. **Animación y Posición**: Deslizamiento suave desde el borde derecho mediante `transform: translateX(100%)` a `translateX(0)` con `cubic-bezier(0.16, 1, 0.3, 1)`.
-2. **Backdrop Blur y Cierre por Teclado**: Fondo difuminado `backdrop-filter: blur(4px)` (`.joli-drawer-overlay`) que se cierra con clic exterior o con la tecla `Escape (Esc)`.
-3. **Botón de Cierre**: Botón de cierre accesible (`<X size={18} />`) ubicado en la cabecera (`.drawer-close-btn`).
-4. **Mini-Kpis Contextuales**: Cabecera o cuerpo con mini rejilla de tarjetas (`.drawer-kpi-grid` y `.drawer-kpi-card`) con datos clave del registro seleccionado.
-5. **Cuerpo Scrollable Independiente**: `.drawer-body` con `overflow-y: auto`.
-6. **Pie de Acción Fijo**: `.drawer-footer` con botones de acción agrupados a la derecha ("Cancelar" y "Guardar / Confirmar").
-
-
+- **Regla:** los formularios de creación (`+ Nuevo`) y edición (`Editar`) de registros CRUD DEBERÍAN abrirse en este panel lateral derecho, no en modales centrados ni en páginas separadas (`/crear`, `/editar/:id`).
+- **Por qué:** el usuario conserva a la vista la tabla de contexto, el formulario tiene scroll propio y la experiencia es igual en todos los módulos.
+- **Excepciones:** pedido explícito del usuario o decisión registrada (ADR). Los modales se reservan para confirmaciones, firmas, escáneres y sesión expirada (ver [`modal_dialog.md`](../modal/modal_dialog.md)).
 
 ---
 
-### 2. Implementación TypeScript Canónica (`Drawer.tsx`)
+### 1. Requisitos y estructura visual
+
+1. **Animación:** entra desde el borde derecho (`translateX(100%)` → `translateX(0)`); se desactiva con `prefers-reduced-motion`.
+2. **Anchos:** `md` = **560px** (estándar), `lg` = **720px** (formularios extensos), `sm` = 400px (detalle breve). En pantallas angostas, hasta 100% del ancho.
+3. **Fondo y cierre:** fondo difuminado (`.joli-drawer-overlay`); se cierra con clic en el fondo, con `Escape` o con el botón de la cabecera.
+4. **Accesibilidad:** `role="dialog"`, `aria-modal="true"`, `aria-labelledby` al título, foco atrapado y devuelto al disparador (hook `useModalA11y` de [`modal_dialog.md`](../modal/modal_dialog.md) §2). Un `ConfirmModal` abierto encima toma el control del teclado.
+5. **Cabecera fija** con título, subtítulo/badge y botón de cierre; **cuerpo** con scroll vertical independiente (`.drawer-body`); **pie fijo** con "Cancelar" y el botón principal con texto contextual ("Guardar usuario", "Crear proveedor"), no genérico.
+6. **Cambios sin guardar:** si `isDirty` es verdadero, cerrar (fondo, Escape o X) DEBERÍA pedir confirmación con `ConfirmModal` antes de descartar.
+7. **Controles de formulario:** usar las clases `.drawer-form-field`, `.drawer-field-label`, `.drawer-input-control` y `.drawer-field-input` definidas en [`variables.css`](../variables.css) §4; no se redefinen aquí.
+8. **Opcional:** mini-KPIs del registro (`.drawer-kpi-grid`) al inicio del cuerpo.
+
+---
+
+### 2. Implementación TypeScript de referencia (`Drawer.tsx`)
 
 ```tsx
-import React, { useEffect } from 'react';
+import React, { useCallback, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useModalA11y } from '../../hooks/useModalA11y';
+import { ConfirmModal } from '../modal/ConfirmModal';
 
 export interface DrawerProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg';
+  /** Si hay cambios sin guardar, se pide confirmación antes de cerrar. */
+  isDirty?: boolean;
   children: React.ReactNode;
   footer?: React.ReactNode;
 }
@@ -44,68 +49,94 @@ export const Drawer: React.FC<DrawerProps> = ({
   title,
   subtitle,
   size = 'md',
+  isDirty = false,
   children,
-  footer
+  footer,
 }) => {
-  // Cierre con la tecla Escape y bloqueo del scroll corporal
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
 
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
-    }
+  const requestClose = useCallback(() => {
+    if (isDirty) setConfirmDiscard(true);
+    else onClose();
+  }, [isDirty, onClose]);
 
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, onClose]);
+  useModalA11y(panelRef, { isOpen, onClose: requestClose });
 
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="joli-drawer-overlay" onClick={onClose} aria-modal="true" role="dialog">
-      <div 
-        className={`joli-drawer-container size-${size}`}
-        onClick={(e) => e.stopPropagation()}
+    <>
+      <div
+        className="joli-drawer-overlay"
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) requestClose();
+        }}
       >
-        {/* Cabecera del Drawer */}
-        <div className="drawer-header">
-          <div className="drawer-title-group">
-            <h5 className="drawer-title">{title}</h5>
-            {subtitle && <p className="drawer-subtitle">{subtitle}</p>}
+        <div
+          ref={panelRef}
+          className={`joli-drawer-container size-${size}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
+          data-testid="sidebar-drawer"
+        >
+          <div className="drawer-header">
+            <div className="drawer-title-group">
+              <h2 id={titleId} className="drawer-title">{title}</h2>
+              {subtitle && <div className="drawer-subtitle">{subtitle}</div>}
+            </div>
+            <button type="button" className="drawer-close-btn" onClick={requestClose} aria-label="Cerrar panel">
+              <X size={18} aria-hidden="true" />
+            </button>
           </div>
-          <button 
-            type="button" 
-            className="drawer-close-btn" 
-            onClick={onClose}
-            aria-label="Cerrar panel"
-          >
-            <X size={18} />
-          </button>
-        </div>
 
-        {/* Cuerpo del Drawer */}
-        <div className="drawer-body">
-          {children}
-        </div>
+          <div className="drawer-body">{children}</div>
 
-        {/* Pie del Drawer */}
-        {footer && (
-          <div className="drawer-footer">
-            {footer}
-          </div>
-        )}
+          {footer && <div className="drawer-footer">{footer}</div>}
+        </div>
       </div>
-    </div>,
-    document.body
+
+      <ConfirmModal
+        isOpen={confirmDiscard}
+        type="warning"
+        title="Descartar cambios"
+        message="Hay cambios sin guardar. ¿Desea cerrar el panel y descartarlos?"
+        confirmText="Descartar"
+        emphasizeCancel
+        onClose={() => setConfirmDiscard(false)}
+        onConfirm={() => {
+          setConfirmDiscard(false);
+          onClose();
+        }}
+      />
+    </>,
+    document.body,
   );
 };
+```
+
+Ejemplo de pie con texto contextual:
+
+```tsx
+<Drawer
+  isOpen={isOpen}
+  onClose={close}
+  title={editing ? 'Editar usuario' : 'Nuevo usuario'}
+  isDirty={formState.isDirty}
+  footer={
+    <>
+      <button type="button" className="joli-btn-secondary" onClick={close}>Cancelar</button>
+      <button type="submit" form="form-usuario" className="joli-btn-primary" disabled={isSaving}>
+        {editing ? 'Guardar usuario' : 'Crear usuario'}
+      </button>
+    </>
+  }
+>
+  <form id="form-usuario" onSubmit={handleSubmit}>{/* campos .drawer-form-field */}</form>
+</Drawer>
 ```
 
 ---
@@ -116,64 +147,55 @@ export const Drawer: React.FC<DrawerProps> = ({
 .joli-drawer-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(4px);
-  z-index: 1050;
+  z-index: var(--z-drawer);
   display: flex;
   justify-content: flex-end;
+  background-color: color-mix(in srgb, var(--bg-viewport) 60%, transparent);
+  backdrop-filter: blur(4px);
   animation: drawerFadeIn 0.2s ease-out;
 }
 
 .joli-drawer-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: var(--color-bg-card, #FFFFFF);
-  color: var(--color-text-primary, #111827);
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.25);
-  animation: drawerSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border-left: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-modal);
+  animation: drawerSlideIn var(--transition-base);
 }
 
-[data-theme="dark"] .joli-drawer-container {
-  background-color: var(--color-bg-card, #1E293B);
-  color: #F8FAFC;
-  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.6);
+.joli-drawer-container:focus {
+  outline: none;
 }
 
-.joli-drawer-container.size-sm { width: 400px; max-width: 90vw; }
-.joli-drawer-container.size-md { width: 600px; max-width: 92vw; }
-.joli-drawer-container.size-lg { width: 840px; max-width: 95vw; }
+.joli-drawer-container.size-sm { width: 400px; max-width: 100vw; }
+.joli-drawer-container.size-md { width: 560px; max-width: 100vw; }
+.joli-drawer-container.size-lg { width: 720px; max-width: 100vw; }
 
 .drawer-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 22px;
-  border-bottom: 1px solid var(--color-border, #E5E7EB);
-  background: var(--bg-surface, #FFFFFF);
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-card);
 }
 
-[data-theme="dark"] .drawer-header {
-  background: var(--bg-surface, #1E293B);
-  border-bottom-color: var(--color-border, #334155);
-}
-
-.drawer-title-group .drawer-title {
-  font-size: 16px;
-  font-weight: 700;
+.drawer-title {
   margin: 0;
-  color: var(--color-text-primary, #111827);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
 }
 
-[data-theme="dark"] .drawer-title-group .drawer-title {
-  color: #F8FAFC;
-}
-
-.drawer-title-group .drawer-subtitle {
-  font-size: 12.5px;
-  color: var(--color-text-secondary, #6B7280);
-  margin: 2px 0 0 0;
+.drawer-subtitle {
+  margin: 2px 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
 }
 
 .drawer-close-btn {
@@ -182,112 +204,42 @@ export const Drawer: React.FC<DrawerProps> = ({
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 6px;
   border: none;
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--color-text-muted, #9CA3AF);
+  color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .drawer-close-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--color-text-primary, #111827);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
-[data-theme="dark"] .drawer-close-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #FFFFFF;
+.drawer-close-btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
 }
 
 .drawer-body {
   flex: 1;
-  padding: 22px;
+  padding: 20px;
   overflow-y: auto;
 }
 
-/* ==========================================================================
-   ESTRUCTURA DE CONTROLES DE FORMULARIO DENTRO DEL DRAWER (OBLIGATORIA)
-   Prohibido usar inputs nativos sin estilizar
-   ========================================================================== */
-.drawer-form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 1.15rem;
-  width: 100%;
+.drawer-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
-.drawer-field-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-secondary, #94a3b8);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  user-select: none;
-  margin-bottom: 0.25rem;
-}
-
-.drawer-input-control {
-  position: relative;
-  display: flex;
-  align-items: center;
-  background: var(--bg-card, #0f172a);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-  border-radius: var(--radius-md, 8px);
-  min-height: 38px;
-  width: 100%;
-  box-sizing: border-box;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.drawer-input-control:hover:not(:focus-within) {
-  border-color: rgba(99, 102, 241, 0.35);
-}
-
-.drawer-input-control:focus-within {
-  border-color: var(--brand-primary, #6366f1);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.drawer-field-input {
-  width: 100%;
-  background: transparent !important;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.84rem;
-  color: var(--text-primary, #f8fafc) !important;
-  font-family: inherit;
-  box-sizing: border-box;
-  height: 38px;
-}
-
-.drawer-input-control.has-icon .drawer-field-input {
-  padding-left: 2.35rem;
-}
-
-.drawer-input-icon {
-  position: absolute;
-  left: 0.75rem;
-  color: var(--text-muted, #64748b);
-  pointer-events: none;
-  flex-shrink: 0;
-  transition: color 0.2s ease, transform 0.2s ease;
-}
-
-.drawer-input-control:focus-within .drawer-input-icon {
-  color: var(--brand-primary, #6366f1);
-  transform: scale(1.08);
-}
-
-.drawer-field-input::placeholder {
-  color: var(--text-muted, #64748b);
-  opacity: 0.75;
+.drawer-kpi-card {
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
 }
 
 .drawer-footer {
@@ -295,21 +247,10 @@ export const Drawer: React.FC<DrawerProps> = ({
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  padding: 16px 22px;
-  border-top: 1px solid var(--color-border, #E5E7EB);
-  background: var(--bg-surface, #FFFFFF);
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-card);
 }
-
-[data-theme="dark"] .drawer-footer {
-  background: var(--bg-surface, #1E293B);
-  border-top-color: var(--color-border, #334155);
-}
-
-/* 
- * REGLA DE TEXTO EN EL BOTÓN PRINCIPAL DEL FOOTER:
- * El botón debe llevar el texto contextual correspondiente a la entidad (ej. "Guardar Registro", "Guardar Partido", "Crear Usuario").
- * Queda PROHIBIDO dejar textos incongruentes fijos como "Guardar Notas".
- */
 
 @keyframes drawerFadeIn {
   from { opacity: 0; }
@@ -319,5 +260,10 @@ export const Drawer: React.FC<DrawerProps> = ({
 @keyframes drawerSlideIn {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .joli-drawer-overlay,
+  .joli-drawer-container { animation: none; }
 }
 ```

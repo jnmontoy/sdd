@@ -1,26 +1,38 @@
 # Especificación de Componente: Banner de Instalación PWA (`PWAInstallBanner`)
-## Ecosistema Jolifoods — Metodología Spec-Driven Development (SDD)
+## SDD Joli Foods — Spec-Driven Development
 
-El componente `PWAInstallBanner` detecta la compatibilidad del navegador con Progressive Web Apps (`beforeinstallprompt`) y presenta un banner inferior no intrusivo invitando a los operarios o guardas de portería a instalar la aplicación en su pantalla de inicio para acceso offline y pantalla completa.
+> **Origen:** patrón tomado de porterias (control de accesos vehiculares y peatonales). Aquí se describe de forma genérica.
 
-> **Origen y validación en producción**: Extraído directamente de la aplicación de control de accesos vehiculares y peatonales en `porterias`.
-
----
-
-### 1. Requisitos Técnicos y de Negocio
-
-1. **Detección de Modo Standalone**: Si la aplicación ya se ejecuta instalada (modo PWA standalone), el banner se oculta automáticamente.
-2. **Persistencia de Descarte**: Si el usuario presiona "✕" (cerrar), la decisión se guarda en `sessionStorage` para no molestarlo durante la misma sesión de trabajo.
-3. **Disparador Nativo**: Al hacer clic en "Instalar", invoca `prompt()` nativo del navegador y captura el resultado (`accepted` o `dismissed`).
+El componente `PWAInstallBanner` detecta si el navegador ofrece instalar la aplicación como PWA (*Progressive Web App*: app web instalable en la pantalla de inicio) mediante el evento `beforeinstallprompt`, y muestra un banner inferior no intrusivo para que operarios o personal de kiosco la instalen y la abran a pantalla completa.
 
 ---
 
-### 2. Implementación TypeScript / React
+### 1. Requisitos técnicos y de negocio
+
+1. **Modo standalone**: si la app ya corre instalada (`display-mode: standalone`), el banner NO DEBE mostrarse.
+2. **Descarte por sesión**: al cerrar con "✕", la decisión se guarda en `sessionStorage` con la clave `STORAGE_KEYS.pwaDismissed` (`<slug-app>:pwa_dismissed`). La clave DEBE llevar el identificador de la app porque varias apps pueden compartir dominio; el acceso a storage DEBE ir en `try/catch` (modo privado o storage bloqueado).
+3. **Disparador nativo**: "Instalar" invoca `prompt()` del navegador y lee el resultado (`accepted` / `dismissed`). El evento solo se puede usar una vez.
+4. **Instalación desde otro lugar**: si el usuario instala desde el menú del navegador, el evento `appinstalled` oculta el banner.
+5. **Compatibilidad**: `beforeinstallprompt` existe en navegadores basados en Chromium. Safari (iOS/macOS) no lo emite; allí la instalación es manual ("Compartir → Agregar a inicio") y el banner simplemente no aparece.
+
+---
+
+### 2. Implementación React + TypeScript
+
+```typescript
+// src/config/storageKeys.ts (fragmento; ver la decisión canónica de claves de almacenamiento)
+const APP = import.meta.env.VITE_APP_SLUG ?? 'app';
+export const STORAGE_KEYS = {
+  pwaDismissed: `${APP}:pwa_dismissed`,
+  // ...resto de claves
+} as const;
+```
 
 ```tsx
 // src/components/ui/PWAInstallBanner.tsx
 import React, { useEffect, useState } from 'react';
 import { Download, X } from 'lucide-react';
+import { STORAGE_KEYS } from '@/config/storageKeys';
 import './PWAInstallBanner.css';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -29,61 +41,78 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+// Safari expone `navigator.standalone`; no está en los tipos estándar del DOM.
+interface NavigatorStandalone extends Navigator {
+  standalone?: boolean;
+}
+
 export interface PWAInstallBannerProps {
   appName?: string;
   subtitle?: string;
 }
 
+function readDismissed(): boolean {
+  try {
+    return sessionStorage.getItem(STORAGE_KEYS.pwaDismissed) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function saveDismissed(): void {
+  try {
+    sessionStorage.setItem(STORAGE_KEYS.pwaDismissed, '1');
+  } catch {
+    // Storage no disponible: el banner se ocultará solo hasta recargar.
+  }
+}
+
 export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
-  appName = 'Aplicación Corporativa Jolifoods',
-  subtitle = 'Acceso rápido y sin conexión desde tu pantalla de inicio',
+  appName = 'Instala la aplicación',
+  subtitle = 'Acceso rápido a pantalla completa desde tu pantalla de inicio',
 }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
-    // Si ya está en modo standalone, no mostrar
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
+      (window.navigator as NavigatorStandalone).standalone === true;
 
-    if (isStandalone) return;
+    if (isStandalone || readDismissed()) return;
 
-    // Si ya fue descartado en esta sesión
-    if (sessionStorage.getItem('joli-pwa-dismissed')) return;
-
-    const handler = (e: Event) => {
-      e.preventDefault();
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault(); // evita el mini-aviso nativo; mostramos el nuestro
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowBanner(true);
     };
+    const handleInstalled = () => setDeferredPrompt(null);
 
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleInstalled);
+    };
   }, []);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      console.log('[PWA] Aplicación instalada exitosamente por el usuario.');
-    }
-    setDeferredPrompt(null);
-    setShowBanner(false);
+    const promptEvent = deferredPrompt;
+    setDeferredPrompt(null); // el evento solo se puede usar una vez
+    await promptEvent.prompt();
+    await promptEvent.userChoice; // 'accepted' | 'dismissed' (se puede enviar a telemetría)
   };
 
   const handleDismiss = () => {
-    sessionStorage.setItem('joli-pwa-dismissed', '1');
-    setShowBanner(false);
+    saveDismissed();
+    setDeferredPrompt(null);
   };
 
-  if (!showBanner) return null;
+  if (!deferredPrompt) return null;
 
   return (
-    <aside className="pwa-install-banner" role="banner" aria-label="Instalación de la aplicación">
+    <aside className="pwa-install-banner" role="region" aria-label="Instalación de la aplicación">
       <div className="pwa-banner-icon-box" aria-hidden="true">
-        <Download size={20} className="text-emerald-500" />
+        <Download size={20} />
       </div>
 
       <div className="pwa-banner-text">
@@ -92,21 +121,11 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
       </div>
 
       <div className="pwa-banner-actions">
-        <button
-          type="button"
-          className="pwa-btn-install"
-          onClick={handleInstall}
-          aria-label="Instalar aplicación"
-        >
+        <button type="button" className="pwa-btn-install" onClick={handleInstall}>
           Instalar
         </button>
-        <button
-          type="button"
-          className="pwa-btn-close"
-          onClick={handleDismiss}
-          aria-label="Cerrar notificación"
-        >
-          <X size={16} />
+        <button type="button" className="pwa-btn-close" onClick={handleDismiss} aria-label="Cerrar aviso de instalación" title="Cerrar">
+          <X size={16} aria-hidden="true" />
         </button>
       </div>
     </aside>
@@ -118,6 +137,8 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
 
 ### 3. Estilos CSS (`PWAInstallBanner.css`)
 
+El banner es un aviso flotante (no una vista), por eso puede ir centrado en la parte inferior.
+
 ```css
 .pwa-install-banner {
   position: fixed;
@@ -126,17 +147,17 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
   transform: translateX(-50%);
   width: calc(100% - 2.5rem);
   max-width: 520px;
-  background: rgba(15, 23, 42, 0.94);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-xl, 14px);
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-popover);
   padding: 0.875rem 1.25rem;
   display: flex;
   align-items: center;
   gap: 0.875rem;
-  z-index: 1000;
+  z-index: var(--z-drawer);
   animation: bannerSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -145,12 +166,17 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .pwa-install-banner { animation: none; }
+}
+
 .pwa-banner-icon-box {
   width: 38px;
   height: 38px;
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  border-radius: 10px;
+  color: var(--brand-primary);
+  background: var(--status-success-bg);
+  border: 1px solid var(--border-card-accent);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -164,16 +190,16 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
 
 .pwa-banner-title {
   display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #F8FAFC;
-  line-height: 1.2;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  line-height: var(--line-height-tight);
 }
 
 .pwa-banner-subtitle {
   margin: 2px 0 0 0;
-  font-size: 0.75rem;
-  color: #94A3B8;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
   line-height: 1.3;
 }
 
@@ -185,25 +211,32 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
 }
 
 .pwa-btn-install {
-  background: var(--color-primary, #10B981);
-  color: #FFFFFF;
+  background: var(--brand-primary);
+  color: var(--text-on-brand);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 0.4rem 0.85rem;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background var(--transition-fast);
 }
 
 .pwa-btn-install:hover {
-  background: #059669;
+  background: var(--brand-primary-hover);
+}
+
+.pwa-btn-install:focus-visible,
+.pwa-btn-close:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-input-focus);
 }
 
 .pwa-btn-close {
   background: transparent;
   border: none;
-  color: #64748B;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -212,6 +245,6 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
 }
 
 .pwa-btn-close:hover {
-  color: #F8FAFC;
+  color: var(--text-primary);
 }
 ```

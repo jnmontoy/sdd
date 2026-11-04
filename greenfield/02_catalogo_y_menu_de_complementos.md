@@ -1,7 +1,7 @@
 # Catálogo Maestro y Menú Interactivo de Complementos SDD
 ## Ecosistema Jolifoods — Metodología Spec-Driven Development (SDD)
 
-Este documento sirve como la guía interactiva oficial que la **Inteligencia Artificial** o el **desarrollador de software** debe consultar al crear o extender un módulo en cualquier proyecto de la organización.
+Este documento es la guía que la **inteligencia artificial** o el **desarrollador** DEBERÍA consultar al crear o extender un módulo en cualquier proyecto de la organización. Contiene 32 complementos; cada uno enlaza su componente en `.sdd/components/` y las preguntas que conviene hacer antes de implementarlo. Las preguntas son una guía: se omiten las que no apliquen y se agregan las que el caso requiera.
 
 ---
 
@@ -130,7 +130,7 @@ Cuando un usuario o desarrollador solicite: *"Quiero crear un complemento"*, *"A
 
 [26] Firma Digital Avanzada Multi-Firmante (MultiPartySignature)
      -> Ideal para: Actas de entrega, inspecciones de contenedores y aprobaciones jerárquicas multi-rol.
-     -> Incluye: Múltiples firmantes, sellado ISO, hash SHA-256 de integridad, geolocalización, IP y marcas de agua.
+     -> Incluye: Múltiples firmantes, fecha ISO 8601, hash SHA-256 de integridad, geolocalización (con consentimiento), IP y marcas de agua.
 
 [27] Suite Completa de Gráficas Analíticas Avanzadas (AdvancedAnalyticsCharts)
      -> Ideal para: Cronogramas de proyectos, matrices de auditoría, balances y cumplimiento de SLAs.
@@ -138,7 +138,7 @@ Cuando un usuario o desarrollador solicite: *"Quiero crear un complemento"*, *"A
 
 [28] Cargador Masivo de Archivos con Drag & Drop (FileUploaderPro)
      -> Ideal para: Subida de comprobantes contables, fotos de auditoría, evidencias y documentos masivos.
-     -> Incluye: Zona Drag & Drop, hash SHA-256 local para deduplicación, barras de progreso individual y magic bytes.
+     -> Incluye: Zona Drag & Drop, hash SHA-256 local para deduplicación, barras de progreso individual y verificación del tipo real por firma de archivo (magic bytes).
 
 [29] Línea de Tiempo de Auditoría y Trazabilidad (ActivityTimeline)
      -> Ideal para: Tracking de pedidos, historial de estados de contenedores y bitácoras de auditoría forense.
@@ -177,7 +177,7 @@ Cuando un usuario o desarrollador solicite: *"Quiero crear un complemento"*, *"A
 
 ---
 
-### Complemento [2]: Tablero de Control y Métricas KPI (`KPICards` BI Cartera)
+### Complemento [2]: Tablero de Control y Métricas KPI (`KPICards`)
 - **Archivos a reutilizar**:
   - Componente y estilos: [kpi_cards.md](../components/kpi/kpi_cards.md)
   - Página de referencia: [dashboard/01_dashboard_especificacion.md](pages/dashboard/01_dashboard_especificacion.md)
@@ -241,7 +241,9 @@ Cuando un usuario o desarrollador solicite: *"Quiero crear un complemento"*, *"A
   - Componente y estilos: [session_expiration_modal.md](../components/modal/session_expiration_modal.md)
   - Servicio HTTP emisor: [api_client.md](../components/services/api_client.md)
 - **Preguntas que debe hacer la IA**:
-  1. *¿El proyecto utiliza tokens JWT en `localStorage` o cookies de sesión `HttpOnly`?*
+  1. *¿Con cuánta anticipación se debe avisar antes de que venza la sesión?* (detección proactiva leyendo `exp` del access token en memoria).
+  2. *¿Qué ruta debe conservarse para volver tras reautenticarse?*
+- **Modelo de sesión (no se pregunta, es fijo)**: access token JWT solo en memoria (nunca en `localStorage`/`sessionStorage`) y refresh token en cookie `HttpOnly; Secure; SameSite=Lax`. Ante un 401 el interceptor intenta un único refresh (con cola para peticiones simultáneas); si falla, despacha `session-expired` y se muestra este modal. Ver `pages/login/04_analisis_patrones_referencia.md`.
 
 ---
 
@@ -302,6 +304,8 @@ Cuando un usuario o desarrollador solicite: *"Quiero crear un complemento"*, *"A
   1. *¿Cuál es el propósito de la captura facial?* (ej. Verificación 1:1 de identidad, registro de visitantes/conductores, enrolamiento de personal en portería o planta).
   2. *¿En qué dispositivo se utilizará principalmente?* (Cámara web de PC de escritorio, tablet/kiosco táctil con cámara frontal, o smartphone de operario con alternancia de cámara).
   3. *¿Se requiere envío directo de imagen Base64 / Blob hacia el backend o confirmación previa en un modal de revisión?*
+  4. *¿Dónde está la autorización expresa del titular y cuánto tiempo se conservará la imagen?*
+- **Advertencia legal**: la imagen del rostro es un dato biométrico, considerado **dato sensible** por la Ley 1581 de 2012. Antes de capturarla DEBE existir autorización expresa e informada del titular, finalidad declarada, acceso restringido y plazo de conservación. El componente solo captura la foto; no realiza reconocimiento facial.
 
 ---
 
@@ -483,7 +487,7 @@ Cuando un usuario o desarrollador solicite: *"Quiero crear un complemento"*, *"A
   - Catálogo de innovaciones: [13_catalogo_innovaciones_y_mejores_practicas_proyectos.md](13_catalogo_innovaciones_y_mejores_practicas_proyectos.md)
 - **Preguntas que debe hacer la IA**:
   1. *¿El tutorial requiere selección previa entre múltiples opciones?* (ej. "¿Cómo conectar Power BI?" vs. "¿Cómo conectar Excel?" usando `TutorialChooserModal`).
-  2. *¿Qué parámetros o datos de referencia deben mostrarse fijos en el panel izquierdo?* (Servidor, base de datos, credenciales temporales o código con botón de copiado).
+  2. *¿Qué parámetros o datos de referencia deben mostrarse fijos en el panel izquierdo?* (Servidor, base de datos, usuario de solo lectura o código con botón de copiado; NO DEBEN mostrarse contraseñas permanentes).
   3. *¿Cuáles son los pasos, imágenes y textos explicativos con botones marcados entre comillas para resaltar en verde esmeralda?*
   4. *¿Se requiere soporte de ampliación de imagen en pantalla completa (ImageLightbox)?*
 

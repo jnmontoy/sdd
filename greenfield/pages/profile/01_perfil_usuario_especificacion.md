@@ -1,375 +1,307 @@
-﻿# 01. Especificación del Módulo de Perfil de Usuario (Gestión de Identidad)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
+﻿# 01. Especificación del Perfil de Usuario y Seguridad
+## Joli Foods — Spec-Driven Development (SDD)
 
-Esta especificación describe la vista de **Mi Perfil**, accesible desde la barra superior de navegación.
-
-Permite al colaborador autenticado consultar sus datos de identidad, cambiar su contraseña voluntariamente de forma segura y revisar/revocar sus sesiones activas en otros dispositivos.
+Vista **Mi perfil**, accesible desde el menú de perfil de la barra superior. El colaborador consulta sus datos, cambia su contraseña y revisa o cierra sus sesiones activas. Ocupa el 100% del ancho del área de contenido (DEBERÍA).
 
 ---
 
-## 1. Topología de la Pantalla
+## 1. Topología
 
 ```
 +-----------------------------------------------------------------------------------------------+
-|  MI PERFIL Y SEGURIDAD                                                                        |
-|  Gestión de credenciales institucionales y sesiones activas                                   |
+|  Mi perfil y seguridad                                                                        |
 +----------------------------------------------------+------------------------------------------+
-|  [ TARJETA DE IDENTIDAD ]                          |  [ CAMBIO DE CONTRASEÑA ]                |
-|  - Avatar con iniciales o foto                     |  - Contraseña Actual (Input Ojo)         |
-|  - Nombre Completo: Joan Montoya                   |  - Nueva Contraseña (Medidor de Fuerza)  |
-|  - Cédula / Documento: 1020405060 (Inmutable)      |  - Confirmar Nueva Contraseña            |
-|  - Correo: j.montoya@jolifoods.com                 |  - [ Botón Actualizar Contraseña ]       |
-|  - Sede Asignada: Sede Principal                   |                                          |
-|  - Rol Corporativo: Administrador (Badge)          |                                          |
+|  Datos del colaborador                             |  Cambiar contraseña                      |
+|  - Avatar (foto o iniciales)                       |  - Contraseña actual (ver/ocultar)       |
+|  - Nombre: Usuario Ejemplo                         |  - Nueva contraseña (medidor de fuerza)  |
+|  - Documento: 1000000001 (solo lectura)            |  - Confirmar nueva contraseña            |
+|  - Correo: usuario@ejemplo.com                     |  - [ Actualizar contraseña ]             |
+|  - Sede y roles (badges)                           |                                          |
 +----------------------------------------------------+------------------------------------------+
-|  [ SESIONES ACTIVAS Y DISPOSITIVOS ]                                                          |
-|  - Windows / Chrome (Esta sesión activa) • IP: 190.14.85.120 • Conectado hace 1 hora         |
-|  - Android / Edge • IP: 181.12.90.14 • Conectado ayer  [ Botón: Cerrar Sesión Remota ]       |
+|  Sesiones activas                                                                             |
+|  - Escritorio • Chrome en Windows (esta sesión) • inició hace 1 hora                          |
+|  - Móvil • Edge en Android • inició ayer                         [ Cerrar sesión ]            |
 +-----------------------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 2. Contratos de API para el Perfil
+## 2. Contratos de API
 
-### 2.1. Cambio Voluntario de Contraseña
-- **Ruta**: `POST /api/v1/auth/password/change/`
-- **Autenticación**: Obligatoria vía Cookie `HttpOnly` (`IsAuthenticated`).
-- **Payload Entrada**:
+### 2.1. Cambio de contraseña — `POST /api/v1/auth/change-password/` (`ENDPOINTS.AUTH.CHANGE_PASSWORD`)
+- **Autenticación:** `Authorization: Bearer <access>` + cookie de refresh (para rotarla) y `X-CSRFToken`.
+- **Límite:** 5 intentos fallidos de `password_actual` cada 15 min por usuario.
+- **Petición:**
   ```json
-  {
-    "password_actual": "ClaveAnterior2026*",
-    "nueva_password": "NuevaClaveSuperSegura2026!"
-  }
+  { "password_actual": "<CONTRASEÑA_ACTUAL>", "nueva_password": "<NUEVA_CONTRASEÑA>" }
   ```
-- **Respuesta Exitosa (HTTP 200 OK)**:
-  ```json
-  {
-    "status": "success",
-    "message": "Contraseña actualizada exitosamente. Sus otras sesiones han sido invalidadas por seguridad."
-  }
-  ```
+- **Proceso (en `transaction.atomic()`):** verifica `password_actual` con `check_password`, aplica `validate_password` (mismos validadores que el login), `set_password`, pone en lista negra **todos** los refresh tokens del usuario, cierra sus `SesionUsuario`, emite un refresh nuevo para la sesión actual (cookie rotada) y registra `PASSWORD_CHANGED` en la bitácora.
+- **200:** `{ "access": "<JWT>", "expires_in": 900, "message": "Contraseña actualizada. Se cerraron tus otras sesiones." }`
+- **400:** `PASSWORD_POLICY` (con reglas incumplidas) o `PASSWORD_REUSED` (igual a la actual). **401:** `INVALID_CURRENT_PASSWORD`.
+
+### 2.2. Sesiones activas
+| Método y ruta | Respuesta |
+| :--- | :--- |
+| `GET /api/v1/auth/sesiones/` | `[{ "id": "uuid", "dispositivo": "Desktop", "navegador": "Chrome en Windows", "fecha_inicio": "...", "es_actual": true }]` — sin IP completa. |
+| `DELETE /api/v1/auth/sesiones/{id}/` | 204. Pone en lista negra el refresh de esa sesión y la marca inactiva. No permite cerrar la sesión actual (para eso está "Salir"). |
+
+Solo se listan sesiones del propio usuario; un `id` ajeno responde 404 (no 403) para no confirmar su existencia.
 
 ---
 
-## 3. Implementación en React 19 + TypeScript (`ProfilePage.tsx`)
+## 3. Implementación (`ProfilePage.tsx`)
 
 ```tsx
-import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { 
-  User, 
-  Shield, 
-  KeyRound, 
-  Laptop, 
-  Smartphone, 
-  CheckCircle, 
-  AlertCircle,
-  Eye,
-  EyeOff
-} from 'lucide-react';
-import '../../styles/variables.css';
+import { useCallback, useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { isAxiosError } from 'axios';
+import { User, KeyRound, Laptop, Smartphone, Shield, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { apiClient, setAccessToken } from '../services/apiClient';
+import { ENDPOINTS } from '../services/endpoints';
+import { showToast } from '../components/ToastNotification';
+import { ConfirmModal } from '../components/modal/ConfirmModal';
+import './profile.css';
 
-export const ProfilePage: React.FC = () => {
+const cambioSchema = z
+  .object({
+    password_actual: z.string().min(1, 'Ingresa tu contraseña actual.'),
+    nueva_password: z.string().min(10, 'Mínimo 10 caracteres.').max(128),
+    confirmar: z.string(),
+  })
+  .refine((v) => v.nueva_password === v.confirmar, { path: ['confirmar'], message: 'Las contraseñas no coinciden.' })
+  .refine((v) => v.nueva_password !== v.password_actual, { path: ['nueva_password'], message: 'Debe ser distinta de la actual.' });
+type CambioForm = z.infer<typeof cambioSchema>;
+
+interface Sesion { id: string; dispositivo: string | null; navegador: string; fecha_inicio: string; es_actual: boolean }
+
+export function ProfilePage() {
   const { user } = useAuth();
-  const [showCurrentPass, setShowCurrentPass] = useState(false);
-  const [showNewPass, setShowNewPass] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [verActual, setVerActual] = useState(false);
+  const [verNueva, setVerNueva] = useState(false);
+  const [sesiones, setSesiones] = useState<Sesion[]>([]);
+  const [sesionACerrar, setSesionACerrar] = useState<Sesion | null>(null);
+  const [recargar, setRecargar] = useState(0);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setFeedback({ type: 'error', message: 'Las nuevas contraseñas no coinciden.' });
-      return;
+  const { register, handleSubmit, reset, setError, formState: { errors, isSubmitting } } =
+    useForm<CambioForm>({ resolver: zodResolver(cambioSchema) });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    apiClient
+      .get<Sesion[]>(ENDPOINTS.AUTH.SESIONES, { signal: controller.signal })
+      .then((r) => setSesiones(r.data))
+      .catch(() => { if (!controller.signal.aborted) showToast.error('No fue posible cargar tus sesiones.'); });
+    return () => controller.abort();
+  }, [recargar]);
+
+  const onCambiar = handleSubmit(async ({ password_actual, nueva_password }) => {
+    try {
+      const { data } = await apiClient.post<{ access: string }>(ENDPOINTS.AUTH.CHANGE_PASSWORD, { password_actual, nueva_password });
+      setAccessToken(data.access); // la sesión actual continúa con el token nuevo
+      reset();
+      showToast.success('Contraseña actualizada. Se cerraron tus otras sesiones.');
+      setRecargar((n) => n + 1);
+    } catch (err: unknown) {
+      const code = isAxiosError<{ error_code?: string; message?: string }>(err) ? err.response?.data?.error_code : undefined;
+      if (code === 'INVALID_CURRENT_PASSWORD') setError('password_actual', { message: 'La contraseña actual no es correcta.' });
+      else showToast.error('No fue posible cambiar la contraseña.');
     }
-    if (newPassword.length < 8) {
-      setFeedback({ type: 'error', message: 'La nueva contraseña debe tener al menos 8 caracteres.' });
-      return;
+  });
+
+  const cerrarSesion = useCallback(async () => {
+    if (!sesionACerrar) return;
+    try {
+      await apiClient.delete(ENDPOINTS.AUTH.SESION(sesionACerrar.id));
+      showToast.success('Sesión cerrada.');
+      setRecargar((n) => n + 1);
+    } catch {
+      showToast.error('No fue posible cerrar la sesión.');
+    } finally {
+      setSesionACerrar(null);
     }
-    // Llamada al endpoint
-    setFeedback({ type: 'success', message: 'Contraseña actualizada con éxito.' });
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-  };
+  }, [sesionACerrar]);
+
+  const iniciales = `${user?.nombre ?? ''}`.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
 
   return (
-    <div className="joli-profile-container">
-      <div className="mb-4">
-        <h1 className="joli-page-title">Mi Perfil y Seguridad</h1>
-        <p className="text-muted small mb-0">Administra tus datos institucionales y preferencias de acceso seguro.</p>
-      </div>
+    <div className="joli-page-container w-100">
+      <header className="mb-4">
+        <h1 className="joli-page-title">Mi perfil y seguridad</h1>
+        <p className="text-muted small mb-0">Tus datos institucionales, contraseña y sesiones abiertas.</p>
+      </header>
 
       <div className="row g-4">
-        {/* 1. INFORMACIÓN DE IDENTIDAD */}
-        <div className="col-12 col-lg-5">
-          <div className="joli-panel-card h-100">
-            <div className="joli-panel-header">
-              <h2 className="joli-panel-title">Datos del Colaborador</h2>
-              <User size={18} className="text-primary" />
-            </div>
+        <div className="col-12 col-xl-5">
+          <section className="joli-panel-card h-100" aria-labelledby="perfil-datos">
+            <header className="joli-panel-header">
+              <h2 id="perfil-datos" className="joli-panel-title">Datos del colaborador</h2>
+              <User size={18} aria-hidden="true" />
+            </header>
             <div className="joli-panel-body">
-              <div className="text-center mb-4">
-                <div className="joli-avatar-large mx-auto mb-3">
-                  {user?.nombre?.slice(0, 2).toUpperCase() || 'JM'}
+              <div className="d-flex align-items-center gap-3 mb-4">
+                {user?.avatar_url
+                  ? <img src={user.avatar_url} alt="" className="joli-avatar-large" />
+                  : <span className="joli-avatar-large" aria-hidden="true">{iniciales || '?'}</span>}
+                <div>
+                  <p className="h5 mb-1">{user?.nombre}</p>
+                  <span className="d-inline-flex flex-wrap gap-1">{user?.roles.map((r) => <span key={r} className="badge text-bg-secondary">{r}</span>)}</span>
                 </div>
-                <h3 className="h5 mb-1 text-primary-emphasis">{user?.nombre || 'Joan Montoya'}</h3>
-                <span className="badge bg-success-subtle text-success">
-                  Rol: {user?.rol || 'Administrador'}
-                </span>
               </div>
-
-              <div className="joli-data-group">
-                <label className="joli-data-label">Número de Cédula (Documento)</label>
-                <div className="joli-data-value">{user?.documento || '1020405060'}</div>
-              </div>
-
-              <div className="joli-data-group">
-                <label className="joli-data-label">Correo Institucional</label>
-                <div className="joli-data-value">{user?.email || 'usuario@jolifoods.com'}</div>
-              </div>
-
-              <div className="joli-data-group">
-                <label className="joli-data-label">Sede Asignada</label>
-                <div className="joli-data-value">{user?.sede || 'Sede Principal Jolifoods'}</div>
-              </div>
+              <dl className="joli-data-list">
+                <dt>Documento</dt><dd>{user?.numero_documento}</dd>
+                <dt>Correo</dt><dd>{user?.email}</dd>
+              </dl>
             </div>
-          </div>
+          </section>
         </div>
 
-        {/* 2. FORMULARIO DE CAMBIO DE CLAVE */}
-        <div className="col-12 col-lg-7">
-          <div className="joli-panel-card h-100">
-            <div className="joli-panel-header">
-              <h2 className="joli-panel-title">Cambiar Contraseña</h2>
-              <KeyRound size={18} className="text-primary" />
-            </div>
-            <div className="joli-panel-body">
-              {feedback && (
-                <div className={`alert ${feedback.type === 'success' ? 'alert-success' : 'alert-danger'} d-flex align-items-center mb-4`}>
-                  {feedback.type === 'success' ? <CheckCircle size={18} className="me-2" /> : <AlertCircle size={18} className="me-2" />}
-                  <span>{feedback.message}</span>
-                </div>
-              )}
-
-              <form onSubmit={handlePasswordSubmit}>
-                <div className="mb-3">
-                  <label className="form-label small fw-semibold">Contraseña Actual</label>
-                  <div className="joli-input-wrapper">
-                    <input 
-                      type={showCurrentPass ? 'text' : 'password'} 
-                      className="form-control joli-form-input" 
-                      required 
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                    />
-                    <button 
-                      type="button" 
-                      className="joli-eye-btn" 
-                      onClick={() => setShowCurrentPass(!showCurrentPass)}
-                    >
-                      {showCurrentPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label small fw-semibold">Nueva Contraseña</label>
-                  <div className="joli-input-wrapper">
-                    <input 
-                      type={showNewPass ? 'text' : 'password'} 
-                      className="form-control joli-form-input" 
-                      required 
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                    />
-                    <button 
-                      type="button" 
-                      className="joli-eye-btn" 
-                      onClick={() => setShowNewPass(!showNewPass)}
-                    >
-                      {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label className="form-label small fw-semibold">Confirmar Nueva Contraseña</label>
-                  <input 
-                    type="password" 
-                    className="form-control joli-form-input" 
-                    required 
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                </div>
-
-                <button type="submit" className="joli-btn-primary">
-                  Actualizar Contraseña
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. GESTIÓN DE SESIONES ACTIVAS */}
-      <div className="row mt-4">
-        <div className="col-12">
-          <div className="joli-panel-card">
-            <div className="joli-panel-header">
-              <h2 className="joli-panel-title">Sesiones Activas y Dispositivos</h2>
-              <Shield size={18} className="text-success" />
-            </div>
-            <div className="joli-panel-body p-0">
-              <ul className="joli-session-list">
-                <li className="joli-session-item">
-                  <Laptop size={24} className="text-primary me-3" />
-                  <div className="flex-grow-1">
-                    <div className="d-flex align-items-center gap-2">
-                      <strong className="small">Navegador Web (Windows / Chrome)</strong>
-                      <span className="badge bg-success-subtle text-success">Sesión Actual</span>
-                    </div>
-                    <span className="text-muted small">IP: 190.14.85.120 &bull; Conectado hace 1 hora</span>
-                  </div>
-                </li>
-                <li className="joli-session-item">
-                  <Smartphone size={24} className="text-muted me-3" />
-                  <div className="flex-grow-1">
-                    <strong className="small">Dispositivo Móvil (Android / Edge)</strong>
-                    <div><span className="text-muted small">IP: 181.12.90.14 &bull; Conectado ayer</span></div>
-                  </div>
-                  <button type="button" className="btn btn-sm btn-outline-danger">
-                    Cerrar Sesión
+        <div className="col-12 col-xl-7">
+          <section className="joli-panel-card h-100" aria-labelledby="perfil-clave">
+            <header className="joli-panel-header">
+              <h2 id="perfil-clave" className="joli-panel-title">Cambiar contraseña</h2>
+              <KeyRound size={18} aria-hidden="true" />
+            </header>
+            <form className="joli-panel-body" onSubmit={onCambiar} noValidate>
+              <div className="mb-3">
+                <label htmlFor="pwd-actual" className="form-label small fw-semibold">Contraseña actual</label>
+                <div className="input-group">
+                  <input id="pwd-actual" type={verActual ? 'text' : 'password'} autoComplete="current-password"
+                         className={`form-control input-control ${errors.password_actual ? 'is-invalid' : ''}`}
+                         aria-invalid={Boolean(errors.password_actual)} {...register('password_actual')} />
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setVerActual((v) => !v)}
+                          aria-label={verActual ? 'Ocultar contraseña actual' : 'Mostrar contraseña actual'} aria-pressed={verActual}>
+                    {verActual ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                   </button>
-                </li>
-              </ul>
-            </div>
-          </div>
+                  {errors.password_actual && <div className="invalid-feedback">{errors.password_actual.message}</div>}
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <label htmlFor="pwd-nueva" className="form-label small fw-semibold">Nueva contraseña</label>
+                <div className="input-group">
+                  <input id="pwd-nueva" type={verNueva ? 'text' : 'password'} autoComplete="new-password"
+                         className={`form-control input-control ${errors.nueva_password ? 'is-invalid' : ''}`}
+                         aria-invalid={Boolean(errors.nueva_password)} {...register('nueva_password')} />
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setVerNueva((v) => !v)}
+                          aria-label={verNueva ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'} aria-pressed={verNueva}>
+                    {verNueva ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+                  </button>
+                  {errors.nueva_password && <div className="invalid-feedback">{errors.nueva_password.message}</div>}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="pwd-confirmar" className="form-label small fw-semibold">Confirmar nueva contraseña</label>
+                <input id="pwd-confirmar" type="password" autoComplete="new-password"
+                       className={`form-control input-control ${errors.confirmar ? 'is-invalid' : ''}`}
+                       aria-invalid={Boolean(errors.confirmar)} {...register('confirmar')} />
+                {errors.confirmar && <div className="invalid-feedback">{errors.confirmar.message}</div>}
+              </div>
+
+              <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                {isSubmitting ? 'Actualizando…' : 'Actualizar contraseña'}
+              </button>
+            </form>
+          </section>
         </div>
       </div>
+
+      <section className="joli-panel-card mt-4" aria-labelledby="perfil-sesiones">
+        <header className="joli-panel-header">
+          <h2 id="perfil-sesiones" className="joli-panel-title">Sesiones activas</h2>
+          <Shield size={18} aria-hidden="true" />
+        </header>
+        <ul className="joli-session-list">
+          {sesiones.map((s) => (
+            <li key={s.id} className="joli-session-item">
+              {s.dispositivo === 'Mobile' ? <Smartphone size={22} aria-hidden="true" /> : <Laptop size={22} aria-hidden="true" />}
+              <div className="flex-grow-1">
+                <strong className="small">{s.navegador}</strong>
+                {s.es_actual && <span className="badge text-bg-success ms-2">Esta sesión</span>}
+                <div className="text-muted small">Inició el {new Date(s.fecha_inicio).toLocaleString('es-CO')}</div>
+              </div>
+              {!s.es_actual && (
+                <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setSesionACerrar(s)}>
+                  Cerrar sesión
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <ConfirmModal
+        isOpen={sesionACerrar !== null}
+        onClose={() => setSesionACerrar(null)}
+        onConfirm={cerrarSesion}
+        type="warning"
+        title="¿Cerrar esta sesión?"
+        message={`Se cerrará la sesión de ${sesionACerrar?.navegador ?? 'ese dispositivo'}.`}
+        confirmText="Cerrar sesión"
+      />
     </div>
   );
-};
+}
 ```
+
+`ENDPOINTS.AUTH.SESIONES` (`/api/v1/auth/sesiones/`) y `ENDPOINTS.AUTH.SESION(id)` DEBEN agregarse al registro de endpoints si no existen; `setAccessToken` es la función del cliente HTTP que guarda el access token en memoria ([`api_client.md`](../../../components/services/api_client.md)).
 
 ---
 
-## 4. Estilos CSS Canónicos (`profile.css`)
+## 4. Estilos (`profile.css`)
+
+Solo tokens de [`variables.css`](../../../components/variables.css). `joli-panel-card` y `joli-page-title` se comparten con el tablero.
 
 ```css
-.joli-profile-container {
-  padding: var(--space-2) 0;
-}
-
 .joli-page-title {
-  font-size: var(--text-2xl);
-  font-weight: var(--weight-extrabold);
-  color: var(--color-text-primary);
-  margin-bottom: 2px;
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-primary);
 }
 
 .joli-avatar-large {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   width: 72px;
   height: 72px;
-  background: linear-gradient(135deg, var(--color-primary), #059669);
-  color: #ffffff;
-  font-size: var(--text-xl);
-  font-weight: var(--weight-bold);
+  object-fit: cover;
   border-radius: var(--radius-full);
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+  background: var(--brand-primary);
+  color: var(--text-on-brand);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
 }
 
-.joli-data-group {
-  margin-bottom: var(--space-3);
-  padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.joli-data-label {
-  font-size: 11px;
-  font-weight: var(--weight-bold);
-  color: var(--color-text-muted);
+.joli-data-list { margin: 0; }
+.joli-data-list dt {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 2px;
-  display: block;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.joli-data-list dd {
+  margin: 0 0 var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
 }
 
-.joli-data-value {
-  font-size: var(--text-sm);
-  color: var(--color-text-primary);
-  font-weight: var(--weight-medium);
-}
-
-.joli-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.joli-form-input {
-  background-color: var(--color-bg-input);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-primary);
-  height: 42px;
-  border-radius: var(--radius-lg);
-}
-
-.joli-form-input:focus {
-  background-color: var(--color-bg-input);
-  border-color: var(--color-primary);
-  color: var(--color-text-primary);
-  box-shadow: var(--focus-ring);
-}
-
-.joli-eye-btn {
-  position: absolute;
-  right: 12px;
-  background: transparent;
-  border: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.joli-btn-primary {
-  height: 42px;
-  padding: 0 24px;
-  background-color: var(--color-primary);
-  border: none;
-  border-radius: var(--radius-lg);
-  color: #ffffff;
-  font-weight: var(--weight-bold);
-  font-size: var(--text-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.joli-btn-primary:hover {
-  background-color: #059669;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
-}
-
-.joli-session-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
+.joli-session-list { list-style: none; margin: 0; padding: 0; }
 .joli-session-item {
   display: flex;
   align-items: center;
+  gap: var(--space-3);
   padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
 }
-
-.joli-session-item:last-child {
-  border-bottom: none;
-}
+.joli-session-item:last-child { border-bottom: none; }
 ```

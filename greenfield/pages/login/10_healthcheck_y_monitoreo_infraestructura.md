@@ -1,107 +1,79 @@
-﻿# 10. Monitoreo de Infraestructura y Sondas de Salud (Healthcheck)
-## Módulo de Login / Autenticación — SDD Greenyard (`GY-SPEC-AUTH-001`)
+﻿# 10. Sondas de Salud y Monitoreo de Infraestructura
+## Módulo de Login / Autenticación — SDD Joli Foods (`SPEC-AUTH-001`)
 
-Esta especificación describe el estándar corporativo para las **sondas de disponibilidad, salud y rendimiento (Liveness y Readiness)** en el backend híbrido FastAPI + Django de **Jolifoods**.
-
----
-
-## 1. Justificación de Ingeniería
-
-En arquitecturas desacopladas con contenedores Docker y orquestadores (Docker Compose, Swarm, Kubernetes o Nginx):
-1. **Evitar tráfico a contenedores no listos**: No se debe enviar peticiones de login al backend si PostgreSQL aún está iniciando sus sockets.
-2. **Detección temprana de caídas**: Si Redis se satura o se cae, el sistema de Rate Limiting fallaría o bloquearía peticiones legítimas. La sonda debe marcar el estado en `degraded` con HTTP 503.
-3. **Métricas de latencia**: Medir en milisegundos el tiempo de respuesta de la base de datos y la caché en cada ciclo de vida.
+Estándar de las sondas de vida (*liveness*) y disponibilidad (*readiness*) del backend híbrido Django + FastAPI. El login depende de PostgreSQL (usuarios, sesiones) y de Redis (límite de intentos); si alguno falla, el login no debe recibir tráfico.
 
 ---
 
-## 2. Contrato de Endpoints de Salud
+## 1. Por qué
 
-### 2.1. Sonda de Vida Rápida (`Liveness Probe`)
-- **Ruta**: `GET /api/v1/health/live`
-- **Frecuencia**: Cada 5 a 10 segundos.
-- **Propósito**: Verificar si el proceso Python/Uvicorn está respondiendo en el bucle de eventos.
-- **Respuesta Exitosa (HTTP 200)**:
-  ```json
-  {
-    "status": "alive"
-  }
-  ```
+1. **No enviar tráfico a contenedores no listos:** mientras PostgreSQL arranca, el login fallaría.
+2. **Fallar cerrado sin Redis:** sin Redis no hay límite de intentos; la sonda de disponibilidad DEBE marcar 503 para que el orquestador o el balanceador dejen de enrutar.
+3. **Medir latencia** de base de datos y caché en cada verificación.
 
 ---
 
-### 2.2. Sonda de Disponibilidad y Dependencias (`Readiness Probe`)
-- **Ruta**: `GET /api/v1/health/`
-- **Frecuencia**: Cada 15 a 30 segundos.
-- **Propósito**: Validar conectividad activa con PostgreSQL y Redis antes de declarar el contenedor saludable.
+## 2. Rutas canónicas
 
-#### Respuesta Exitosa (HTTP 200 OK):
+Ambas son públicas, las sirve FastAPI y NO DEBEN exponer versiones de software, cadenas de conexión ni mensajes de error internos.
+
+| Ruta | Tipo | Verifica | Respuesta |
+| :--- | :--- | :--- | :--- |
+| `GET /health/live` | Vida | Que el proceso responde (no toca BD ni Redis). | 200 `{ "status": "alive" }` |
+| `GET /health/ready` | Disponibilidad | `SELECT 1` en PostgreSQL y `PING` en Redis, con tiempo límite de 2 s cada uno. | 200 si ambos responden; **503** si alguno falla. |
+| `GET /fast/v1/health` | Salud de la capa FastAPI | Estado propio de la sub-aplicación FastAPI. | 200 |
+
+### 2.1. `GET /health/ready` — 200
 ```json
 {
-  "status": "healthy",
-  "timestamp": 1790874600.12,
-  "services": {
-    "database": {
-      "status": "up",
-      "latency_ms": 1.45,
-      "engine": "PostgreSQL"
-    },
-    "redis": {
-      "status": "up",
-      "latency_ms": 0.82
-    }
-  },
-  "latency_ms": 2.38
+  "status": "ready",
+  "timestamp": "2026-11-04T13:00:00Z",
+  "checks": {
+    "database": { "status": "up", "latency_ms": 1.45 },
+    "redis":    { "status": "up", "latency_ms": 0.82 }
+  }
 }
 ```
 
-#### Respuesta de Degradación / Fallo Crítico (HTTP 503 Service Unavailable):
+### 2.2. `GET /health/ready` — 503
 ```json
 {
   "status": "degraded",
-  "timestamp": 1790874600.12,
-  "services": {
-    "database": {
-      "status": "down",
-      "error": "could not connect to server: Connection refused",
-      "engine": "PostgreSQL"
-    },
-    "redis": {
-      "status": "up",
-      "latency_ms": 0.91
-    }
-  },
-  "latency_ms": 1002.5
+  "timestamp": "2026-11-04T13:00:00Z",
+  "checks": {
+    "database": { "status": "down" },
+    "redis":    { "status": "up", "latency_ms": 0.91 }
+  }
 }
 ```
+El detalle del error (excepción) se escribe en el log del servidor, no en la respuesta.
 
 ---
 
-## 3. Integración en `docker-compose.yml`
-
-Para que el backend informe su estado de salud nativamente a Docker, se define la siguiente directiva en el servicio `backend`:
+## 3. `docker-compose.yml`
 
 ```yaml
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: jolifoods_backend
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health/live || exit 1"]
-      interval: 10s
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health/ready || exit 1"]
+      interval: 15s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 20s
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
 ```
+
+`/health/live` se usa para reinicios (el proceso está colgado); `/health/ready` para decidir si recibe tráfico. En Docker Compose, que solo tiene un `healthcheck`, se usa `/health/ready`. La imagen DEBE incluir `curl` (o usar un script Python equivalente).
 
 ---
 
-## 4. Archivo de Implementación Canónica
+## 4. Implementación de referencia
 
-El código Python completo listo para producción se encuentra disponible en:
-- [`.sdd/stack/healthcheck.py`](../../../stack/healthcheck.py)
+[`.sdd/stack/healthcheck.py`](../../../stack/healthcheck.py). Las llamadas al ORM de Django desde la vista `async` de FastAPI DEBEN envolverse en `sync_to_async` (o usar `connection` en un hilo) para no bloquear el bucle de eventos.

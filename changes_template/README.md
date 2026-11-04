@@ -1,48 +1,63 @@
-# Plantilla de Cambios Atómicos y Especificaciones Vivas (SDD Changes)
+# Plantilla de cambios atómicos y especificaciones vivas
 
-Inspirado en el estándar **OpenSpec** y la metodología **Spec-Driven Development (SDD)** promovida en ecosistemas modernos de desarrollo con agentes de Inteligencia Artificial (Gentle-AI / Gentleman Programming).
+Plantilla para documentar un cambio incremental (nueva funcionalidad, refactorización o ajuste de contrato) **antes** de tocar código, y dejar la evidencia de que funciona **después**. Se inspira en la práctica de *spec-driven development* (desarrollo guiado por especificaciones) y en herramientas como OpenSpec; aquí se adapta al stack del SDD.
+
+Protocolo que la rige: [`greenfield/14_protocolo_cambios_atomicos_y_especificaciones_vivas.md`](../greenfield/14_protocolo_cambios_atomicos_y_especificaciones_vivas.md).
 
 ---
 
-## 🎯 ¿Para qué sirve esta estructura?
+## ¿Cuándo usarla?
 
-Cuando un proyecto ya está inicializado o en producción y se requiere implementar una **nueva funcionalidad, refactorización o cambio incremental significativo (Nivel 2 de ODD)**, queda prohibido pedirle a la Inteligencia Artificial cambios sueltos mediante "prompts ciegos" o "vibe coding".
+| Nivel (ver [`SPEC_GUIDE.md` §1.0](../greenfield/SPEC_GUIDE.md)) | Ejemplo | ¿Usa esta plantilla? |
+|---|---|---|
+| 1. Ajuste menor / corrección puntual | Texto, color, bug trivial sin cambio de contrato | No. Basta el mensaje de commit y la prueba que cubra el arreglo. |
+| 2. Cambio atómico | Nuevo endpoint, nuevo drawer en una vista existente, refactor de un módulo | **Sí (DEBERÍA).** |
+| 3. Módulo o proyecto nuevo | Pantalla o sistema desde cero | Sí, más el flujo completo de `SPEC_GUIDE.md`. |
 
-Toda modificación debe gestionarse creando una subcarpeta dentro del directorio `specs/changes/` del proyecto:
+**Por qué:** un cambio con alcance escrito y criterios de aceptación reduce el trabajo fuera de alcance (propio o de un agente de IA) y deja un registro revisable de qué se decidió y cómo se verificó. El costo es tiempo de redacción, por eso no se exige en el nivel 1.
+
+---
+
+## Estructura
 
 ```text
-mi_proyecto/
+<proyecto>/
 └── specs/
     └── changes/
-        └── [YYYY-MM-DD]-[nombre-del-cambio]/
-            ├── proposal.md     # 1. Motivación, alcance y qué NO incluye el cambio
-            ├── design.md       # 2. Contratos de datos, componentes UI y casos de borde
-            ├── tasks.md        # 3. Lista de tareas atómicas secuenciales con casillas [ ]
-            └── evidence.md     # 4. Evidencia verificable de ejecución (pruebas y contratos)
+        └── AAAA-MM-DD-nombre-del-cambio/
+            ├── proposal.md   # 1. Problema, alcance y lo que NO incluye
+            ├── design.md     # 2. Contratos, componentes, impacto en BD y casos de borde
+            ├── tasks.md      # 3. Tareas pequeñas y verificables, con casillas [ ]
+            └── evidence.md   # 4. Salida real de las herramientas de verificación
 ```
 
----
-
-## 🔄 El Ciclo de 4 Fases de un Cambio Atómico
+## Ciclo
 
 ```mermaid
 flowchart LR
-    P[1. proposal.md<br/>Propuesta y Alcance] --> D[2. design.md<br/>Diseño y Contratos]
-    D --> T[3. tasks.md<br/>Plan Atómico [ ]]
-    T --> E[4. evidence.md<br/>Validación con Pruebas]
+    P["1. proposal.md<br/>Alcance"] --> R{"Aprobación<br/>humana"}
+    R --> D["2. design.md<br/>Contratos"]
+    D --> T["3. tasks.md<br/>Plan"]
+    T --> E["4. evidence.md<br/>Evidencia"]
 ```
 
-1. **Fase de Propuesta (`proposal.md`)**: El desarrollador o la IA define el problema de negocio y el valor a entregar. Se fija el límite de alcance (Out-of-Scope) para evitar que el agente agregue código innecesario.
-2. **Fase de Diseño Técnico (`design.md`)**: Se definen los contratos TypeScript/Pydantic, los endpoints que se modificarán o crearán en `endpoints_registry.json`, los componentes reutilizables de `.sdd/components/` y la gestión de casos de borde.
-3. **Fase de Tareas Ejecutables (`tasks.md`)**: Desglose paso a paso. La IA debe marcar `[x]` a medida que completa cada tarea. Si una tarea falla, se detiene y reporta.
-4. **Fase de Cierre y Evidencia (`evidence.md`)**: La IA **no puede dar por completada la solicitud** sin adjuntar la salida del validador de endpoints (`python validate_endpoints.py`), la ejecución de tests Pytest/Playwright o las trazas de prueba.
+1. **Propuesta**: problema, valor esperado y límites de alcance. Una persona la aprueba antes de seguir.
+2. **Diseño**: contratos de datos, endpoints (registro en `backend/config/endpoints_registry.json`), componentes de `.sdd/components/` que se reutilizan y casos de borde.
+3. **Tareas**: se ejecutan en orden; si una falla, se detiene y se reporta.
+4. **Evidencia**: el cambio NO DEBE declararse terminado sin pegar la salida real de las verificaciones (pruebas, lint, validador de endpoints). Lo que no se pudo ejecutar se declara como "no ejecutado" con el motivo.
 
----
-
-## 🛠️ Cómo Inicializar un Nuevo Cambio
-
-Simplemente copia esta carpeta `changes_template/` dentro de `specs/changes/` de tu proyecto y renómbrala con la fecha y el nombre de la característica:
+## Cómo iniciar un cambio
 
 ```bash
-cp -r .sdd/changes_template specs/changes/2026-10-15-filtro-avanzado-pedidos/
+# Linux / macOS / Git Bash
+cp -r .sdd/changes_template specs/changes/2026-10-15-filtro-avanzado-pedidos
+rm specs/changes/2026-10-15-filtro-avanzado-pedidos/README.md
 ```
+
+```powershell
+# Windows PowerShell
+Copy-Item -Recurse .sdd\changes_template specs\changes\2026-10-15-filtro-avanzado-pedidos
+Remove-Item specs\changes\2026-10-15-filtro-avanzado-pedidos\README.md
+```
+
+La carpeta `specs/changes/` se versiona en Git junto con el código.

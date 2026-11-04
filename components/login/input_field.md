@@ -25,17 +25,19 @@ Este documento especifica los campos de entrada de datos para la página de logi
 
     <input
       id="login-doc"
-      name="documento"
+      name="numero_documento"
       type="text"
       inputmode="numeric"
-      placeholder="Ej. 1037645123"
+      placeholder="Ej. 1000000001"
       class="login-input-control"
       autocomplete="username"
+      aria-describedby="login-doc-error"
+      data-testid="input-username"
       required
     />
   </div>
   <!-- Mensaje de error condicional -->
-  <p class="login-input-error" role="alert" style="display: none;">El documento debe contener solo números</p>
+  <p id="login-doc-error" class="login-input-error" role="alert" hidden>El documento debe contener solo números</p>
 </div>
 ```
 
@@ -65,6 +67,8 @@ Este documento especifica los campos de entrada de datos para la página de logi
       placeholder="••••••••••••"
       class="login-input-control login-has-suffix"
       autocomplete="current-password"
+      aria-describedby="login-pass-error"
+      data-testid="input-password"
       required
     />
 
@@ -73,18 +77,25 @@ Este documento especifica los campos de entrada de datos para la página de logi
       type="button"
       class="login-input-toggle-btn"
       aria-label="Mostrar contraseña"
+      aria-controls="login-pass"
+      aria-pressed="false"
     >
       <!-- Ícono Ojo Cerrado / Abierto en SVG -->
-      <svg class="login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2"/>
         <circle cx="12" cy="12" r="3" stroke-width="2"/>
       </svg>
     </button>
   </div>
   <!-- Mensaje de error condicional -->
-  <p class="login-input-error" role="alert" style="display: none;">La contraseña es requerida</p>
+  <p id="login-pass-error" class="login-input-error" role="alert" hidden>La contraseña es requerida</p>
 </div>
 ```
+
+---
+
+### 2.2. Comportamiento del toggle
+Al pulsar el botón se alterna `type="password"` / `type="text"`, se actualiza `aria-pressed` y `aria-label` ("Mostrar contraseña" / "Ocultar contraseña") y el foco permanece en el botón. El valor de la contraseña nunca se guarda en storage.
 
 ---
 
@@ -105,12 +116,12 @@ Este documento especifica los campos de entrada de datos para la página de logi
 }
 
 .login-input-label {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #cbd5e1; /* Slate 300 */
+  color: var(--label-color);
 }
 
 .login-input-box {
@@ -127,7 +138,7 @@ Este documento especifica los campos de entrada de datos para la página de logi
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b; /* Slate 500 */
+  color: var(--text-muted);
   pointer-events: none;
   transition: color 0.2s ease;
   z-index: 2;
@@ -142,14 +153,14 @@ Este documento especifica los campos de entrada de datos para la página de logi
 .login-input-control {
   width: 100%;
   padding: 0.85rem 1rem 0.85rem 2.75rem;
-  background-color: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.75rem;
-  color: #f8fafc;
-  font-size: 0.875rem;
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-lg);
+  color: var(--input-text);
+  font-size: var(--font-size-sm);
   font-family: inherit;
   outline: none;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
   box-sizing: border-box;
 }
 
@@ -158,22 +169,21 @@ Este documento especifica los campos de entrada de datos para la página de logi
 }
 
 .login-input-control::placeholder {
-  color: #475569;
+  color: var(--input-placeholder);
 }
 
 .login-input-control:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  background-color: rgba(15, 23, 42, 0.8);
+  border-color: var(--input-border-hover);
 }
 
 .login-input-control:focus {
-  border-color: #10b981; /* Esmeralda Greenyard */
-  background-color: rgba(15, 23, 42, 0.95);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  border-color: var(--input-focus-border);
+  background-color: var(--bg-input-focus);
+  box-shadow: var(--shadow-input-focus);
 }
 
 .login-input-box:focus-within .login-input-prefix-icon {
-  color: #10b981;
+  color: var(--brand-primary);
 }
 
 /* Botón interactivo para ver/ocultar contraseña */
@@ -182,37 +192,42 @@ Este documento especifica los campos de entrada de datos para la página de logi
   right: 0.875rem;
   background: none;
   border: none;
-  color: #64748b;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: color 0.2s ease, transform 0.15s ease;
-  outline: none;
   z-index: 2;
 }
 
+.login-input-toggle-btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
 .login-input-toggle-btn:hover {
-  color: #f1f5f9;
+  color: var(--text-primary);
   transform: scale(1.1);
 }
 
 /* Estado de Error */
 .login-input-group.has-error .login-input-control {
-  border-color: #f43f5e;
-  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.2);
+  border-color: var(--border-error);
+  box-shadow: var(--shadow-error-focus);
   animation: loginShake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 .login-input-group.has-error .login-input-prefix-icon {
-  color: #f43f5e;
+  color: var(--status-error);
 }
 
 .login-input-error {
   font-family: inherit;
-  font-size: 0.75rem;
-  color: #fb7185;
+  font-size: var(--font-size-xs);
+  color: var(--status-error);
   margin: 0.25rem 0 0 0;
 }
 
@@ -221,5 +236,9 @@ Este documento especifica los campos de entrada de datos para la página de logi
   20%, 80% { transform: translate3d(2px, 0, 0); }
   30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
   40%, 60% { transform: translate3d(3px, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-input-group.has-error .login-input-control { animation: none; }
 }
 ```

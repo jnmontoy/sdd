@@ -97,7 +97,7 @@ export const TruncatedTooltip: React.FC<TruncatedTooltipProps> = ({
 }
 
 .tt-wrapper:focus-visible {
-  box-shadow: 0 0 0 2px var(--color-primary, #10B981);
+  box-shadow: 0 0 0 2px var(--brand-primary);
 }
 
 .tt-text {
@@ -113,10 +113,10 @@ export const TruncatedTooltip: React.FC<TruncatedTooltipProps> = ({
 .tt-text-expanded {
   white-space: normal;
   word-break: break-word;
-  background: var(--bg-surface, #F8FAFC);
+  background: var(--bg-card);
   padding: 4px 8px;
   border-radius: 4px;
-  border: 1px solid var(--border-subtle, #CBD5E1);
+  border: 1px solid var(--border-subtle);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   position: relative;
   z-index: 15;

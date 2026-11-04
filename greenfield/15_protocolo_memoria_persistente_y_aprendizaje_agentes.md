@@ -1,53 +1,60 @@
-# Protocolo 15: Sistema de Memoria Persistente y Aprendizaje Continuo para Agentes de IA
-## Ecosistema Greenfield / Jolifoods — Metodología SDD
+# Protocolo 15: memoria persistente del proyecto y aprendizaje continuo
 
-Este protocolo establece los lineamientos obligatorios para eliminar la amnesia entre sesiones de los agentes de Inteligencia Artificial (Claude Code, Cursor, Antigravity, OpenCode, GitHub Copilot).
+Cómo conservar en el repositorio las decisiones, los errores resueltos y las convenciones de un proyecto, para que ni las personas nuevas ni los asistentes de IA (Claude Code, Cursor, GitHub Copilot, OpenCode, Antigravity, etc.) empiecen cada sesión desde cero.
 
-Inspirado en el sistema **Engram™** y la arquitectura de **ADRs (Architectural Decision Records)**, este protocolo garantiza que el conocimiento del proyecto no se degrade con el paso del tiempo.
+Se basa en los registros de decisiones de arquitectura (**ADR**) y en catálogos de lecciones aprendidas. Plantilla: [`../memory/`](../memory/README.md).
 
----
-
-## 1. El Fenómeno de la Amnesia del LLM y su Costo Operativo
-
-En equipos de ingeniería tradicionales que usan IA:
-* El agente empieza cada día con una "mente en blanco".
-* Vuelve a cometer los mismos errores de concurrencia, serialización o CORS que ya se resolvieron la semana anterior.
-* El desarrollador gasta entre 15 y 30 minutos por sesión recordándole al modelo: *"recuerda que usamos FastAPI para lectura y Django para permisos, no uses SQLAlchemy..."*.
+Las palabras **DEBE / DEBERÍA / PUEDE** siguen la RFC 2119.
 
 ---
 
-## 2. Los Dos Ciclos de la Memoria Persistente
+## 1. Problema que resuelve
+
+* Un asistente de IA no recuerda sesiones anteriores: cada conversación empieza sin el contexto del proyecto.
+* Sin registro escrito se repiten errores ya resueltos (concurrencia, serialización, CORS) y se vuelven a proponer alternativas que el equipo descartó.
+* Se pierde tiempo reexplicando decisiones ("usamos FastAPI para lecturas y Django para permisos; no uses SQLAlchemy").
+
+---
+
+## 2. Ciclo de uso
 
 ```mermaid
 flowchart TD
-    Inicio[Nueva Sesión con Agente de IA] --> Recall[1. FASE RECALL: Consulta de Memoria]
-    Recall --> R1[Leer memory/adrs/ -> Decisiones tomadas]
-    Recall --> R2[Leer memory/learnings/conventions.md -> Reglas de negocio]
-    Recall --> R3[Leer memory/learnings/bug_lessons.md -> Bugs conocidos a evitar]
-    
-    R1 & R2 & R3 --> Ejecucion[2. FASE EJECUCIÓN: Desarrollo guiado por SDD]
-    
-    Ejecucion --> Decision{¿Se resolvió un bug complejo o se tomó una decisión arquitectónica?}
-    Decision -->|SÍ| Log[3. FASE LOG LEARNINGS: Registro de Aprendizaje]
-    Decision -->|NO| Fin[Fin de Tarea]
-    
-    Log --> L1[Añadir entrada en bug_lessons.md o nuevo ADR]
+    Inicio[Nueva sesión de trabajo] --> Recall[1. Consultar memoria]
+    Recall --> R1[memory/adrs/: decisiones vigentes]
+    Recall --> R2[memory/learnings/conventions.md: convenciones]
+    Recall --> R3[memory/learnings/bug_lessons.md: errores conocidos]
+    R1 & R2 & R3 --> Ejecucion[2. Ejecutar la tarea]
+    Ejecucion --> Decision{¿Se resolvió un error difícil o se tomó una decisión de arquitectura?}
+    Decision -->|Sí| Log[3. Registrar aprendizaje]
+    Decision -->|No| Fin[Fin]
+    Log --> L1[Entrada en bug_lessons.md o ADR nuevo]
     L1 --> Fin
 ```
 
 ---
 
-## 3. Normas Inflexibles de Memoria para la IA
+## 3. Reglas
 
-1. **Prohibido Contradecir un ADR Aceptado**: Si existe un ADR en `memory/adrs/` en estado `Aceptado`, la IA tiene terminantemente prohibido sugerir tecnologías contrarias a menos que el usuario exprese explícitamente su intención de revocar el ADR.
-2. **Consulta Obligatoria de `bug_lessons.md`**: Antes de tocar código en endpoints híbridos, paginadores, migraciones o bucles masivos, la IA debe cotejar el catálogo de bugs conocidos para no repetir errores históricos.
-3. **Registro Obligatorio de Nuevas Lecciones**: Todo bug que haya requerido más de 2 intentos de corrección o investigación profunda debe registrarse inmediatamente en `memory/learnings/bug_lessons.md` con su síntoma, causa raíz, solución y regla preventiva.
+1. **Respetar los ADR aceptados.** Mientras un ADR esté en estado "Aceptado", no DEBERÍA proponerse una alternativa contraria salvo que una persona pida explícitamente revisarlo. Si hay razones nuevas para cambiarlo, se propone un ADR nuevo que lo reemplace, con el contexto que cambió. **Por qué:** evita reabrir decisiones sin información nueva, sin impedir que se corrijan.
+2. **Consultar las lecciones antes de tocar áreas sensibles.** Antes de modificar endpoints híbridos Django/FastAPI, paginadores, migraciones o procesos masivos, se DEBERÍA revisar `bug_lessons.md`.
+3. **Registrar lo aprendido.** Un error que requirió más de un intento de corrección o una investigación DEBERÍA registrarse en `bug_lessons.md` con síntoma, causa raíz, solución y regla preventiva.
+4. **Sin datos sensibles.** La memoria NO DEBE contener credenciales, datos personales ni información confidencial del negocio (costos, fórmulas, recetas).
+5. **Mantenimiento.** Las entradas obsoletas se marcan como tales (no se borran sin dejar rastro), para que la memoria no se convierta en ruido.
+
+> **Estado de implementación**: la plantilla `memory/` se copia al proyecto con `stack/init_project.py`. Que un agente la lea depende de que el archivo de instrucciones del proyecto lo indique (ver §4); el SDD no verifica que se mantenga actualizada.
 
 ---
 
-## 4. Integración con Servidores MCP y Herramientas Externas
+## 4. Integración con herramientas
 
-Este estándar de archivos Markdown estructurados está diseñado para integrarse de forma nativa con:
-* **Engram™ (Gentleman Programming)**: Servidor MCP local en Go + SQLite/FTS5 que realiza búsqueda semántica sobre la carpeta `memory/`.
-* **Knowledge Items (Antigravity)**: Carga contextual automática al iniciar la conversación.
-* **Cursor / Claude Code**: Inyección directa en el system prompt mediante `@memory`.
+Los archivos son Markdown plano: cualquier persona o herramienta puede leerlos. Para que un agente los consulte de forma sistemática, se referencian desde su archivo de instrucciones:
+
+| Herramienta | Mecanismo |
+|---|---|
+| Claude Code | `CLAUDE.md` en la raíz (admite importar archivos con `@ruta/archivo.md`). |
+| Cursor | Reglas de proyecto en `.cursor/rules/` (o el formato heredado `.cursorrules`). |
+| GitHub Copilot | `.github/copilot-instructions.md`. |
+| OpenCode y otros | `AGENTS.md` en la raíz. |
+
+Opcionalmente, un servidor MCP (*Model Context Protocol*) de memoria PUEDE indexar estas notas; por ejemplo Engram (Gentleman Programming), que usa búsqueda de texto completo sobre SQLite (FTS5). El SDD no depende de ninguno: la fuente de verdad son los archivos versionados en Git.

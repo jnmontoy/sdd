@@ -43,7 +43,7 @@ Comprende dos pantallas:
             id="recovery-id" 
             name="identificador" 
             type="text" 
-            placeholder="Ej. 1037645123 o usuario@jolifoods.com" 
+            placeholder="Ej. 1000000001 o usuario@ejemplo.com"
             class="login-input-control" 
             required 
           />
@@ -191,7 +191,7 @@ Comprende dos pantallas:
 }
 
 .login-recovery-back-link:hover {
-  color: var(--brand-accent);
+  color: var(--brand-primary);
 }
 
 /* Reglas de Complejidad de Contraseña */

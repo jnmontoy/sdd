@@ -1,6 +1,7 @@
 /* ==========================================================================
-   SISTEMA DE VARIABLES DE DISEÑO (CSS PURO) — GREENYARD / JOLIFOODS SDD
-   Control Central de Textos, Superficies y Tematización Día/Noche
+   SISTEMA DE VARIABLES DE DISEÑO (CSS PURO) — SDD JOLI FOODS
+   Fuente única de tokens: textos, superficies, estados y tema Día/Noche.
+   La especificación y el catálogo de tokens están en variables.md.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -69,6 +70,43 @@
   --status-error-bg: rgba(244, 63, 94, 0.15);
   --status-warning-bg: rgba(245, 158, 11, 0.15);
   --status-info-bg: rgba(14, 165, 233, 0.15);
+
+  /* --- Escala de espaciado --- */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+
+  /* --- Acentos categóricos (iconos de KPI, series de gráficas, categorías) ---
+     Uso: color de icono/serie. Para fondos translúcidos use
+     color-mix(in srgb, var(--accent-*) 12%, transparent). */
+  --accent-blue: #3b82f6;
+  --accent-cyan: #06b6d4;
+  --accent-indigo: #6366f1;
+  --accent-violet: #8b5cf6;
+  --accent-excel: #107c41;        /* Botón "Exportar a Excel" (color reconocible de la herramienta) */
+  --accent-excel-hover: #0e6835;
+
+  /* --- Superficies que NO cambian con el tema ---
+     Papel de documentos (PDF, firma) y capas sobre video/cámara o visores. */
+  --surface-paper: #ffffff;
+  --ink-signature: #0f172a;       /* Trazo de firma: debe verse sobre papel blanco impreso */
+  --overlay-scrim: rgba(15, 23, 42, 0.72);     /* Fondo de modales y cortinas sobre video */
+  --overlay-surface: rgba(15, 23, 42, 0.85);   /* Píldoras/controles flotantes sobre video o PDF */
+  --overlay-border: rgba(255, 255, 255, 0.12);
+  --overlay-control-hover: rgba(255, 255, 255, 0.2);
+  --text-on-overlay: #f8fafc;
+
+  /* --- Series de gráficas (colores de datos) --- */
+  --chart-primary: var(--brand-primary);
+  --chart-secondary: var(--accent-blue);
+  --chart-warning: var(--status-warning);
+  --chart-danger: var(--status-error);
+  --chart-accent: var(--accent-cyan);
+  --chart-purple: var(--accent-violet);
 }
 
 /* --------------------------------------------------------------------------
@@ -125,6 +163,14 @@
   --alert-error-border: rgba(244, 63, 94, 0.3);
   --alert-error-text: #fecdd3;
 
+  /* Gráficas: rejilla, ejes y tooltip */
+  --chart-grid: rgba(51, 65, 85, 0.5);
+  --chart-text: #94a3b8;
+  --chart-tooltip-bg: rgba(30, 41, 59, 0.95);
+  --chart-tooltip-border: rgba(255, 255, 255, 0.1);
+  --chart-tooltip-text: #f8fafc;
+  --chart-tooltip-label: #94a3b8;
+
   /* --- Aliases Canónicos de Compatibilidad --- */
   --background: var(--bg-viewport);
   --surface: var(--bg-viewport);
@@ -133,11 +179,11 @@
   --surface-active: var(--bg-active);
   --border-color: var(--border-subtle);
 
-  /* Controles de Formulario e Inputs (Estándar bi/cartera) */
+  /* Controles de formulario e inputs */
   --input-height: 38px;
   --input-bg: var(--bg-card);
   --input-border: var(--border-subtle);
-  --input-border-hover: rgba(99, 102, 241, 0.35);
+  --input-border-hover: var(--border-strong);
   --input-focus-border: var(--brand-primary);
   --input-focus-ring: rgba(16, 185, 129, 0.25);
   --input-text: var(--text-primary);
@@ -198,6 +244,14 @@
   --alert-error-border: #fca5a5;
   --alert-error-text: #991b1b;
 
+  /* Gráficas: rejilla, ejes y tooltip */
+  --chart-grid: rgba(203, 213, 225, 0.8);
+  --chart-text: #64748b;
+  --chart-tooltip-bg: rgba(15, 23, 42, 0.92);
+  --chart-tooltip-border: rgba(255, 255, 255, 0.15);
+  --chart-tooltip-text: #f8fafc;
+  --chart-tooltip-label: #cbd5e1;
+
   /* --- Aliases Canónicos de Compatibilidad --- */
   --background: var(--bg-viewport);
   --surface: var(--bg-viewport);
@@ -206,7 +260,7 @@
   --surface-active: var(--bg-active);
   --border-color: var(--border-subtle);
 
-  /* Controles de Formulario e Inputs (Estándar bi/cartera) */
+  /* Controles de formulario e inputs */
   --input-height: 38px;
   --input-bg: #ffffff;
   --input-border: #cbd5e1;
@@ -216,6 +270,80 @@
   --input-text: #0f172a;
   --input-placeholder: #94a3b8;
   --label-color: #475569;
+}
+
+/* --------------------------------------------------------------------------
+   3b. ALIAS DE COMPATIBILIDAD (OBSOLETOS)
+   Nombres heredados que aparecen en especificaciones y proyectos anteriores.
+   Se resuelven contra los tokens canónicos para que nada quede sin color.
+   El código nuevo NO DEBERÍA usarlos: use el token canónico de la derecha.
+   Se declaran sobre cada contenedor con tema para que se recalculen si el
+   atributo data-theme se aplica en un elemento distinto de <html>.
+   -------------------------------------------------------------------------- */
+:root,
+[data-theme],
+[data-bs-theme] {
+  /* Marca y estados */
+  --primary: var(--brand-primary);
+  --color-primary: var(--brand-primary);
+  --color-primary-light: var(--brand-primary-light);
+  --color-primary-dark: var(--brand-primary-hover);
+  --accent-color: var(--brand-primary);
+  --color-danger: var(--status-error);
+  --color-warning: var(--status-warning);
+  --error: var(--status-error);
+
+  /* Texto */
+  --color-text-primary: var(--text-primary);
+  --color-text-main: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  /* Superficies */
+  --bg-base: var(--bg-viewport);
+  --color-bg-base: var(--bg-viewport);
+  --color-bg-body: var(--bg-viewport);
+  --color-bg-surface-dim: var(--bg-viewport);
+  --bg-surface: var(--bg-card);
+  --color-bg-card: var(--bg-card);
+  --color-bg-surface: var(--bg-card);
+  --color-bg-surface-elevated: var(--bg-elevated);
+  --bg-secondary: var(--bg-elevated);
+  --bg-muted: var(--bg-elevated);
+  --bg-tertiary: var(--bg-active);
+  --color-bg-card-hover: var(--bg-hover);
+  --color-bg-input: var(--bg-input);
+
+  /* Bordes y foco */
+  --color-border: var(--border-subtle);
+  --color-border-subtle: var(--border-subtle);
+  --border-default: var(--border-subtle);
+  --color-border-hover: var(--border-strong);
+  --focus-ring: var(--shadow-input-focus);
+
+  /* Tipografía */
+  --weight-regular: var(--font-weight-regular);
+  --weight-medium: var(--font-weight-medium);
+  --weight-semibold: var(--font-weight-semibold);
+  --weight-bold: var(--font-weight-bold);
+  --weight-extrabold: var(--font-weight-extrabold);
+  --text-xs: var(--font-size-xs);
+  --text-sm: var(--font-size-sm);
+  --text-base: var(--font-size-base);
+  --text-lg: var(--font-size-lg);
+  --text-xl: var(--font-size-xl);
+  --text-2xl: var(--font-size-2xl);
+
+  /* Sombras, radios, tiempos y layout */
+  --shadow-sm: var(--shadow-card);
+  --shadow-md: var(--shadow-popover);
+  --shadow-xl: var(--shadow-modal);
+  --radius-pill: var(--radius-full);
+  --border-radius-sm: var(--radius-sm);
+  --border-radius-md: var(--radius-md);
+  --border-radius-lg: var(--radius-lg);
+  --transition-normal: var(--transition-base);
+  --topheader-height: var(--topbar-height);
 }
 
 /* ==========================================================================
@@ -354,7 +482,7 @@
 }
 
 .joli-modal-justification-counter.is-valid {
-  color: var(--status-success, #10b981);
+  color: var(--status-success);
   font-weight: 700;
 }
 
@@ -377,7 +505,7 @@
 }
 
 .joli-modal-textarea:focus {
-  border-color: var(--brand-primary, #6366f1) !important;
+  border-color: var(--brand-primary) !important;
   box-shadow: 0 0 0 3px var(--input-focus-ring, rgba(16, 185, 129, 0.25)) !important;
 }
 

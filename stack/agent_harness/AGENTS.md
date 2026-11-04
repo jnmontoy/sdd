@@ -1,67 +1,53 @@
-# Guía Operativa de Inteligencia Artificial (AGENTS.md)
-## Estándar Oficial de Ingeniería Greenfield / Jolifoods — SDD
+# Guía para agentes de IA (AGENTS.md)
 
-Este archivo es leído automáticamente por agentes de IA (Claude Code, Cursor, Antigravity, OpenCode, GitHub Copilot).
-Toda IA que opere en este repositorio debe cumplir de forma inflexible las siguientes directrices operativas.
+Este archivo lo leen automáticamente los asistentes de código (Claude Code, Cursor, Copilot y otros). Resume las reglas del proyecto; la fuente completa es la normativa de buenas prácticas del SDD (`.sdd/greenfield/00_normativa_buenas_practicas_y_auditoria.md`).
 
----
+Palabras clave: **DEBE / NO DEBE** = obligatorio; **DEBERÍA / NO DEBERÍA** = recomendado, se puede desviar dejando la razón en un ADR (`memory/adrs/`) o si el usuario lo pide expresamente.
 
-## 🛑 1. Guardrails de Seguridad y Deny-List (Innegociable)
-
-1. **PROHIBIDO MODIFICAR O LEER ARCHIVOS DE SECRETOS**:
-   * Queda estrictamente prohibido alterar o exponer credenciales de `.env`, `.env.local`, llaves privadas (`*.pem`, `*.key`), tokens de API o certificados.
-2. **PROHIBIDO USAR RUTAS ABSOLUTAS (BP-07)**:
-   * Toda ruta debe ser relativa a `BASE_DIR` (`Path(__file__).resolve().parent.parent`). Nunca cablear `C:\...` ni `/home/...`.
-3. **AISLAMIENTO DE ENTORNO VIRTUAL (BP-15)**:
-   * Toda ejecución de Python o pip debe realizarse dentro del `.venv` del proyecto (`.\.venv\Scripts\python.exe`).
+Idioma: respuestas, comentarios y documentación en español.
 
 ---
 
-## 🧠 2. Protocolo de Memoria Persistente (Recall & Log)
+## 1. Seguridad
 
-Antes de responder o escribir una sola línea de código:
-1. **Consulta Obligatoria**:
-   * Revisa `memory/adrs/`: Respeta las decisiones de arquitectura ya tomadas.
-   * Revisa `memory/learnings/conventions.md`: Aplica las convenciones de datos y negocio.
-   * Revisa `memory/learnings/bug_lessons.md`: Verifica que tu propuesta no reincida en bugs conocidos (N+1, leaks de conexiones, etc.).
-2. **Registro de Aprendizajes**:
-   * Si solucionas un bug complejo o tomas una decisión técnica de impacto, registra el aprendizaje en `memory/learnings/bug_lessons.md`.
+1. NO DEBE leer, mostrar ni modificar secretos (`.env`, `*.pem`, `*.key`, tokens). Para configurar, use `.env.example`.
+2. NO DEBE instalar paquetes fuera del entorno virtual del proyecto (BP-15): `.\.venv\Scripts\python.exe -m pip ...` (Windows) o `./.venv/bin/python -m pip ...` (Linux/macOS). **Por qué:** instalar en el Python global mezcla versiones entre proyectos y no se puede reproducir.
+3. NO DEBE escribir rutas absolutas de disco ni URLs de servidor en el código (BP-07); use `BASE_DIR` en el backend y `ENDPOINTS` en el frontend (BP-09).
+4. Los tokens de sesión NO DEBEN guardarse en `localStorage`/`sessionStorage`: el access token vive en memoria y el refresh en cookie HttpOnly (BP-18).
 
----
+## 2. Antes de programar
 
-## ⚖️ 3. Proporcionalidad del Trabajo (Principio ODD)
+1. Revise `memory/adrs/` (decisiones vigentes) y `memory/learnings/` (convenciones y errores ya conocidos).
+2. Ajuste el esfuerzo al tamaño del cambio:
+   - **Nivel 1, corrección pequeña:** se hace directamente y se verifica que las pruebas sigan pasando.
+   - **Nivel 2, funcionalidad o refactor:** cree `specs/changes/AAAA-MM-DD-nombre/` con `proposal.md`, `design.md`, `tasks.md` y `evidence.md` (plantilla en `specs/changes/_plantilla/`). **Por qué:** deja escrito qué se decidió y con qué evidencia se dio por terminado.
+   - **Nivel 3, módulo nuevo:** siga la entrevista guiada del SDD (`greenfield/03`).
+3. Si resuelve un error difícil, regístrelo en `memory/learnings/bug_lessons.md`.
 
-* **Nivel 1 (Micro-Fix / Hotfix)**: Si es un cambio cosmético o corrección de texto simple, ejecútalo de inmediato verificando no romper tests ni contratos.
-* **Nivel 2 (Feature Incremental / Cambio Atómico)**:
-  * Queda **PROHIBIDO programar a ciegas**.
-  * Crea primero la carpeta `specs/changes/[fecha]-[nombre-cambio]/`.
-  * Rellena `proposal.md`, `design.md` y `tasks.md`.
-  * Ejecuta una tarea a la vez marcando `[x]`.
-  * Adjunta la salida real en `evidence.md` antes de concluir.
-* **Nivel 3 (Nuevo Módulo Completo)**: Aplica la entrevista guiada del SDD.
+## 3. Backend
 
----
+1. Operaciones con 2 o más escrituras dependientes DEBEN ir en `transaction.atomic()` (BP-12).
+2. Consultas con relaciones DEBEN usar `select_related`/`prefetch_related` (sin N+1). NO DEBERÍA haber consultas a la base de datos dentro de ciclos (BP-11).
+3. Las inserciones masivas DEBERÍAN usar `bulk_create`/`bulk_update` (BP-13). Tenga en cuenta que no ejecutan `save()` ni señales.
+4. Todo endpoint nuevo DEBE registrarse en `backend/config/endpoints_registry.json` y en `frontend/src/services/endpoints.ts`.
+5. Las vistas son privadas por defecto (BP-05); una vista pública lo declara explícitamente.
 
-## 🎨 4. Reglas Inflexibles de Frontend y UI
+## 4. Frontend
 
-1. **PROHIBIDO INVENTAR CSS AD-HOC**:
-   * Reutiliza exclusivamente los componentes auditados y variables de diseño del SDD. No crees archivos `.css` aislados improvisados.
-2. **LAYOUT 100% HORIZONTAL**:
-   * Prohibido encoger la vista con `max-w-xl mx-auto`. La interfaz debe extenderse a lo largo de toda la pantalla de borde a borde.
-3. **RIGHT DRAWER PARA EDICIÓN Y CREACIÓN**:
-   * Todo formulario CRUD se despliega en panel lateral derecho de 560px (`drawer.md`), nunca en modales flotantes centrados.
-4. **JUSTIFICACIÓN EN ACCIONES CRÍTICAS**:
-   * Toda anulación o borrado debe exigir motivo con mínimo 10 caracteres (`confirm_modal.md`).
+1. DEBERÍA construir con los componentes y tokens del SDD (`variables.css`) antes de crear estilos nuevos. Si un estilo nuevo es necesario, use tokens `var(--...)`, nunca colores fijos.
+2. Las pantallas de trabajo DEBERÍAN ocupar todo el ancho disponible. Se centran solo los modales y la tarjeta de login.
+3. La creación y edición en CRUD DEBERÍA hacerse en el panel lateral derecho (drawer); los modales quedan para confirmaciones, firmas, escáneres y sesión vencida.
+4. Las acciones de fila (2 o más botones) DEBERÍAN agruparse con `btn-group btn-group-sm` y llevar `aria-label`.
+5. Las acciones destructivas DEBEN pedir confirmación; si el negocio exige trazabilidad, también un motivo.
 
----
+## 5. Verificación antes de dar algo por terminado
 
-## 🔌 5. Reglas Inflexibles de Backend y Base de Datos
+Ejecute y pegue la salida real en `evidence.md` (cambios de nivel 2):
 
-1. **CENTRALIZACIÓN DE ENDPOINTS (BP-09)**:
-   * Todo endpoint debe registrarse en `backend/config/endpoints_registry.json` y consumirse desde `src/services/endpoints.ts`.
-2. **TRANSACCIONALIDAD ATÓMICA (BP-12)**:
-   * Envuelve operaciones dependientes en `with transaction.atomic():`.
-3. **PERSISTENCIA EN BLOQUE (BP-13)**:
-   * Prohibido `.save()` individual en bucles; usa `bulk_create` / `bulk_update`.
-4. **VALIDACIÓN AUTOMÁTICA DE ENDPOINTS**:
-   * Ejecuta siempre `python stack/validate_endpoints.py` para certificar que ningún contrato esté roto.
+```powershell
+.\.venv\Scripts\python.exe -m pytest                                   # pruebas del backend (pruebas/)
+npm --prefix frontend run typecheck; npm --prefix frontend test        # tipos y pruebas de React
+.\.venv\Scripts\python.exe pruebas\validate_endpoints.py --base-url http://localhost:8000
+```
+
+NO DEBE declarar una tarea como terminada sin esa evidencia, ni entregar archivos con código truncado o marcadores del tipo `// ... resto del código ...` (BP-14).

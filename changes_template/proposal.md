@@ -1,47 +1,57 @@
-# Propuesta de Cambio: [Nombre Breve de la Funcionalidad o Refactor]
+# Propuesta de cambio: [Nombre breve de la funcionalidad o refactor]
 
-## 📌 Metadatos del Cambio
-* **Identificador**: `[YYYY-MM-DD]-[nombre-cambio]`
-* **Autor / Responsable**: `[Nombre del Ingeniero o Rol]`
-* **Fecha de Creación**: `[YYYY-MM-DD]`
-* **Nivel ODD**: Nivel 2 (Feature Incremental)
-* **Estado**: `[Borrador | Aprobado | En Ejecución | Completado | Descartado]`
-
----
-
-## 1. Problema de Negocio y Motivación
-> Describe qué problema actual existe, qué limitación técnica se presenta o qué nueva necesidad operativa de la organización se busca resolver con este cambio.
-
-* **Situación Actual**:
-  * [Explicar cómo funciona hoy el sistema]
-* **Impacto Negativo o Cuello de Botella**:
-  * [Explicar por qué es necesario modificarlo ahora]
+## Metadatos
+* **Identificador**: `AAAA-MM-DD-nombre-cambio`
+* **Responsable (rol)**: `[Rol o equipo]`
+* **Fecha de creación**: `AAAA-MM-DD`
+* **Nivel**: 2 (cambio atómico)
+* **Estado**: `[Borrador | Aprobado | En ejecución | Completado | Descartado]`
+* **Aprobado por / fecha**: `[Rol] — AAAA-MM-DD`
 
 ---
 
-## 2. Solución Propuesta (Alcance)
-> Define con precisión qué se va a construir o modificar.
+## 1. Problema y motivación
+> Qué ocurre hoy, a quién afecta y por qué conviene cambiarlo ahora. Distingue hechos (datos, incidentes) de supuestos.
 
-* [ ] Capacidad A: [Descripción precisa de la nueva capacidad]
-* [ ] Capacidad B: [Descripción de ajustes a componentes existentes]
-* [ ] Capacidad C: [Ajustes en contratos o modelos de datos]
-
----
-
-## 3. Límites Estrictos de Alcance (Out-of-Scope)
-> **REGLA DE ORO CONTRA LA ALUCINACIÓN Y OVER-ENGINEERING**:
-> La IA tiene prohibido tocar o agregar código fuera de esta lista. Lo que esté listado aquí NO DEBE TOCARSE en este cambio.
-
-* ❌ **NO incluye**: [Ejemplo: No se modifica la tabla de usuarios ni el flujo de login]
-* ❌ **NO incluye**: [Ejemplo: No se agregan nuevas dependencias al package.json]
-* ❌ **NO incluye**: [Ejemplo: No se rediseñan las vistas existentes, solo se añade el modal]
+* **Situación actual**: [cómo funciona hoy]
+* **Impacto**: [qué cuesta no hacerlo: tiempo, errores, riesgo]
+* **Evidencia**: [ticket, métrica, queja recurrente; o "supuesto, sin medir"]
 
 ---
 
-## 4. Criterios de Éxito y Aceptación
-> Condiciones innegociables para considerar el cambio exitoso.
+## 2. Solución propuesta (alcance)
+* [ ] Capacidad A: [descripción concreta]
+* [ ] Capacidad B: [ajuste a componente existente]
+* [ ] Capacidad C: [cambio en contrato o modelo de datos]
 
-1. [Criterio 1: El endpoint responde en < 200ms con paginación server-side]
-2. [Criterio 2: La interfaz reutiliza `.sdd/components/drawer/drawer.md` sin inventar CSS]
-3. [Criterio 3: El validador `validate_endpoints.py` pasa con Score 100%]
-4. [Criterio 4: Cero errores en TypeScript y Pytest]
+### Alternativas consideradas
+| Alternativa | Por qué se descarta |
+|---|---|
+| [No hacer nada] | [...] |
+| [Opción B] | [...] |
+
+---
+
+## 3. Fuera de alcance
+> Lo listado aquí NO DEBE modificarse en este cambio. Si durante la ejecución aparece la necesidad, se registra como cambio nuevo.
+
+* NO incluye: [ej. modificar la tabla de usuarios o el flujo de login]
+* NO incluye: [ej. agregar dependencias nuevas a `package.json` o `requirements.txt`]
+* NO incluye: [ej. rediseñar vistas existentes]
+
+---
+
+## 4. Impacto en otras áreas o sistemas
+> Quién más se ve afectado (otras unidades de negocio, integraciones, reportes, usuarios de otros módulos) y cómo.
+
+* [ej. El reporte de inventario consume este endpoint: requiere aviso de deprecación (protocolo 09)]
+
+---
+
+## 5. Criterios de aceptación
+> Condiciones verificables. Cada una debe poder demostrarse en `evidence.md`.
+
+1. [ej. `GET /api/v1/pedidos/?estado=...` responde con paginación en servidor y p95 < 500 ms en staging con N registros]
+2. [ej. La interfaz usa `components/drawer/drawer.md` sin CSS nuevo]
+3. [ej. `pruebas/validate_endpoints.py` termina con código de salida 0]
+4. [ej. Pruebas nuevas en `pruebas/` cubren el caso feliz y los casos de borde de `design.md`]

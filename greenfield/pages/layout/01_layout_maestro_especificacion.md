@@ -1,99 +1,84 @@
-﻿# 01. Especificación del Layout Maestro Corporativo (App Shell)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
+﻿# 01. Especificación del Layout Maestro (App Shell)
+## Joli Foods — Spec-Driven Development (SDD)
 
-Esta especificación describe la estructura envolvente (**App Shell / Layout Maestro**) en la que residen todas las vistas de la aplicación una vez superado el proceso de autenticación.
-
-Garantiza una experiencia de usuario consistente, persistencia del **Modo Noche / Modo Día**, control de sesión activa y manejo centralizado de expiración de sesión (HTTP 401).
+Estructura envolvente (*App Shell*) de todas las vistas tras iniciar sesión: barra superior, menú lateral, área de contenido, tema noche/día y manejo de sesión vencida.
 
 ---
 
-## 1. Topología del Layout Maestro
+## 1. Topología
 
 ```
 +-----------------------------------------------------------------------------+
-| Top Navbar (64px Fija) - Logo, Título Proyecto, Tema Noche/Día, Perfil/Salir|
-+------------------------------------+----------------------------------------+
-|                                    |                                        |
-| Sidebar de Módulos (260px o 76px)  |  Área de Contenido Dinámico (<main>)   |
-| - Tablero Principal                |  - Vistas de Negocio                   |
-| - Operaciones                      |  - Tablas, Formularios, Gráficos       |
-| - Reportes                         |                                        |
-| - Auditoría                        |                                        |
-|                                    |                                        |
-+------------------------------------+----------------------------------------+
+| Barra superior (var(--topbar-height), 100% del ancho)                        |
+| [☰] Logo + nombre del proyecto                  [Tema] [Menú de perfil ▾]   |
++------------------------------+----------------------------------------------+
+| Menú lateral (260px / 76px)  | Área de contenido <main> (ocupa el resto)    |
+| - Tablero                    | - Tablas, filtros, KPIs y gráficos al 100%   |
+| - Módulos según permisos     |   del ancho disponible                       |
++------------------------------+----------------------------------------------+
+```
+
+### Regla de ancho (DEBERÍA)
+- Las vistas autenticadas DEBERÍAN ocupar el 100% del ancho disponible (`container-fluid`, `width: 100%`), sin contenedores estrechos centrados (`max-w-*`, `mx-auto` como contenedor principal).
+- **Por qué:** las pantallas operativas son tablas y tableros con muchas columnas; un contenedor angosto obliga a desplazarse horizontalmente y desperdicia el monitor.
+- **Excepciones:** modales, el diálogo de sesión vencida, la tarjeta de login y páginas de error PUEDEN centrarse. Otras desviaciones se registran en un ADR o por pedido explícito del usuario.
+- La barra superior abarca el 100% del ancho: marca a la izquierda, controles de sesión a la derecha.
+
+---
+
+## 2. Tema Noche / Día
+
+`AuthContext` expone `theme` y `toggleTheme()`; la preferencia se guarda en `localStorage` con la clave `STORAGE_KEYS.theme` (`<slug-app>:theme`, ver `frontend/src/config/storageKeys.ts`). El slug evita choques entre aplicaciones que comparten dominio. Todo acceso a `localStorage` va en `try/catch` (modo privado o almacenamiento bloqueado).
+
+### Script anti-parpadeo (en `index.html`, antes de cargar la app)
+Vite reemplaza `%VITE_APP_SLUG%` en `index.html` al compilar.
+```html
+<script>
+  (function () {
+    var theme = 'dark';
+    try { theme = localStorage.getItem('%VITE_APP_SLUG%:theme') || 'dark'; } catch (e) { /* storage bloqueado */ }
+    document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
+  })();
+</script>
 ```
 
 ---
 
-## 2. Gestión Centralizada del Tema (Noche / Día)
+## 3. Sesión Vencida
 
-El tema visual se almacena en `localStorage` bajo la clave `jolifoods_theme` (`dark` o `light`).
+El manejo es el de BP-20 y la decisión canónica de sesión (access en memoria, refresh en cookie HttpOnly):
+1. El cliente HTTP, ante un 401, intenta **un** refresh; si falla, despacha `window.dispatchEvent(new Event('session-expired'))`.
+2. `AuthContext` escucha ese evento y muestra [`SessionExpirationModal`](../../../components/modal/session_expiration_modal.md) (ver [`auth_context.md`](../../../components/context/auth_context.md)).
+3. Al confirmar, `logout()` limpia el estado y navega a `/login?redirect=<ruta actual>`.
 
-### Script de Inicialización Anti-Parpadeo (en `index.html` o `main.tsx`):
-```javascript
-(function() {
-  const savedTheme = localStorage.getItem('jolifoods_theme') || 'dark';
-  if (savedTheme === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light');
-  } else {
-    document.documentElement.removeAttribute('data-theme');
-  }
-})();
-```
+El layout **no** monta un segundo modal ni su propio listener. **Por qué:** dos manejadores del mismo evento producen modales duplicados o redirecciones en carrera.
 
 ---
 
-## 3. Manejo de Sesión Expirada (Interceptor Axios / Fetch)
-
-Cuando cualquier petición al backend retorne código de estado HTTP 401:
-1. El interceptor intercepta el error.
-2. Abre automáticamente el modal accesible de sesión expirada especificado en [`feedback_alerts.md`](../../components/login/feedback_alerts.md).
-3. Inicia un contador de 5 segundos tras el cual limpia el estado de autenticación y redirige a la vista de Login.
-
----
-
-## 4. Implementación en React + TypeScript (`AppLayout.tsx`)
+## 4. Implementación (`AppLayout.tsx`)
 
 ```tsx
-import React, { useState, useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Navbar } from '../components/layout/Navbar';
 import { Sidebar } from '../components/layout/Sidebar';
-import { SessionExpiredModal } from '../components/auth/SessionExpiredModal';
-import '../styles/variables.css';
 
-export const AppLayout: React.FC = () => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('jolifoods_theme') as 'dark' | 'light') || 'dark';
-  });
-  const [isSessionExpired, setIsSessionExpired] = useState<boolean>(false);
-  const { user, logout } = useAuth();
+export function AppLayout() {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // El tema (lectura/escritura en STORAGE_KEYS.theme y atributo data-theme) lo gestiona AuthContext
+  const { user, logout, theme, toggleTheme } = useAuth();
   const navigate = useNavigate();
 
-  // Conmutador de tema
-  const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
-    localStorage.setItem('jolifoods_theme', newTheme);
-    if (newTheme === 'light') {
-      document.documentElement.setAttribute('data-theme', 'light');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-    }
-  };
-
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await logout();
-    navigate('/login');
-  };
+    navigate('/login', { replace: true });
+  }, [logout, navigate]);
 
   return (
     <div className="joli-app-shell">
-      {/* 1. TOP NAVBAR */}
-      <Navbar 
-        onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      <Navbar
+        onToggleSidebar={() => setIsSidebarCollapsed((v) => !v)}
         currentTheme={theme}
         onToggleTheme={toggleTheme}
         user={user}
@@ -101,40 +86,32 @@ export const AppLayout: React.FC = () => {
       />
 
       <div className="joli-app-body">
-        {/* 2. SIDEBAR NAVEGACIÓN */}
-        <Sidebar 
-          isCollapsed={isSidebarCollapsed}
-          userRole={user?.rol || 'CONSULTA'}
-        />
+        {/* El menú muestra solo los módulos para los que el usuario tiene permiso "<modulo>.ver" (BP-19) */}
+        <Sidebar isCollapsed={isSidebarCollapsed} permisos={user?.permisos ?? []} />
 
-        {/* 3. CONTENIDO PRINCIPAL */}
-        <main className={`joli-main-content ${isSidebarCollapsed ? 'expanded' : ''}`}>
+        <main className={`joli-main-content ${isSidebarCollapsed ? 'is-expanded' : ''}`}>
           <div className="container-fluid p-4">
             <Outlet />
           </div>
         </main>
       </div>
-
-      {/* 4. MODAL DE SESIÓN EXPIRADA */}
-      {isSessionExpired && (
-        <SessionExpiredModal onConfirm={() => navigate('/login')} />
-      )}
     </div>
   );
-};
+}
 ```
 
 ---
 
-## 5. Estilos Estructurales del Layout
+## 5. Estilos Estructurales
 
 ```css
 .joli-app-shell {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg-base);
-  color: var(--color-text-primary);
+  background-color: var(--bg-viewport);
+  color: var(--text-primary);
 }
 
 .joli-app-body {
@@ -145,19 +122,27 @@ export const AppLayout: React.FC = () => {
 
 .joli-main-content {
   flex: 1;
+  min-width: 0; /* permite que tablas anchas hagan scroll interno en vez de desbordar */
   margin-left: 260px;
-  min-height: calc(100vh - 64px);
-  background-color: var(--color-bg-base);
-  transition: margin-left var(--transition-normal);
+  min-height: calc(100vh - var(--topbar-height));
+  background-color: var(--bg-viewport);
+  transition: margin-left var(--transition-base);
 }
 
-.joli-main-content.expanded {
+.joli-main-content.is-expanded {
   margin-left: 76px;
 }
 
 @media (max-width: 768px) {
-  .joli-main-content {
-    margin-left: 0 !important;
+  .joli-main-content,
+  .joli-main-content.is-expanded {
+    margin-left: 0;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .joli-main-content { transition: none; }
+}
 ```
+
+Componentes: [`navbar.md`](../../../components/layout/navbar.md), [`sidebar.md`](../../../components/layout/sidebar.md), [`user_profile_dropdown.md`](../../../components/layout/user_profile_dropdown.md).

@@ -1,35 +1,35 @@
 #!/bin/sh
+# Arranque del contenedor backend (plantilla SDD).
+# Variables:
+#   RUN_MIGRATIONS=true|false  (por defecto true)  Aplica migraciones al arrancar.
+#   SEED_ON_START=true|false   (por defecto false) Crea el administrador inicial. Solo desarrollo/pruebas.
+#   COLLECTSTATIC=true|false   (por defecto true)
 set -e
 
-echo "======================================================================"
-echo "  INICIANDO CONTENEDOR BACKEND — JOLIFOODS (FASTAPI + DJANGO ASGI)"
-echo "======================================================================"
-
-# 1. Esperar a que PostgreSQL esté completamente disponible
-echo "-> [1/4] Verificando conectividad con PostgreSQL..."
-until pg_isready -h "${POSTGRES_HOST:-db}" -p "${POSTGRES_PORT:-5432}" -U "${POSTGRES_USER:-postgres}"; do
-  echo "   Base de datos aún no disponible. Reintentando en 2 segundos..."
+echo "-> [1/4] Esperando PostgreSQL en ${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}..."
+attempts=0
+until pg_isready -h "${POSTGRES_HOST:-db}" -p "${POSTGRES_PORT:-5432}" -U "${POSTGRES_USER:-postgres}" >/dev/null 2>&1; do
+  attempts=$((attempts + 1))
+  if [ "$attempts" -ge 30 ]; then
+    echo "   PostgreSQL no respondió en 60 s. Abortando." >&2
+    exit 1
+  fi
   sleep 2
 done
-echo "   PostgreSQL listo y respondiendo."
 
-# 2. Ejecutar migraciones automáticas de Django ORM
-echo "-> [2/4] Ejecutando migraciones de base de datos..."
-python manage.py migrate --noinput
-
-# 3. Cargar datos semilla iniciales (Roles y Superusuario de desarrollo)
-echo "-> [3/4] Verificando datos semilla iniciales (seed_data.py)..."
-if [ -f "seed_data.py" ]; then
-  python seed_data.py || echo "   Aviso: seed_data ya ejecutado o no requerido."
+if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+  echo "-> [2/4] Aplicando migraciones..."
+  python manage.py migrate --noinput
 fi
 
-# 4. Recolectar archivos estáticos para producción
-echo "-> [4/4] Recolectando archivos estáticos..."
-python manage.py collectstatic --noinput || true
+if [ "${SEED_ON_START:-false}" = "true" ] && [ -f "seed_data.py" ]; then
+  echo "-> [3/4] Datos semilla..."
+  python seed_data.py
+fi
 
-echo "======================================================================"
-echo "  BACKEND LISTO — EJECUTANDO SERVIDOR UVICORN ASGI"
-echo "======================================================================"
+if [ "${COLLECTSTATIC:-true}" = "true" ]; then
+  echo "-> [4/4] Archivos estáticos..."
+  python manage.py collectstatic --noinput
+fi
 
-# Ejecutar el comando pasado como parámetro al contenedor (o Uvicorn por defecto)
 exec "$@"

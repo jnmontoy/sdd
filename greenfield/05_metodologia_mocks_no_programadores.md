@@ -1,6 +1,6 @@
 # Metodología de Mocks Autónomos para Usuarios No Técnicos y el Integrador de Desarrollo (SDD)
 
-Este documento define el estándar operativo mediante el cual **cualquier persona de la organización (sin conocimientos de programación)** puede solicitar o entregar un mockup funcional y visual a un **integrador / desarrollador de software**, garantizando que el sistema **SDD (Spec-Driven Development)** reutilice 100% los estilos y componentes existentes sin inventar CSS nuevo ni duplicar código.
+Este documento define el estándar operativo mediante el cual **cualquier persona de la organización (sin conocimientos de programación)** puede solicitar o entregar un mockup funcional y visual a un **integrador / desarrollador de software**, procurando que el desarrollo reutilice los estilos y componentes existentes sin inventar CSS nuevo ni duplicar código.
 
 ---
 
@@ -45,7 +45,8 @@ La IA genera obligatoriamente **4 archivos limpios e independientes más su subc
 
 1. **La Estructura de Marcado (`[pantalla].html`)**:
    - Estructura HTML limpia y semántica, que enlaza `<link rel="stylesheet" href="./[pantalla].css">`, `<script src="./[pantalla].js"></script>` y `<img src="./assets/Jolifoods.svg" class="topheader-logo">`.
-   - **Apertura inmediata con doble clic**: Abre directamente en Edge o Chrome sin necesi    - Contiene el esqueleto visual de la Top Navbar, KPIs, la card contenedora (`.main-card-container`) con toolbar superior, tabla interna con scroll y contenedores para el Drawer lateral y el ConfirmModal.
+   - **Apertura inmediata con doble clic**: abre directamente en Edge o Chrome sin instalar nada.
+   - Contiene el esqueleto visual de la barra superior, los KPIs, la tarjeta contenedora (`.main-card-container`) con barra de herramientas y paginador arriba, la tabla con scroll y los contenedores del drawer lateral y del ConfirmModal.
 
 2. **La Hoja de Estilos del Módulo (`[pantalla].css`)**:
    - Importa o define las variables canónicas de `variables.css`.
@@ -65,7 +66,7 @@ La IA genera obligatoriamente **4 archivos limpios e independientes más su subc
 
 5. **Directorio Local de Identidad de Marca (`assets/`)**:
    - Subcarpeta local que aloja las copias de los logotipos vectoriales e isotipos de Jolifoods (`Jolifoods.svg`, `Joli.svg`, `logoJoli.png`) extraídos desde `.sdd/assets/`.
-   - Garantiza que la pantalla sea 100% portable y autónoma en modo offline, permitiendo compartir la carpeta del prototipo con cualquier persona de la empresa sin que se rompan las imágenes ni el favicon.
+   - Permite que el logo y el favicon se vean al compartir la carpeta del prototipo con cualquier persona de la empresa sin que se rompan las imágenes.
 
 ### Paso 3: Validación por el Usuario No Técnico
 El solicitante abre el archivo `.html` en su navegador web:
@@ -88,13 +89,13 @@ Cuando el integrador abre el mockup HTML, cada sección corresponde unívocament
 
 | Bloque en el Mockup HTML | Clase CSS SDD Embebible | Componente React a Reutilizar | Documentación SDD de Referencia |
 | :--- | :--- | :--- | :--- |
-| **Título en TopHeader (Lado Izquierdo)** | `<div class="topheader-left">` con `.topheader-title-box` | `<TopHeader title="..." badge="..." />` *(Prohibido títulos h1 en cuerpo)* | [navbar.md](../components/layout/navbar.md) |
+| **Título en TopHeader (Lado Izquierdo)** | `<div class="topheader-left">` con `.topheader-title-box` | `<TopHeader title="..." badge="..." />` *(el título es el `<h1>` de la página; no se repite en el cuerpo)* | [navbar.md](../components/layout/navbar.md) |
 | **Layout Full-Width (Sin Sidebar)** | Layout sin aside lateral | `<MainLayout fullWidth={true}>` *(Sidebar solo si usuario lo pide)* | [sidebar.md](../components/layout/sidebar.md) |
-| **Panel Lateral Derecho (Drawer)** | `<aside class="joli-drawer-container">` | `<RightDrawer />` *(Prohibido modales centrados)* | [drawer.md](../components/drawer/drawer.md) |
+| **Panel Lateral Derecho (Drawer)** | `<aside class="joli-drawer-container">` | `<RightDrawer />` *(crear y editar; no modales centrados)* | [drawer.md](../components/drawer/drawer.md) |
 | **Acciones Toolbar de Tabla** | `<div class="compact-action-box">` | `<IconActionGroup />` *(Botones de solo icono, sin texto)* | [icon_action_group.md](../components/button/icon_action_group.md) |
 | **Acciones por Fila Agrupadas** | `<div class="row-actions-group">` | `<RowActionGroup />` *(Botones agrupados con divisor de 1px)* | [icon_action_group.md](../components/button/icon_action_group.md) |
 | **Filtros Superiores Expandibles** | `<div class="expandable-filter-group">` | `<ExpandableFilterGroup />` | [expandable_filter_group.md](../components/dropdown/expandable_filter_group.md) |
-| **Switcher de Vistas (Pill)** | `<div class="view-switcher">` | `<ViewSwitcher />` | [button.md](../components/button/button.md) |
+| **Switcher de Vistas (Pill)** | `<div class="view-switcher">` | `<ViewSwitcher />` | Sin especificación propia todavía; ver el ejemplo en [mockup_template.html](../components/mockup_template.html) |
 | **Contenedor de Métricas** | `<div class="joli-kpi-row">` | `<div className="joli-kpi-row">` | [kpi_cards.md](../components/kpi/kpi_cards.md) |
 | **Tarjeta de Métrica (KPI)** | `<div class="joli-kpi-card">` | `<KpiCard />` *(Content + Icon Box)* | [kpi_cards.md](../components/kpi/kpi_cards.md) |
 | **Buscador de Texto** | `<div class="toolbar-search-box">` | `<SearchInput />` | [input_field.md](../components/login/input_field.md) |
@@ -102,8 +103,8 @@ Cuando el integrador abre el mockup HTML, cada sección corresponde unívocament
 | **Estados / Badges Pill** | `<span class="badge-pill-joli">` | `<BadgeStatus variant="..." />` *(Verde solo para óptimo/positivo)* | [badge_status.md](../components/badge/badge_status.md) |
 | **Paginador Superior en Toolbar** | `<div class="table-header-toolbar pagination-container">` | `<Pagination placement="top" />` *(Arriba de la tabla, con buscador y selector)* | [pagination.md](../components/pagination/pagination.md) |
 | **Card Contenedora hasta Abajo** | `<div class="main-card-container">` | `<div className="main-card-container">` *(`flex: 1` hasta abajo del viewport)* | [data_table.md](../components/data_table/data_table.md) |
-| **Inputs y Controles en Drawer** | `<div class="drawer-form-field">` con `.drawer-input-control` | `<FormField>`, `<Input>` corporativo *(Prohibido inputs nativos sin estilo)* | [drawer.md](../components/drawer/drawer.md) |
-| **Confirmación Crítica** | Estructura Jolifoods ConfirmModal | `<ConfirmModal type="danger" />` *(Prohibido modal Bootstrap genérico)* | [confirm_modal.md](../components/modal/confirm_modal.md) |érico)* | [confirm_modal.md](../components/modal/confirm_modal.md) |
+| **Inputs y Controles en Drawer** | `<div class="drawer-form-field">` con `.drawer-input-control` | `<FormField>`, `<Input>` corporativo *(con `<label for>` asociado; sin inputs nativos sin estilo)* | [drawer.md](../components/drawer/drawer.md) |
+| **Confirmación Crítica** | Estructura ConfirmModal (`.joli-modal-overlay`) | `<ConfirmModal type="danger" />` *(en lugar de un modal genérico de Bootstrap)* | [confirm_modal.md](../components/modal/confirm_modal.md) |
 
 
 ---
@@ -134,7 +135,8 @@ Cualquier persona puede copiar y pegar la siguiente plantilla de prompt para sol
 
 ```text
 "Hola, no sé programar, pero necesito presentarle un mockup de una pantalla al desarrollador.
-Quiero que me generes un archivo HTML autónomo basado en las especificaciones del SDD.
+Genera el prototipo en mock/<nombre_modulo>/ (4 archivos + assets/) siguiendo el SDD.
+Los datos de ejemplo deben ser ficticios.
 
 La pantalla es: [Nombre de la Pantalla, ej. Dashboard de Producción / Vista de Inventario]
 Necesito que tenga:
@@ -143,7 +145,7 @@ Necesito que tenga:
 - Tabla o listado: [Columnas que debe mostrar la tabla]
 - Estados visuales: [Ej. Activo en verde, Pendiente en amarillo, Rechazado en rojo]
 
-Usa la plantilla oficial de .sdd/components/mockup_template.html para que pueda abrirlo
+Usa la plantilla .sdd/mock/mock_template_with_json.html para que pueda abrirlo
 con doble clic en mi navegador y entregárselo al programador."
 ```
 
@@ -156,7 +158,7 @@ Cuando recibas el archivo `.html`:
 2. **Abre el código HTML**: Observa los nombres de las clases CSS utilizadas (`.joli-kpi-card`, `.joli-table`, etc.).
 3. **No escribas CSS nuevo**: Importa los componentes React correspondientes desde tu librería interna o desde los templates en `.sdd/components/`.
 4. **Conecta los datos dinámicos**:
-   - Las tarjetas KPI se conectan a los endpoints FastAPI `/fast/metricas/`.
+   - Las tarjetas KPI se conectan a endpoints FastAPI de lectura (p. ej. `/fast/v1/<modulo>/metricas`), registrados en `endpoints.ts` y `endpoints_registry.json`.
    - La tabla se conecta al endpoint paginado con filtros server-side.
 5. **Reemplaza cualquier elemento nativo**:
    - Asegúrate de que las confirmaciones usen `ConfirmModal`.
@@ -167,25 +169,25 @@ Cuando recibas el archivo `.html`:
 
 ## 7. Checklist Anti-Olvidos de Negocio (Blindaje No-Code)
 
-Para asegurar que no quede ningún cabo suelto antes de iniciar el desarrollo en código, el prototipo debe cumplir este checklist de 8 puntos:
+Para asegurar que no quede ningún cabo suelto antes de iniciar el desarrollo en código, el prototipo debe cumplir esta lista de verificación (17 puntos; los de estilo son DEBERÍA y se pueden ajustar a pedido del usuario):
 
-1. **[ ] Layout Full-Width y Título en TopHeader**: La pantalla aprovecha el ancho completo (sin sidebar de navegación a menos que el usuario lo solicite explícitamente). El título del módulo se ubica en el TopHeader a la izquierda (`.topheader-left`) junto al logotipo de Jolifoods, eliminando encabezados gigantes innecesarios en el cuerpo.
-2. **[ ] Acciones Agrupadas**: Toolbar compacta de 28px (`.compact-action-box`) y botones de fila agrupados en contenedor unificado de 26px (`.row-actions-group`) con divisor de 1px (prohibido botones sueltos).
-3. **[ ] Tipografía Neutra en Códigos/IDs**: Los identificadores y números usan fuente monoespaciada con color de texto neutro. Prohibido textos verdes en códigos (el verde se reserva únicamente para badges de estado positivo).
-4. **[ ] Pegado Directo desde Excel**: Si el solicitante tiene una tabla en Excel, permitir copiar y pegar las filas en el chat para transformarlas a JSON sin obligar a escribir sintaxis de programación.
+1. **[ ] Layout Full-Width y Título en TopHeader**: La pantalla aprovecha el ancho completo (sin sidebar de navegación a menos que el usuario lo solicite explícitamente). El título del módulo se ubica en el TopHeader a la izquierda (`.topheader-left`) junto al logotipo de Jolifoods, como `<h1>` único, sin repetir un título grande en el cuerpo.
+2. **[ ] Acciones Agrupadas**: Toolbar compacta de 28px (`.compact-action-box`) y botones de fila agrupados en contenedor unificado de 26px (`.row-actions-group`) con divisor de 1px (no botones sueltos).
+3. **[ ] Tipografía Neutra en Códigos/IDs**: Los identificadores y números usan fuente monoespaciada con color de texto neutro. Sin color verde en códigos (el verde se reserva para estados positivos).
+4. **[ ] Pegado Directo desde Excel**: Si el solicitante tiene una tabla en Excel, permitir pegar las filas en el chat para transformarlas a JSON, **usando datos ficticios o anonimizados** (sin nombres, cédulas, correos, costos ni recetas reales).
 5. **[ ] Estado Vacío Diseñado (Empty State)**: La pantalla debe mostrar cómo se ve cuando no hay registros aún o la búsqueda no arroja resultados, con mensaje claro e icono ilustrado.
 6. **[ ] Estado de Espera (Skeleton Loader)**: Simular la animación de carga para que el usuario entienda qué se mostrará mientras el servidor responde.
 7. **[ ] Matriz de Permisos por Rol**: Dejar explícito en `datos_[pantalla].md` qué columnas o botones ve un administrador vs un operario o vendedor.
-8. **[ ] Acciones Destructivas con Justificación Auditada**: Los botones de anulación o eliminación deben abrir el `ConfirmModal` canónico Jolifoods con textarea a ancho completo 100% (`.joli-modal-textarea`), contador dinámico (`0 / 10 mín.`) y botón de confirmación condicionado y deshabilitado hasta ingresar al menos 10 caracteres válidos.
+8. **[ ] Acciones Destructivas con Justificación Auditada**: Los botones de anulación o eliminación abren el `ConfirmModal` con textarea a ancho completo 100% (`.joli-modal-textarea`), contador dinámico (`0 / 10 mín.`) y botón de confirmación condicionado y deshabilitado hasta ingresar al menos 10 caracteres válidos.
 9. **[ ] Validación de Campos**: Formulario de adición de prueba en Right Drawer con asteriscos rojos `*` en los campos obligatorios.
 10. **[ ] Formatos Locales Claros**: Cifras en pesos colombianos (`$ 1.487.500`), fechas legibles (`30 Sep 2026, 09:15 AM`) y porcentajes (`76,8%`).
 11. **[ ] Definición de Dispositivo**: Aclarar si se usará en computadores de escritorio o en tablets/celulares de campo o bodega para adaptar el layout.
 12. **[ ] Paginador Superior en Toolbar y Card hasta Abajo**: La paginación debe estar ubicada en la toolbar superior de la tabla (`.table-header-toolbar.pagination-container`), y la card principal (`.main-card-container`) debe expandirse hasta la parte inferior del viewport visible (`flex: 1`).
-13. **[ ] Controles de Formulario e Inputs Estilizados**: Todo `<input>`, `<select>` y `<textarea>` dentro de modales o del Right Drawer debe implementar `.form-field` / `.drawer-form-field` con bordes, radios y halo de foco de acento corporativo (prohibido inputs nativos del navegador).
-14. **[ ] Textos de Botones Contextuales**: El botón principal del footer en formularios debe decir exactamente qué guarda (ej. *"Guardar Partido"*, *"Guardar Registro"*), prohibido textos fijos desfasados como *"Guardar Notas"*.
-15. **[ ] Paquete Modular de 4 Archivos**: El mock debe entregarse estrictamente en 4 archivos independientes (`.html`, `.css`, `.js`, `datos_*.md`), con cero código monolítico.
-16. **[ ] Identidad de Marca y Carpeta assets/ Local**: La subcarpeta `assets/` debe acompañar al mock conteniendo los logos oficiales (`Jolifoods.svg`, `Joli.svg`, `logoJoli.png`) tomados desde `.sdd/assets/`, y el TopHeader debe referenciar relativamente `<img src="./assets/Jolifoods.svg">` con favicon, garantizando portabilidad offline 100% libre de imágenes rotas.
-17. **[ ] Cero Testing y Cero Pruebas Automáticas**: En el **Modo Mock**, queda terminantemente **prohibido e innecesario ejecutar o requerir pruebas automáticas, Pytest, Playwright, suites E2E o validaciones con `validate_endpoints.py`**. Por su naturaleza, un mock es exclusivamente una simulación visual e interactiva sin backend real ni base de datos conectada. El testing se reserva para cuando el integrador construya el código en `frontend/` y `backend/`.
+13. **[ ] Controles de Formulario e Inputs Estilizados**: Todo `<input>`, `<select>` y `<textarea>` dentro de modales o del Right Drawer debe implementar `.form-field` / `.drawer-form-field` con bordes, radios y halo de foco de acento corporativo (no inputs nativos sin estilo; cada control con su etiqueta asociada).
+14. **[ ] Textos de Botones Contextuales**: El botón principal del footer en formularios debe decir exactamente qué guarda (ej. *"Guardar Registro"*), evitando textos genéricos que no correspondan a la entidad.
+15. **[ ] Paquete Modular de 4 Archivos**: El mock DEBERÍA entregarse en 4 archivos (`.html`, `.css`, `.js`, `datos_*.md`) más `assets/`; la plantilla base es un archivo único solo por comodidad de copia.
+16. **[ ] Identidad de Marca y Carpeta assets/ Local**: La subcarpeta `assets/` debe acompañar al mock conteniendo los logos oficiales (`Jolifoods.svg`, `Joli.svg`, `logoJoli.png`) tomados desde `.sdd/assets/`, y el TopHeader debe referenciar relativamente `<img src="./assets/Jolifoods.svg">` con favicon, para que el logo no se rompa al mover la carpeta.
+17. **[ ] Sin pruebas automáticas en el mock (BP-10)**: a un mock NO se le exigen Pytest, Playwright, E2E ni `validate_endpoints.py`. Por su naturaleza, un mock es exclusivamente una simulación visual e interactiva sin backend real ni base de datos conectada. El testing se reserva para cuando el integrador construya el código en `frontend/` y `backend/`.
 
 
 

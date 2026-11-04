@@ -114,8 +114,8 @@ export const GlobalErrorBoundary: React.FC = () => {
   justify-content: center;
   min-height: 100vh;
   padding: 24px;
-  background-color: var(--color-bg-body, #0F172A);
-  color: var(--color-text-primary, #F8FAFC);
+  background-color: var(--bg-viewport);
+  color: var(--text-primary);
 }
 
 .joli-error-boundary-card {
@@ -126,9 +126,9 @@ export const GlobalErrorBoundary: React.FC = () => {
   max-width: 480px;
   width: 100%;
   padding: 36px 28px;
-  background: var(--color-bg-card, #1E293B);
-  border: 1px solid var(--color-border, #334155);
-  border-radius: var(--radius-xl, 14px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
@@ -151,7 +151,7 @@ export const GlobalErrorBoundary: React.FC = () => {
 
 .error-card-desc {
   font-size: 13.5px;
-  color: var(--color-text-secondary, #94A3B8);
+  color: var(--text-secondary);
   line-height: 1.5;
   margin-bottom: 24px;
 }
@@ -169,7 +169,7 @@ export const GlobalErrorBoundary: React.FC = () => {
   width: 100%;
   margin-top: 16px;
   text-align: left;
-  border-top: 1px solid var(--color-border, #334155);
+  border-top: 1px solid var(--border-subtle);
   padding-top: 14px;
 }
 
@@ -178,7 +178,7 @@ export const GlobalErrorBoundary: React.FC = () => {
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
-  color: var(--color-text-muted, #64748B);
+  color: var(--text-muted);
   cursor: pointer;
   user-select: none;
 }

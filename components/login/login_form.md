@@ -20,20 +20,11 @@ Este documento especifica el componente orquestador que ensambla todos los compo
       <!-- 1. Encabezado / Logo -->
       <header class="login-logo-wrapper">
         <div class="login-logo-badge">
-          <svg class="login-logo-svg" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-            <defs>
-              <linearGradient id="formLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#34d399" />
-                <stop offset="100%" stop-color="#059669" />
-              </linearGradient>
-            </defs>
-            <rect width="48" height="48" rx="14" fill="url(#formLogoGrad)" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5" />
-            <path d="M24 10C16 10 12 16 12 24C12 32 18 38 24 38C30 38 36 32 36 24C36 14 28 10 24 10Z" fill="url(#formLogoGrad)" />
-            <path d="M24 18V30M18 24H30" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
-          </svg>
+          <img src="./assets/Jolifoods.svg" alt="Joli Foods" class="login-logo-img"
+               onerror="this.onerror=null; this.src='./assets/logoJoli.png';" />
         </div>
-        <h1 id="login-title" class="login-logo-title">Greenyard</h1>
-        <p class="login-logo-subtitle">Portal de Acceso Corporativo</p>
+        <h1 id="login-title" class="login-logo-title">[Nombre del Proyecto]</h1>
+        <p class="login-logo-subtitle">Joli Foods • Acceso seguro</p>
       </header>
 
       <!-- 2. Formulario de Credenciales -->
@@ -52,15 +43,18 @@ Este documento especifica el componente orquestador que ensambla todos los compo
             </span>
             <input 
               id="input-doc" 
-              name="documento" 
+              name="numero_documento"
               type="text" 
               inputmode="numeric" 
-              placeholder="Ej. 1037645123" 
+              placeholder="Ej. 1000000001"
               class="login-input-control" 
               required 
+              autocomplete="username"
+              aria-describedby="input-doc-error"
+              data-testid="input-username"
             />
           </div>
-          <span class="login-input-error" style="display: none;">Documento inválido</span>
+          <span id="input-doc-error" class="login-input-error" hidden>Documento inválido</span>
         </div>
 
         <!-- Campo: Contraseña con Toggle Ojo -->
@@ -80,29 +74,32 @@ Este documento especifica el componente orquestador que ensambla todos los compo
               placeholder="••••••••••••" 
               class="login-input-control login-has-suffix" 
               required 
+              autocomplete="current-password"
+              aria-describedby="input-pass-error"
+              data-testid="input-password"
             />
-            <button type="button" class="login-input-toggle-btn" aria-label="Mostrar contraseña">
-              <svg class="login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button type="button" class="login-input-toggle-btn" aria-label="Mostrar contraseña" aria-controls="input-pass" aria-pressed="false">
+              <svg class="login-input-svg" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2"/>
                 <circle cx="12" cy="12" r="3" stroke-width="2"/>
               </svg>
             </button>
           </div>
-          <span class="login-input-error" style="display: none;">Contraseña requerida</span>
+          <span id="input-pass-error" class="login-input-error" hidden>Contraseña requerida</span>
         </div>
 
         <!-- Barra de Opciones: Recordar & Olvido -->
         <div class="login-options-bar">
           <label class="login-checkbox-label">
             <input type="checkbox" id="chk-remember" class="login-checkbox-control" />
-            <span class="login-checkbox-text">Recordarme</span>
+            <span class="login-checkbox-text">Recordar mi documento</span>
           </label>
-          <a href="#recuperar" class="login-forgot-link">¿Olvidaste tu contraseña?</a>
+          <a href="/recuperar" class="login-forgot-link">¿Olvidaste tu contraseña?</a>
         </div>
 
         <!-- Banner de Error Condicional -->
-        <div id="login-alert-banner" class="login-alert-box" role="alert" style="display: none;">
-          <svg class="login-alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div id="login-alert-banner" class="login-alert-box" role="alert" hidden>
+          <svg class="login-alert-icon" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="10" stroke-width="2" />
             <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round" />
             <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" stroke-linecap="round" />
@@ -111,8 +108,8 @@ Este documento especifica el componente orquestador que ensambla todos los compo
         </div>
 
         <!-- Botón Submit Principal -->
-        <button type="submit" class="login-btn-primary">
-          <svg class="login-btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button type="submit" class="login-btn-primary" data-testid="btn-login-submit">
+          <svg class="login-btn-icon" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <span class="login-btn-text">Ingresar al Sistema</span>
@@ -120,7 +117,7 @@ Este documento especifica el componente orquestador que ensambla todos los compo
       </form>
 
       <!-- 3. Divisor "o también" -->
-      <div class="login-divider">
+      <div class="login-divider" aria-hidden="true">
         <span class="login-divider-line"></span>
         <span class="login-divider-text">o continúa con</span>
         <span class="login-divider-line"></span>
@@ -128,7 +125,7 @@ Este documento especifica el componente orquestador que ensambla todos los compo
 
       <!-- 4. Botón Microsoft SSO -->
       <button type="button" class="login-btn-microsoft">
-        <svg class="login-btn-microsoft-icon" viewBox="0 0 21 21">
+        <svg class="login-btn-microsoft-icon" viewBox="0 0 21 21" aria-hidden="true">
           <path fill="#f25022" d="M1 1h9v9H1z" />
           <path fill="#00a4ef" d="M1 11h9v9H1z" />
           <path fill="#7fba00" d="M11 1h9v9h-9z" />
@@ -139,12 +136,113 @@ Este documento especifica el componente orquestador que ensambla todos los compo
 
       <!-- 5. Pie institucional -->
       <footer class="login-footer">
-        <p>Greenyard • Acceso Seguro Corporativo</p>
+        <p>[Nombre del Proyecto] • Joli Foods</p>
       </footer>
 
     </div>
   </section>
 </main>
+```
+
+---
+
+## 1.1. Envío del formulario en React (integración con `AuthContext`)
+
+El formulario NO llama a la API ni maneja tokens directamente: delega en `login()` de [`context/auth_context.md`](../context/auth_context.md), que guarda el access token en memoria y deja que el backend fije la cookie `HttpOnly` de refresh. "Recordar mi documento" solo guarda el número de documento (nunca la contraseña ni tokens) con `STORAGE_KEYS.rememberedDoc`.
+
+```tsx
+import React, { useState } from 'react';
+import { isAxiosError } from 'axios';
+import { useLocation, useNavigate, type Location } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { STORAGE_KEYS, safeStorage } from '../../config/storageKeys';
+
+export const LoginForm: React.FC = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const remembered = safeStorage.get(STORAGE_KEYS.rememberedDoc);
+
+  const [documento, setDocumento] = useState(remembered ?? '');
+  const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(remembered !== null);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isSubmitting) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await login({ numero_documento: documento.trim(), password });
+      if (remember) safeStorage.set(STORAGE_KEYS.rememberedDoc, documento.trim());
+      else safeStorage.remove(STORAGE_KEYS.rememberedDoc);
+      const from = (location.state as { from?: Location } | null)?.from?.pathname ?? '/home';
+      navigate(from, { replace: true });
+    } catch (err) {
+      const status = isAxiosError(err) ? err.response?.status : undefined;
+      // Mensaje genérico: no revelar si el documento existe
+      setError(status === 400 || status === 401 ? 'Documento o contraseña incorrectos.' : 'No fue posible conectar. Intenta de nuevo.');
+      setPassword('');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Se omiten los íconos SVG decorativos de §1 para centrar el ejemplo en el comportamiento.
+  return (
+    <form className="login-form-body" onSubmit={handleSubmit} noValidate>
+      <div className="login-input-group">
+        <label htmlFor="input-doc" className="login-input-label">Número de Documento</label>
+        <div className="login-input-box">
+          <input
+            id="input-doc" name="numero_documento" type="text" inputMode="numeric"
+            className="login-input-control" autoComplete="username" required
+            placeholder="Ej. 1000000001" data-testid="input-username"
+            value={documento} onChange={(e) => setDocumento(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="login-input-group">
+        <label htmlFor="input-pass" className="login-input-label">Contraseña</label>
+        <div className="login-input-box">
+          <input
+            id="input-pass" name="password" type="password"
+            className="login-input-control" autoComplete="current-password" required
+            data-testid="input-password"
+            value={password} onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="login-options-bar">
+        <label className="login-checkbox-label">
+          <input
+            type="checkbox" className="login-checkbox-control"
+            checked={remember} onChange={(e) => setRemember(e.target.checked)}
+          />
+          <span className="login-checkbox-text">Recordar mi documento</span>
+        </label>
+        <a href="/recuperar" className="login-forgot-link">¿Olvidaste tu contraseña?</a>
+      </div>
+
+      {error && (
+        <div className="login-alert-box" role="alert">
+          <span className="login-alert-message">{error}</span>
+        </div>
+      )}
+
+      <button
+        type="submit" className="login-btn-primary" data-testid="btn-login-submit"
+        disabled={isSubmitting} aria-busy={isSubmitting}
+      >
+        <span className="login-btn-text">{isSubmitting ? 'Validando...' : 'Ingresar al Sistema'}</span>
+      </button>
+    </form>
+  );
+};
 ```
 
 ---
@@ -251,7 +349,7 @@ Este documento especifica el componente orquestador que ensambla todos los compo
 }
 
 .login-forgot-link {
-  color: var(--brand-accent);
+  color: var(--brand-primary);
   text-decoration: none;
   font-weight: var(--font-weight-medium);
   transition: color var(--transition-fast);

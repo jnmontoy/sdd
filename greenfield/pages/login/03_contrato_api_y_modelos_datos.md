@@ -1,268 +1,178 @@
-﻿# 03. Contratos de API, Modelos de Datos y OpenAPI Specs
-## Módulo de Login / Autenticación — SDD Greenyard (`GY-SPEC-AUTH-001`)
+﻿# 03. Contratos de API y Modelos de Datos
+## Módulo de Login / Autenticación — SDD Joli Foods (`SPEC-AUTH-001`)
 
-Este documento constituye la **fuente formal e inmutable de especificación técnica** para la comunicación cliente-servidor en el módulo de login. Cualquier implementación (sea en Django, FastAPI, Node, Go o cualquier otro backend) y cualquier cliente (React, Vue, Flutter, iOS, Android) debe adherirse estrictamente a estos esquemas.
+Este documento es la fuente del contrato cliente-servidor del login. Las implementaciones (backend y cliente) DEBEN respetar estos nombres de campos, códigos HTTP y cabeceras. Los cambios se versionan según [`../../09_protocolo_gobernanza_apis_y_breaking_changes.md`](../../09_protocolo_gobernanza_apis_y_breaking_changes.md).
+
+Las rutas del cliente se consumen desde `frontend/src/services/endpoints.ts` (`ENDPOINTS.AUTH.*`), nunca quemadas en componentes. Los datos de ejemplo son ficticios.
 
 ---
 
-## 1. Esquema de Modelos de Datos Canónicos
-
-### 1.1. Modelo Conceptual de Usuario (`UserEntity`)
+## 1. Modelo de Usuario expuesto al cliente (`UserEntity`)
 
 ```typescript
 export interface UserEntity {
-  /** Identificador único autonumérico */
   id: number;
-  /** Número de cédula o documento de identidad oficial (único) */
-  documento: string;
-  /** Nombre completo de la persona */
+  /** Documento de identidad (solo dígitos) */
+  numero_documento: string;
   nombre: string;
-  /** Apellidos de la persona */
-  apellidos?: string;
-  /** Correo corporativo (@jolifoods.com o @greenyard.com) */
+  apellidos: string;
   email: string;
-  /** Rol jerárquico principal */
-  tipo: 'Administrador' | 'Colaborador' | 'Operario' | 'Auditor';
-  /** Lista de permisos o grupos funcionales */
+  /** Códigos de los roles asignados (tabla Rol, relación M2M — BP-19) */
   roles: string[];
-  /** Cargo formal según nómina/HR */
-  cargo?: string;
-  /** Sede, planta o unidad de negocio */
-  sede?: string;
-  /** Estado de habilitación del usuario en la plataforma */
+  /** Claves de permiso consolidadas (p. ej. "usuarios.ver"); la UI valida por permiso, no por rol */
+  permisos: string[];
+  cargo: string | null;
+  sede: string | null;
   is_active: boolean;
-  /** URL o URI del avatar corporativo */
-  avatar_url?: string | null;
-  /** Marca temporal del último inicio de sesión exitoso */
-  last_login?: string | null;
+  /** true si la cuenta debe cambiar su contraseña (primer ingreso o clave temporal) */
+  debe_cambiar_clave: boolean;
+  /** URL protegida del avatar (ver model/archivos) */
+  avatar_url: string | null;
+  last_login: string | null;
 }
 ```
 
+El modelo de persistencia está en [`../../../model/login/spec_model_usuario.md`](../../../model/login/spec_model_usuario.md).
+
 ---
 
-## 2. Especificación Formal de Endpoints (OpenAPI 3.1)
+## 2. Endpoints de Sesión
 
-### 2.1. `POST /api/auth/login/` (Autenticación Principal)
+### Cabeceras y cookies comunes
 
-- **Propósito**: Validar credenciales de usuario (documento + contraseña) y emitir sesión segura.
-- **Autenticación**: Pública (no requiere token previo).
-- **Control de Tasa (Rate Limit)**: Máximo 5 peticiones por minuto por IP.
+| Elemento | Valor |
+| :--- | :--- |
+| Cookie de refresh | `refresh_token=<jwt>; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth/; Max-Age=43200` |
+| Cookie CSRF | `csrftoken=<valor>; Secure; SameSite=Lax; Path=/` (no HttpOnly, el cliente la lee) |
+| Cabecera CSRF | `X-CSRFToken: <valor de csrftoken>` — obligatoria en `/auth/refresh/` y `/auth/logout/` |
+| Autorización | `Authorization: Bearer <access>` en las demás rutas autenticadas |
+| Cliente | Todas las llamadas a `/api/v1/auth/` usan `withCredentials: true` |
 
-#### Request Body
-- **Content-Type**: `application/json`
+### 2.1. `POST /api/v1/auth/login/`
 
+- **Autenticación:** pública.
+- **Límite:** ver [`05_seguridad_auditoria_y_hardening.md`](./05_seguridad_auditoria_y_hardening.md) §3.
+
+#### Cuerpo de la petición
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "LoginCredentialsPayload",
   "type": "object",
   "properties": {
-    "documento": {
-      "type": "string",
-      "pattern": "^[0-9]{5,15}$",
-      "description": "Número de cédula sin espacios ni caracteres especiales"
-    },
-    "password": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Contraseña en texto claro enviada bajo túnel seguro TLS"
-    },
-    "rememberMe": {
-      "type": "boolean",
-      "default": false,
-      "description": "Indica si el cliente debe recordar el documento en el equipo"
-    }
+    "numero_documento": { "type": "string", "pattern": "^[0-9]{5,15}$" },
+    "password":  { "type": "string", "minLength": 1, "maxLength": 128 }
   },
-  "required": ["documento"]
+  "required": ["numero_documento", "password"],
+  "additionalProperties": false
 }
 ```
+"Recordar mi documento" es una preferencia del cliente y **no** se envía al servidor.
 
-#### Respuestas HTTP
-
-##### 200 OK (Autenticación Exitosa)
-- **Cabeceras de Respuesta**:
-  - `Set-Cookie: greenyard_auth_token=<JWT_TOKEN>; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`
-- **Body**:
+#### 200 OK
+Cabeceras: `Set-Cookie: refresh_token=...` y `Set-Cookie: csrftoken=...` (ver tabla).
 ```json
 {
-  "success": true,
-  "message": "Autenticación exitosa. Bienvenido al sistema.",
+  "access": "<JWT de acceso>",
+  "token_type": "Bearer",
+  "expires_in": 900,
   "user": {
     "id": 101,
-    "documento": "1037645123",
-    "nombre": "Joan Montoya",
-    "email": "joan.montoya@jolifoods.com",
-    "tipo": "Administrador",
-    "roles": ["TI_LEAD", "SECURITY_ADMIN"],
-    "cargo": "Líder de TI & Arquitectura",
-    "sede": "Planta Principal",
-    "avatar_url": "/media/avatars/user_101.webp"
-  },
-  "token_type": "Bearer",
-  "expires_in": 86400
-}
-```
-
-##### 400 Bad Request (Payload Inválido)
-```json
-{
-  "success": false,
-  "error_code": "VALIDATION_ERROR",
-  "message": "Datos de entrada inválidos",
-  "details": {
-    "documento": ["El documento debe contener exclusivamente dígitos numéricos."]
+    "numero_documento": "1000000001",
+    "nombre": "Usuario",
+    "apellidos": "Ejemplo",
+    "email": "usuario@ejemplo.com",
+    "roles": ["OPERADOR"],
+    "permisos": ["dashboard.ver", "usuarios.ver"],
+    "cargo": "Analista",
+    "sede": "Sede principal",
+    "is_active": true,
+    "debe_cambiar_clave": false,
+    "avatar_url": null,
+    "last_login": "2026-11-04T13:00:00Z"
   }
 }
 ```
 
-##### 401 Unauthorized (Credenciales Incorrectas)
+#### Errores (formato único)
 ```json
-{
-  "success": false,
-  "error_code": "INVALID_CREDENTIALS",
-  "message": "El documento o la contraseña ingresada son incorrectos."
-}
+{ "error_code": "INVALID_CREDENTIALS", "message": "Documento o contraseña incorrectos." }
 ```
 
-##### 403 Forbidden (Cuenta Desactivada o Forzado a SSO)
+| HTTP | `error_code` | Cuándo |
+| :--- | :--- | :--- |
+| 400 | `VALIDATION_ERROR` | Payload inválido (incluye `details` por campo). |
+| 401 | `INVALID_CREDENTIALS` | Documento inexistente **o** contraseña errada (mismo cuerpo, mismo tiempo aproximado). |
+| 403 | `SSO_REQUIRED` | Contraseña válida pero el rol exige Microsoft SSO. |
+| 403 | `USER_INACTIVE` | Contraseña válida pero cuenta inactiva. |
+| 429 | `RATE_LIMIT_EXCEEDED` | Bloqueo temporal. Incluye cabecera `Retry-After` (segundos) y `retry_after_seconds`. |
+
+Los errores NO DEBEN incluir trazas, nombres de tablas ni detalles internos.
+
+### 2.2. `POST /api/v1/auth/check-user/` (pre-chequeo de método)
+
+- **Autenticación:** pública, con el mismo límite de tasa que el login.
+- **Petición:** `{ "numero_documento": "1000000001" }`
+- **Respuesta 200 (siempre):**
 ```json
-{
-  "success": false,
-  "error_code": "USER_INACTIVE",
-  "message": "Tu cuenta de usuario se encuentra desactivada. Contacta al administrador del sistema."
-}
+{ "metodo": "PASSWORD" }
 ```
+o `{ "metodo": "SSO" }`. Para documentos inexistentes o inactivos DEBE responder `PASSWORD`, igual que para una cuenta normal. NO DEBE devolver nombre, existencia, estado ni rol.
+- **Riesgo aceptado:** la respuesta `SSO` revela que el documento pertenece a una cuenta privilegiada; se mitiga con el límite de tasa. Si el proyecto no lo acepta, PUEDE omitir este endpoint y mostrar siempre ambos métodos.
 
-##### 429 Too Many Requests (Exceso de Intentos / Brute Force)
-- **Cabecera**: `Retry-After: 900`
+### 2.3. `POST /api/v1/auth/refresh/`
+
+- **Autenticación:** cookie `refresh_token` + cabecera `X-CSRFToken`. El refresh **no** se envía en el cuerpo ni en `Authorization`.
+- **200 OK:** rota la cookie (`Set-Cookie: refresh_token=<nuevo>`) y devuelve:
 ```json
-{
-  "success": false,
-  "error_code": "RATE_LIMIT_EXCEEDED",
-  "message": "Has excedido el número máximo de intentos fallidos. Intenta nuevamente en 15 minutos.",
-  "retry_after_seconds": 900
-}
+{ "access": "<JWT de acceso>", "token_type": "Bearer", "expires_in": 900 }
 ```
+- **401 `REFRESH_INVALID`:** cookie ausente, vencida, en lista negra o usuario inactivo. Responde además `Set-Cookie: refresh_token=; Max-Age=0`.
+- **403 `CSRF_FAILED`:** falta o no coincide la cabecera CSRF.
 
----
+### 2.4. `POST /api/v1/auth/logout/`
 
-### 2.2. `POST /api/auth/check-user/` (Pre-chequeo Inteligente de Rol)
+- **Autenticación:** cookie `refresh_token` + `X-CSRFToken`. Es idempotente: responde 204 aunque la cookie ya no sea válida.
+- **Efecto:** refresh en lista negra, `SesionUsuario.is_activa = false`, `Set-Cookie: refresh_token=; Path=/api/v1/auth/; Max-Age=0`.
+- **204 No Content.**
 
-- **Propósito**: Consultar rápidamente si la cédula corresponde a un usuario con requerimientos especiales (por ejemplo, exigir inicio de sesión exclusivo vía Microsoft SSO para administradores) antes de solicitar contraseñas locales.
-- **Autenticación**: Pública.
+### 2.5. `GET /api/v1/auth/me/`
 
-#### Request Body
-```json
-{
-  "documento": "1037645123"
-}
-```
+- **Autenticación:** `Authorization: Bearer <access>`.
+- **200 OK:** `UserEntity`.
 
-#### Response 200 OK
-```json
-{
-  "exists": true,
-  "is_active": true,
-  "tipo": "Administrador",
-  "requires_sso": true,
-  "provider": "MICROSOFT_365",
-  "display_name": "Joan Montoya"
-}
-```
+### 2.6. `GET /api/v1/auth/microsoft/login/` y `GET /api/v1/auth/microsoft/callback/`
 
----
-
-### 2.3. `POST /api/auth/refresh/` (Rotación Silenciosa de Sesión)
-
-- **Propósito**: Renovar el Access Token antes de su expiración utilizando la cookie de sesión o el Refresh Token.
-- **Cabeceras**: Requiere cookie `HttpOnly` previa o cabecera `Authorization: Bearer <refresh_token>`.
-
-#### Response 200 OK
-```json
-{
-  "success": true,
-  "message": "Sesión renovada con éxito",
-  "expires_in": 86400
-}
-```
-
----
-
-### 2.4. `POST /api/auth/logout/` (Cierre de Sesión Seguro)
-
-- **Propósito**: Invalidar tokens en backend (blacklist) y eliminar las cookies de autenticación en el cliente.
-- **Efecto de Red**:
-  - `Set-Cookie: greenyard_auth_token=; Path=/; HttpOnly; Max-Age=0`
-
-#### Response 200 OK
-```json
-{
-  "success": true,
-  "message": "Sesión finalizada correctamente."
-}
-```
+Flujo de navegación completo (302), no AJAX. Ver secuencia en [`02_arquitectura_y_maquina_estados.md`](./02_arquitectura_y_maquina_estados.md) §2.2. El callback termina en una redirección al frontend (`/auth/callback`) **sin** tokens en la URL; si falla, redirige a `/login?error=sso_failed`.
 
 ---
 
 ## 3. Endpoints de Restablecimiento de Contraseña
 
-### 3.1. `POST /api/auth/password-reset/request/` (Solicitud de Enlace)
-- **Propósito**: Iniciar el flujo de recuperación generando un token de 15 minutos y enviando un correo al colaborador.
-- **Seguridad**: Respuesta idéntica exista o no la cuenta para prevenir enumeración.
+El detalle del flujo y sus reglas de seguridad está en [`09_flujo_restablecimiento_contrasena.md`](./09_flujo_restablecimiento_contrasena.md).
 
-#### Request Body
-```json
-{
-  "identificador": "1037645123"
-}
-```
-
-#### Response 200 OK
-```json
-{
-  "success": true,
-  "message": "Si los datos corresponden a un usuario activo en Jolifoods, recibirás un enlace de recuperación en tu correo corporativo."
-}
-```
+| Método y ruta | Petición | Respuesta |
+| :--- | :--- | :--- |
+| `POST /api/v1/auth/password-reset/request/` | `{ "identificador": "1000000001" }` (documento o correo) | **202** siempre, con el mismo cuerpo exista o no la cuenta. |
+| `POST /api/v1/auth/password-reset/validate/` | `{ "token": "<token del enlace>" }` | 200 `{ "valid": true }` o 400 `TOKEN_EXPIRED_OR_INVALID`. |
+| `POST /api/v1/auth/password-reset/confirm/` | `{ "token": "...", "new_password": "<NUEVA_CONTRASEÑA>", "confirm_password": "<NUEVA_CONTRASEÑA>" }` | 200 o 400 (`TOKEN_EXPIRED_OR_INVALID`, `PASSWORD_POLICY`, `PASSWORD_MISMATCH`). |
 
 ---
 
-### 3.2. `POST /api/auth/password-reset/validate/` (Comprobación de Vigencia)
-- **Propósito**: Verificar si el token sigue vigente antes de renderizar el formulario de nueva clave.
+## 4. Registro en `ENDPOINTS` (cliente)
 
-#### Request Body
-```json
-{
-  "token": "token_efimero_32_bytes_base64"
-}
-```
-
-#### Response 200 OK
-```json
-{
-  "valid": true,
-  "email_enmascarado": "j***a@jolifoods.com"
-}
-```
-
----
-
-### 3.3. `POST /api/auth/password-reset/confirm/` (Cambio Efectivo de Contraseña)
-- **Propósito**: Fijar la nueva clave, consumir el token e invalidar todas las sesiones activas del usuario.
-
-#### Request Body
-```json
-{
-  "token": "token_efimero_32_bytes_base64",
-  "new_password": "NuevaPasswordSegura!2026",
-  "confirm_password": "NuevaPasswordSegura!2026"
-}
-```
-
-#### Response 200 OK
-```json
-{
-  "success": true,
-  "message": "Contraseña actualizada exitosamente. Inicia sesión con tus nuevas credenciales."
-}
+```ts
+// frontend/src/services/endpoints.ts (fragmento del grupo AUTH)
+AUTH: {
+  LOGIN: '/api/v1/auth/login/',
+  CHECK_USER: '/api/v1/auth/check-user/',
+  REFRESH: '/api/v1/auth/refresh/',
+  LOGOUT: '/api/v1/auth/logout/',
+  ME: '/api/v1/auth/me/',
+  MICROSOFT_LOGIN: '/api/v1/auth/microsoft/login/',
+  PASSWORD_RESET_REQUEST: '/api/v1/auth/password-reset/request/',
+  PASSWORD_RESET_VALIDATE: '/api/v1/auth/password-reset/validate/',
+  PASSWORD_RESET_CONFIRM: '/api/v1/auth/password-reset/confirm/',
+  CHANGE_PASSWORD: '/api/v1/auth/change-password/',
+},
 ```

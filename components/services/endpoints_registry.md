@@ -1,54 +1,56 @@
 # Registro Centralizado de Endpoints (`endpoints.ts` y `endpoints_registry.json`)
-## Componente de Servicio y Contratos — Spec-Driven Development (SDD)
+## Componente de servicio y contratos — Spec-Driven Development (SDD)
 
-Este estándar erradica la práctica nociva de escribir URLs de endpoints quemadas directamente dentro de los componentes visuales o vistas (ej. `fetch('/api/v1/usuarios/')` o `api.get('/api/v1/facturas/')`). 
+Este estándar evita escribir URLs de endpoints directamente dentro de componentes visuales o vistas (p. ej. `fetch('/api/v1/usuarios/')` o `api.get('/api/v1/facturas/')`).
 
-Bajo la metodología SDD, **todas las rutas del sistema se centralizan en un único archivo de registro** tanto en el frontend (`src/services/endpoints.ts`) como en el backend/testing (`backend/config/endpoints_registry.json`).
-
----
-
-## 1. La Regla Inflexible de Cero URLs Quemadas en Vistas
-
-> **PROHIBICIÓN TERMINANTE (BP-09)**:
-> Queda estrictamente prohibido escribir cadenas de texto con rutas de endpoints en vistas React, páginas, botones o paneles laterales.
-> 
-> ```typescript
-> // ❌ INCORRECTO - PENALIZADO EN AUDITORÍA:
-> const response = await api.get('/api/v1/usuarios/lista/');
-> 
-> // ✅ CORRECTO - CANÓNICO SDD:
-> import { ENDPOINTS } from '@services/endpoints';
-> const response = await api.get(ENDPOINTS.USUARIOS.LISTA);
-> ```
+Todas las rutas del sistema se centralizan en un único registro, tanto en el frontend (`frontend/src/services/endpoints.ts`) como en el backend/pruebas (`backend/config/endpoints_registry.json`).
 
 ---
 
-## 2. Implementación Canónica en Frontend (`src/services/endpoints.ts`)
+## 1. Regla: sin URLs escritas a mano en vistas (BP-09)
+
+- **Regla:** las vistas, páginas, botones y paneles laterales **NO DEBEN** contener cadenas con rutas de endpoints; DEBEN consumir `ENDPOINTS`.
+- **Por qué:** un cambio de versión o de ruta se hace en un solo archivo, y el validador automático puede recorrer el mismo catálogo que usa la aplicación.
+- **Excepciones:** ninguna en código de aplicación. Las pruebas automáticas PUEDEN usar rutas literales para verificar el contrato.
+
+```typescript
+// Incorrecto:
+const response = await api.get('/api/v1/usuarios/');
+
+// Correcto:
+import { ENDPOINTS } from '@/services/endpoints';
+const response = await api.get(ENDPOINTS.USUARIOS.LISTA);
+```
+
+---
+
+## 2. Implementación en frontend (`frontend/src/services/endpoints.ts`)
+
+Las rutas son **absolutas desde la raíz del backend** (`/api/v1/...`, `/fast/v1/...`, `/health/...`). Por eso `VITE_API_URL` se configura sin sufijo `/api` (ver [`api_client.md`](./api_client.md)).
 
 ```typescript
 /**
- * Catálogo Centralizado de Endpoints — Jolifoods / SDD
- * Todas las vistas deben consumir las rutas exclusivamente desde esta constante tipada.
+ * Catálogo centralizado de endpoints.
+ * Todas las vistas consumen las rutas exclusivamente desde esta constante tipada.
  */
-
 export const ENDPOINTS = {
-  // 1. Diagnóstico y Salud
+  // 1. Diagnóstico y salud (públicos, servidos por FastAPI)
   HEALTH: {
     LIVE: '/health/live',
     READY: '/health/ready',
   },
 
-  // 2. Autenticación y Perfil
+  // 2. Autenticación y perfil
   AUTH: {
-    LOGIN: '/api/v1/auth/login/',
-    LOGOUT: '/api/v1/auth/logout/',
-    REFRESH: '/api/v1/auth/refresh/',
+    LOGIN: '/api/v1/auth/login/',       // responde { access, user } + cookie HttpOnly refresh_token
+    REFRESH: '/api/v1/auth/refresh/',   // lee la cookie refresh_token; exige X-CSRFToken; responde { access }
+    LOGOUT: '/api/v1/auth/logout/',     // borra e invalida la cookie refresh_token
     ME: '/api/v1/auth/me/',
     RECOVERY: '/api/v1/auth/recovery/',
     CHANGE_PASSWORD: '/api/v1/auth/change-password/',
   },
 
-  // 3. Administración y Seguridad
+  // 3. Administración y seguridad
   USUARIOS: {
     LISTA: '/api/v1/usuarios/',
     DETALLE: (id: string | number) => `/api/v1/usuarios/${id}/`,
@@ -63,14 +65,14 @@ export const ENDPOINTS = {
     EXPORTAR_EXCEL: '/api/v1/auditoria/exportar-excel/',
   },
 
-  // 4. Capa de Alto Rendimiento ASGI FastAPI (/fast)
+  // 4. Capa FastAPI (/fast)
   FAST: {
     HEALTH: '/fast/v1/health',
     METRICAS_KPI: '/fast/v1/metricas/kpi',
     TELEMETRIA: '/fast/v1/telemetria/resumen',
   },
 
-  // 5. Telemetría de Adopción y Mejora Continua
+  // 5. Telemetría de adopción
   TELEMETRIA: {
     FEEDBACK: '/api/v1/telemetria/feedback/',
     METRICAS_USO: '/api/v1/telemetria/metricas-uso/',
@@ -82,50 +84,68 @@ export type EndpointsType = typeof ENDPOINTS;
 
 ---
 
-## 3. Registro Centralizado para Testing Automático (`backend/config/endpoints_registry.json`)
+## 3. Registro para pruebas automáticas (`backend/config/endpoints_registry.json`)
 
-Para que el script `validate_endpoints.py` no tenga que inspeccionar vistas aisladas, se genera este manifiesto JSON con la lista declarativa de todos los endpoints:
+El validador `pruebas/validate_endpoints.py` (fuente en `.sdd/stack/validate_endpoints.py`) lee este manifiesto declarativo en lugar de inspeccionar vistas. La plantilla completa está en `.sdd/stack/endpoints_registry_template.json`; extracto:
 
 ```json
 {
-  "project_name": "jolifoods_core",
+  "project_name": "mi_proyecto",
   "version": "1.0.0",
+  "auth": {
+    "login_path": "/api/v1/auth/login/",
+    "username_field": "numero_documento",
+    "password_field": "password",
+    "token_field": "access"
+  },
   "endpoints": [
     {
-      "name": "Health Liveness",
+      "name": "Salud: vida",
       "path": "/health/live",
       "method": "GET",
       "expected_status": 200,
-      "auth_required": false
+      "auth_required": false,
+      "max_latency_ms": 200
     },
     {
-      "name": "Health Readiness",
+      "name": "Salud: disponibilidad (BD + Redis)",
       "path": "/health/ready",
       "method": "GET",
       "expected_status": 200,
-      "auth_required": false
+      "auth_required": false,
+      "max_latency_ms": 500
     },
     {
-      "name": "Listado de Usuarios",
+      "name": "Salud: capa FastAPI",
+      "path": "/fast/v1/health",
+      "method": "GET",
+      "expected_status": 200,
+      "auth_required": false,
+      "max_latency_ms": 200
+    },
+    {
+      "name": "Listado de usuarios",
       "path": "/api/v1/usuarios/",
       "method": "GET",
       "expected_status": 200,
       "auth_required": true
-    },
-    {
-      "name": "FastAPI Diagnostics",
-      "path": "/fast/v1/health",
-      "method": "GET",
-      "expected_status": 200,
-      "max_latency_ms": 45
     }
   ]
 }
 ```
 
+Los valores de `max_latency_ms` son metas de partida; cada proyecto DEBERÍA ajustarlos a mediciones reales de su entorno.
+
 ---
 
-## 4. Beneficios para la Automatización y Auditoría
-1. **Verificación en un Solo Comando**: `python backend/validate_endpoints.py` lee directamente este archivo y prueba el 100% de las rutas sin necesidad de explorar vistas.
-2. **Refactorización Segura**: Si un endpoint cambia de versión (`/api/v1/` a `/api/v2/`), se actualiza en una sola línea en `endpoints.ts` y toda la aplicación queda sincronizada sin errores 404.
-3. **Generación Instantánea de cURLs**: Cualquier desarrollador o auditor genera la suite completa de comandos cURL con `--export-curls curls.sh` directamente desde el registro.
+## 4. Uso en automatización y auditoría
+
+1. **Verificación en un solo comando** (la contraseña de login se lee de la variable de entorno `SDD_LOGIN_PASSWORD`, nunca por argumento):
+   ```powershell
+   $env:SDD_LOGIN_PASSWORD = "<CONTRASEÑA>"
+   .\.venv\Scripts\python.exe pruebas\validate_endpoints.py --base-url http://localhost:8000 --login-user 1000000001
+   ```
+   En Linux/macOS: `./.venv/bin/python pruebas/validate_endpoints.py --base-url http://localhost:8000`.
+2. **Refactorización segura:** si un endpoint cambia de versión (`/api/v1/` a `/api/v2/`), se actualiza `endpoints.ts` y el registro JSON; las vistas no cambian.
+3. **Exportación de cURL:** `--export-curls curls.sh` genera los comandos cURL de todos los endpoints registrados, sin secretos (usan `$SDD_TOKEN` y `$SDD_LOGIN_PASSWORD`).
+4. **Cobertura:** el validador solo prueba lo que está en el registro; mantenerlo al día es parte de la definición de terminado de cada endpoint nuevo.

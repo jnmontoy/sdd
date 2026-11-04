@@ -1,88 +1,93 @@
 # Especificación de Enrutamiento: Rutas Protegidas y RBAC (`ProtectedRoute.tsx`)
-## Ecosistema Jolifoods — Control de Acceso Declarativo en React Router
+## Control de acceso declarativo en React Router
 
-El componente `ProtectedRoute` intercepta la navegación para garantizar que solo usuarios con credenciales vigentes y roles autorizados puedan acceder a vistas sensibles o administrativas.
+El componente `ProtectedRoute` intercepta la navegación para que solo usuarios con sesión vigente y rol o permiso autorizado accedan a vistas sensibles o administrativas. Consume `useAuth()` de [`context/auth_context.md`](../context/auth_context.md).
 
----
-
-### 1. Requisitos de Negocio y Seguridad
-1. **Prevención de Pantallazos en Blanco / Flash**: Durante la comprobación inicial de credenciales (`isLoading`), renderiza un loader corporativo centrado.
-2. **Redirección Segura a Login**: Si no hay sesión activa, redirige a `/login` preservando la ruta solicitada en el estado de navegación (`state: { from: location }`) para redirigir al usuario tras identificarse con éxito.
-3. **Control RBAC Granular**: Propiedad opcional `allowedRoles: string[]`. Si el usuario está autenticado pero su rol no está autorizado, redirige automáticamente a la página `/403` (Acceso Denegado).
-4. **Soporte para Layouts Anidados**: Admite renderizar tanto elementos hijos directos (`children`) como componentes de ruta anidados vía `<Outlet />`.
+> **Importante:** esta protección es de experiencia de usuario. La autorización real DEBE validarse en el backend en cada endpoint; ocultar una ruta en el frontend no impide llamar a la API.
 
 ---
 
-### 2. Implementación TypeScript Canónica (`src/components/routing/ProtectedRoute.tsx`)
+### 1. Requisitos
+
+1. **Sin parpadeos:** mientras `AuthContext` recupera la sesión (`isLoading`), se muestra un loader a pantalla completa (es un estado de carga, no una vista de trabajo).
+2. **Redirección a login:** sin sesión, redirige a `/login` guardando la ruta solicitada en `state.from`, para volver a ella tras autenticarse.
+3. **Control RBAC:** propiedades opcionales `allowedRoles`, `permissionKey` y `adminOnly`. Si el usuario está autenticado pero no autorizado, redirige a `/403`.
+4. **Rutas anidadas:** admite hijos directos (`children`) o `<Outlet />`.
+
+---
+
+### 2. Implementación TypeScript de referencia (`src/components/routing/ProtectedRoute.tsx`)
 
 ```tsx
 import React from 'react';
-import { Navigate, useLocation, Outlet } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { tienePermiso, esAdmin, esSA } from '../../utils/authRoles';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export interface ProtectedRouteProps {
   children?: React.ReactNode;
+  /** Códigos de rol permitidos (comparación sin distinguir mayúsculas). */
   allowedRoles?: string[];
+  /** Clave de permiso requerida, p. ej. 'usuarios.ver'. */
   permissionKey?: string;
+  /** Solo roles administrativos (ver ADMIN_ROLES en AuthContext). */
   adminOnly?: boolean;
-  saOnly?: boolean;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
   allowedRoles,
   permissionKey,
   adminOnly = false,
-  saOnly = false,
 }) => {
-  const { isAuthenticated, isLoading, user, hasRole } = useAuth();
+  const { isAuthenticated, isLoading, hasRole, hasPermission, isAdmin } = useAuth();
   const location = useLocation();
 
-  // 1. Estado de carga inicial (Evita parpadeos o falsas redirecciones)
+  // 1. Recuperando sesión: evita redirecciones falsas a /login
   if (isLoading) {
     return (
-      <div className="joli-route-loader-screen">
-        <div className="route-loader-content">
-          <Loader2 size={36} className="route-spinner text-primary" />
-          <p className="route-loader-text">Validando credenciales...</p>
-        </div>
+      <div className="joli-route-loader-screen" role="status" aria-live="polite">
+        <Loader2 size={36} className="joli-route-spinner" aria-hidden="true" />
+        <p className="joli-route-loader-text">Validando sesión...</p>
       </div>
     );
   }
 
-  // 2. Comprobar si el usuario está autenticado
-  if (!isAuthenticated || !user) {
+  // 2. Sin sesión
+  if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // 3. Comprobación por clave de permiso dinámica (Estabilización de Permisos)
-  if (permissionKey && !tienePermiso(user, permissionKey)) {
+  // 3. Autorización: todas las condiciones declaradas deben cumplirse
+  const denied =
+    (adminOnly && !isAdmin()) ||
+    (permissionKey !== undefined && !hasPermission(permissionKey)) ||
+    (allowedRoles !== undefined && allowedRoles.length > 0 && !hasRole(allowedRoles));
+
+  if (denied) {
     return <Navigate to="/403" state={{ deniedFrom: location.pathname }} replace />;
   }
 
-  // 4. Comprobación exclusiva para administración general o rol tope (SA)
-  if (adminOnly && !tienePermiso(user, 'ver_administracion_home') && !esAdmin(user)) {
-    return <Navigate to="/home" replace />;
-  }
-
-  if (saOnly && !esSA(user)) {
-    return <Navigate to="/home" replace />;
-  }
-
-  // 5. Comprobar roles tradicionales si se especifican
-  if (allowedRoles && allowedRoles.length > 0) {
-    const isAuthorized = hasRole ? hasRole(allowedRoles) : allowedRoles.some((r) => user.roles?.includes(r));
-    if (!isAuthorized) {
-      return <Navigate to="/403" state={{ deniedFrom: location.pathname }} replace />;
-    }
-  }
-
-  // 6. Renderizar contenido autorizado
+  // 4. Contenido autorizado
   return children ? <>{children}</> : <Outlet />;
 };
 ```
+
+Ejemplo de uso:
+
+```tsx
+<Route element={<ProtectedRoute />}>
+  <Route element={<AppLayout />}>
+    <Route path="/home" element={<HomePage />} />
+    <Route
+      path="/admin/usuarios"
+      element={<ProtectedRoute permissionKey="usuarios.ver"><UsuariosPage /></ProtectedRoute>}
+    />
+  </Route>
+</Route>
+```
+
+En `LoginPage`, tras un `login()` exitoso: `navigate(location.state?.from?.pathname ?? '/home', { replace: true })`.
 
 ---
 
@@ -91,30 +96,33 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 ```css
 .joli-route-loader-screen {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100vw;
-  height: 100vh;
-  background-color: var(--color-bg-body, #0F172A);
-  color: var(--color-text-primary, #F8FAFC);
-}
-
-.route-loader-content {
-  display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 14px;
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-viewport);
+  color: var(--text-primary);
 }
 
-.route-spinner {
-  animation: spin 1s linear infinite;
-  color: var(--color-primary, #2D6A4F);
+.joli-route-spinner {
+  color: var(--brand-primary);
+  animation: joli-route-spin 1s linear infinite;
 }
 
-.route-loader-text {
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--color-text-secondary, #94A3B8);
-  letter-spacing: 0.2px;
+.joli-route-loader-text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+@keyframes joli-route-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .joli-route-spinner { animation: none; }
 }
 ```

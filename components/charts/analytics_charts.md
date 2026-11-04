@@ -1,37 +1,27 @@
 # Especificación de Componente: Suite de Gráficas y Analítica Visual (`AnalyticsCharts`)
-## Ecosistema Jolifoods — Metodología Spec-Driven Development (SDD)
+## SDD Joli Foods — Spec-Driven Development
 
-La suite `AnalyticsCharts` proporciona un conjunto de componentes de visualización de datos de alto impacto estético, totalmente alineados con la identidad visual corporativa de Jolifoods y gobernados por los tokens de color de `variables.css`.
-
-Implementa renderizado SVG vectorial ultraligero y receptivo, compatible con cualquier framework moderno (React con SVG nativo o integración con `recharts`), soporte nativo para **Modo Noche y Modo Día**, tooltips interactivos con efecto glassmorphism, y curvaturas suaves con gradientes de desvanecimiento vertical.
+La suite `AnalyticsCharts` reúne gráficas básicas (área, barras, dona y minigráfica) dibujadas con SVG nativo en React, sin librerías de gráficos. Los colores salen de los tokens de [`variables.css`](../variables.css), por lo que funcionan en **Modo Noche y Modo Día**. Para gráficas avanzadas (radar, Gantt, Sankey) ver [`advanced_analytics_charts.md`](./advanced_analytics_charts.md).
 
 ---
 
-### 1. Paleta de Tokens Cromáticos para Gráficas
+### 1. Tokens de color para gráficas
 
-Las gráficas utilizan exclusivamente los acentos semánticos corporativos para garantizar armonía visual y máxima legibilidad:
+Los tokens de gráficas están definidos en `variables.css` (no se redefinen aquí):
 
-```css
-:root {
-  --chart-primary: #10B981;    /* Verde Esmeralda Institucional */
-  --chart-secondary: #3B82F6;  /* Azul Tecnológico */
-  --chart-warning: #F59E0B;    /* Ámbar Alerta */
-  --chart-danger: #F43F5E;     /* Rosa / Rubí Crítico */
-  --chart-accent: #06B6D4;     /* Cian Innovación */
-  --chart-purple: #8B5CF6;     /* Violeta Analítica */
-  --chart-grid: rgba(226, 232, 240, 0.8);
-  --chart-text: #64748B;
-  --chart-tooltip-bg: rgba(15, 23, 42, 0.92);
-  --chart-tooltip-border: rgba(255, 255, 255, 0.15);
-}
+| Token | Uso | Cambia con el tema |
+| :--- | :--- | :--- |
+| `--chart-primary` | Serie principal (marca) | No |
+| `--chart-secondary` | Serie secundaria (azul) | No |
+| `--chart-warning` / `--chart-danger` | Series de alerta | No |
+| `--chart-accent` / `--chart-purple` | Series adicionales (cian / violeta) | No |
+| `--chart-grid` | Líneas de rejilla | Sí |
+| `--chart-text` | Etiquetas de ejes | Sí |
+| `--chart-tooltip-bg`, `--chart-tooltip-border`, `--chart-tooltip-text`, `--chart-tooltip-label` | Tooltip | Sí |
 
-[data-theme="dark"] {
-  --chart-grid: rgba(51, 65, 85, 0.5);
-  --chart-text: #94A3B8;
-  --chart-tooltip-bg: rgba(30, 41, 59, 0.95);
-  --chart-tooltip-border: rgba(255, 255, 255, 0.1);
-}
-```
+En SVG los colores se pasan como `var(--chart-*)`; los navegadores actuales resuelven variables CSS en atributos de presentación (`fill`, `stroke`).
+
+**Accesibilidad:** cada gráfica DEBE tener `role="img"` y un `aria-label` que resuma lo que muestra; si el dato exacto importa, DEBERÍA ofrecerse también como tabla. El color no debe ser el único medio para distinguir series (usar leyenda con texto).
 
 ---
 
@@ -45,7 +35,7 @@ Las gráficas utilizan exclusivamente los acentos semánticos corporativos para 
 2. **`RoundedBarChart` (Comparativa Categórica / Mensual)**:
    - Barras verticales con bordes superiores redondeados (`rx="6"`).
    - Efecto hover de iluminación y tooltip informativo.
-3. **`DonutDistributionChart` (Distribución Porcentual / Mix de Cartera)**:
+3. **`DonutDistributionChart` (distribución porcentual, ej. mezcla de cartera por antigüedad)**:
    - Anillo concéntrico con grosor optimizado (`stroke-width="22"`).
    - Métrica total y etiqueta descriptiva en el centro del hueco.
    - Leyenda lateral interactiva con bullets cromáticos y porcentajes.
@@ -83,13 +73,13 @@ export interface AreaGradientChartProps {
 export const AreaGradientChart: React.FC<AreaGradientChartProps> = ({
   data,
   height = 240,
-  color = 'var(--chart-primary, #10B981)',
+  color = 'var(--chart-primary)',
   title,
   subtitle,
   valuePrefix = '',
   valueSuffix = '',
 }) => {
-  const gradientId = useId();
+  const gradientId = useId().replace(/:/g, ''); // ids de React 18 traen ':'; se limpian para usarlos en url(#...)
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   if (!data || data.length === 0) return null;
@@ -100,10 +90,16 @@ export const AreaGradientChart: React.FC<AreaGradientChartProps> = ({
   const innerHeight = height - padding.top - padding.bottom;
 
   const values = data.map((d) => d.value);
-  const minVal = Math.min(...values) * 0.9;
-  const maxVal = Math.max(...values) * 1.05 || 1;
+  const rawMin = Math.min(...values);
+  const rawMax = Math.max(...values);
+  // Margen del 10 % del rango; si todos los valores son iguales se usa un rango artificial.
+  const span = rawMax - rawMin || Math.abs(rawMax) || 1;
+  const minVal = rawMin - span * 0.1;
+  const maxVal = rawMax + span * 0.05;
 
-  const getX = (index: number) => padding.left + (index / (data.length - 1)) * innerWidth;
+  // Con un solo punto se centra en el eje X (evita dividir entre cero).
+  const getX = (index: number) =>
+    data.length === 1 ? padding.left + innerWidth / 2 : padding.left + (index / (data.length - 1)) * innerWidth;
   const getY = (val: number) => padding.top + innerHeight - ((val - minVal) / (maxVal - minVal)) * innerHeight;
 
   // Generar curva Bézier continua (Catmull-Rom simplificado)
@@ -129,7 +125,13 @@ export const AreaGradientChart: React.FC<AreaGradientChartProps> = ({
       )}
 
       <div className="joli-chart-viewport" style={{ height }}>
-        <svg viewBox={`0 0 ${width} ${height}`} className="joli-chart-svg" preserveAspectRatio="none">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="joli-chart-svg"
+          preserveAspectRatio="none"
+          role="img"
+          aria-label={title ? `${title}: ${data.length} puntos` : `Gráfica de área con ${data.length} puntos`}
+        >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={color} stopOpacity="0.35" />
@@ -192,7 +194,7 @@ export const AreaGradientChart: React.FC<AreaGradientChartProps> = ({
                       strokeWidth="1.5"
                       strokeDasharray="4 3"
                     />
-                    <circle cx={x} cy={getY(d.value)} r="5" fill="#FFFFFF" stroke={color} strokeWidth="2.5" />
+                    <circle cx={x} cy={getY(d.value)} r="5" fill="var(--bg-card)" stroke={color} strokeWidth="2.5" />
                   </>
                 )}
               </g>
@@ -236,7 +238,7 @@ export interface RoundedBarChartProps {
 export const RoundedBarChart: React.FC<RoundedBarChartProps> = ({
   data,
   height = 240,
-  color = 'var(--chart-secondary, #3B82F6)',
+  color = 'var(--chart-secondary)',
   title,
   subtitle,
   valuePrefix = '',
@@ -251,8 +253,9 @@ export const RoundedBarChart: React.FC<RoundedBarChartProps> = ({
   const innerWidth = width - padding.left - padding.right;
   const innerHeight = height - padding.top - padding.bottom;
 
-  const maxVal = Math.max(...data.map((d) => d.value)) * 1.1 || 1;
-  const barWidth = Math.min(innerWidth / data.length - 12, 42);
+  // Barras desde cero: valores negativos se recortan a 0 (para negativos usar otra variante).
+  const maxVal = Math.max(...data.map((d) => Math.max(d.value, 0))) * 1.1 || 1;
+  const barWidth = Math.max(Math.min(innerWidth / data.length - 12, 42), 4);
 
   return (
     <div className="joli-chart-card">
@@ -264,7 +267,13 @@ export const RoundedBarChart: React.FC<RoundedBarChartProps> = ({
       )}
 
       <div className="joli-chart-viewport" style={{ height }}>
-        <svg viewBox={`0 0 ${width} ${height}`} className="joli-chart-svg" preserveAspectRatio="none">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="joli-chart-svg"
+          preserveAspectRatio="none"
+          role="img"
+          aria-label={title ? `${title}: ${data.length} barras` : `Gráfica de barras con ${data.length} categorías`}
+        >
           {[0, 0.33, 0.66, 1].map((pct, i) => {
             const y = padding.top + innerHeight * pct;
             return <line key={i} x1={padding.left} y1={y} x2={width - padding.right} y2={y} className="joli-chart-grid-line" />;
@@ -272,13 +281,13 @@ export const RoundedBarChart: React.FC<RoundedBarChartProps> = ({
 
           {data.map((d, i) => {
             const x = padding.left + (i + 0.5) * (innerWidth / data.length) - barWidth / 2;
-            const barHeight = (d.value / maxVal) * innerHeight;
+            const barHeight = (Math.max(d.value, 0) / maxVal) * innerHeight;
             const y = padding.top + innerHeight - barHeight;
             const isHovered = hoverIndex === i;
 
             return (
               <g
-                key={i}
+                key={d.label}
                 onMouseEnter={() => setHoverIndex(i)}
                 onMouseLeave={() => setHoverIndex(null)}
                 className="joli-bar-group"
@@ -310,7 +319,7 @@ export const RoundedBarChart: React.FC<RoundedBarChartProps> = ({
             className="joli-chart-tooltip"
             style={{
               left: `${((padding.left + (hoverIndex + 0.5) * (innerWidth / data.length)) / width) * 100}%`,
-              top: `${((padding.top + innerHeight - (data[hoverIndex].value / maxVal) * innerHeight) / height) * 100}%`,
+              top: `${((padding.top + innerHeight - (Math.max(data[hoverIndex].value, 0) / maxVal) * innerHeight) / height) * 100}%`,
             }}
           >
             <div className="joli-tooltip-label">{data[hoverIndex].label}</div>
@@ -330,6 +339,7 @@ export const RoundedBarChart: React.FC<RoundedBarChartProps> = ({
 export interface DonutSegment {
   label: string;
   value: number;
+  /** Usar tokens: 'var(--chart-primary)', 'var(--chart-warning)', etc. */
   color: string;
 }
 
@@ -366,7 +376,13 @@ export const DonutDistributionChart: React.FC<DonutDistributionChartProps> = ({
 
       <div className="joli-donut-container">
         <div className="joli-donut-circle-box" style={{ width: size, height: size }}>
-          <svg width={size} height={size} className="joli-donut-svg">
+          <svg
+            width={size}
+            height={size}
+            className="joli-donut-svg"
+            role="img"
+            aria-label={`${title ?? 'Distribución'}: ${data.map((d) => `${d.label} ${Math.round((d.value / total) * 100)}%`).join(', ')}`}
+          >
             {data.map((item, idx) => {
               const percent = item.value / total;
               const strokeDasharray = `${circumference * percent} ${circumference * (1 - percent)}`;
@@ -375,7 +391,7 @@ export const DonutDistributionChart: React.FC<DonutDistributionChartProps> = ({
 
               return (
                 <circle
-                  key={idx}
+                  key={item.label}
                   cx={size / 2}
                   cy={size / 2}
                   r={radius}
@@ -390,7 +406,7 @@ export const DonutDistributionChart: React.FC<DonutDistributionChartProps> = ({
             })}
           </svg>
           <div className="joli-donut-center-badge">
-            <span className="joli-donut-total">{total.toLocaleString('es-CO')}</span>
+            <span className="joli-donut-total">{data.reduce((acc, d) => acc + d.value, 0).toLocaleString('es-CO')}</span>
             <span className="joli-donut-center-sub">{centerLabel}</span>
           </div>
         </div>
@@ -400,7 +416,7 @@ export const DonutDistributionChart: React.FC<DonutDistributionChartProps> = ({
           {data.map((item, idx) => {
             const pct = Math.round((item.value / total) * 100);
             return (
-              <div key={idx} className="joli-donut-legend-item">
+              <div key={item.label} className="joli-donut-legend-item">
                 <span className="joli-legend-dot" style={{ backgroundColor: item.color }} />
                 <span className="joli-legend-label">{item.label}</span>
                 <span className="joli-legend-value">{pct}%</span>
@@ -425,14 +441,14 @@ export interface MiniSparklineProps {
 
 export const MiniSparkline: React.FC<MiniSparklineProps> = ({
   data,
-  color = 'var(--chart-primary, #10B981)',
+  color = 'var(--chart-primary)',
   width = 90,
   height = 28,
 }) => {
   if (!data || data.length < 2) return null;
 
   const min = Math.min(...data);
-  const max = Math.max(...data) || 1;
+  const max = Math.max(...data);
   const padding = 2;
 
   const points = data
@@ -444,7 +460,7 @@ export const MiniSparkline: React.FC<MiniSparklineProps> = ({
     .join(' ');
 
   return (
-    <svg width={width} height={height} className="joli-sparkline-svg">
+    <svg width={width} height={height} className="joli-sparkline-svg" role="img" aria-label={`Tendencia: de ${data[0]} a ${data[data.length - 1]}`}>
       <polyline points={points} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -457,17 +473,11 @@ export const MiniSparkline: React.FC<MiniSparklineProps> = ({
 
 ```css
 .joli-chart-card {
-  background: var(--bg-card, #FFFFFF);
-  border: 1px solid var(--border-subtle, #E2E8F0);
-  border-radius: var(--radius-xl, 14px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
   padding: 1.25rem 1.5rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
-}
-
-[data-theme="dark"] .joli-chart-card {
-  background: var(--bg-card, #1E293B);
-  border-color: var(--border-subtle, #334155);
+  box-shadow: var(--shadow-card);
 }
 
 .joli-chart-header {
@@ -478,14 +488,14 @@ export const MiniSparkline: React.FC<MiniSparklineProps> = ({
   margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--text-primary, #0F172A);
+  color: var(--text-primary);
   letter-spacing: -0.01em;
 }
 
 .joli-chart-subtitle {
   margin: 4px 0 0 0;
   font-size: 0.8rem;
-  color: var(--text-muted, #64748B);
+  color: var(--text-muted);
 }
 
 .joli-chart-viewport {
@@ -500,18 +510,18 @@ export const MiniSparkline: React.FC<MiniSparklineProps> = ({
 }
 
 .joli-chart-grid-line {
-  stroke: var(--chart-grid, rgba(226, 232, 240, 0.8));
+  stroke: var(--chart-grid);
   stroke-dasharray: 4 4;
 }
 
 .joli-chart-axis-text {
   font-size: 11px;
-  fill: var(--chart-text, #64748B);
+  fill: var(--chart-text);
   transition: fill 0.15s ease;
 }
 
 .joli-chart-axis-text.is-active {
-  fill: var(--text-primary, #0F172A);
+  fill: var(--text-primary);
   font-weight: 600;
 }
 
@@ -529,22 +539,22 @@ export const MiniSparkline: React.FC<MiniSparklineProps> = ({
   opacity: 0.85;
 }
 
-/* Tooltip Flotante Estilo Jolifoods */
+/* Tooltip flotante */
 .joli-chart-tooltip {
   position: absolute;
   transform: translate(-50%, -125%);
-  background: var(--chart-tooltip-bg, rgba(15, 23, 42, 0.94));
-  border: 1px solid var(--chart-tooltip-border, rgba(255, 255, 255, 0.15));
+  background: var(--chart-tooltip-bg);
+  border: 1px solid var(--chart-tooltip-border);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: #FFFFFF;
+  color: var(--chart-tooltip-text);
   padding: 6px 10px;
   border-radius: 8px;
   font-size: 12px;
   pointer-events: none;
-  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-popover);
   white-space: nowrap;
-  z-index: 50;
+  z-index: var(--z-card);
   animation: tooltipFade 0.15s ease-out;
 }
 
@@ -555,14 +565,14 @@ export const MiniSparkline: React.FC<MiniSparklineProps> = ({
 
 .joli-tooltip-label {
   font-size: 10.5px;
-  color: #94A3B8;
+  color: var(--chart-tooltip-label);
   margin-bottom: 2px;
 }
 
 .joli-tooltip-value {
   font-size: 13px;
   font-weight: 700;
-  color: #F8FAFC;
+  color: var(--chart-tooltip-text);
 }
 
 /* Donut Chart Layout */
@@ -570,6 +580,7 @@ export const MiniSparkline: React.FC<MiniSparklineProps> = ({
   display: flex;
   align-items: center;
   justify-content: space-around;
+  flex-wrap: wrap;
   gap: 1.5rem;
   padding: 0.5rem 0;
 }
@@ -607,13 +618,13 @@ export const MiniSparkline: React.FC<MiniSparklineProps> = ({
 .joli-donut-total {
   font-size: 1.4rem;
   font-weight: 800;
-  color: var(--text-primary, #0F172A);
+  color: var(--text-primary);
   line-height: 1;
 }
 
 .joli-donut-center-sub {
   font-size: 0.75rem;
-  color: var(--text-muted, #64748B);
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
@@ -638,13 +649,13 @@ export const MiniSparkline: React.FC<MiniSparklineProps> = ({
 }
 
 .joli-legend-label {
-  color: var(--text-secondary, #475569);
+  color: var(--text-secondary);
   flex: 1;
 }
 
 .joli-legend-value {
   font-weight: 600;
-  color: var(--text-primary, #0F172A);
+  color: var(--text-primary);
 }
 
 .joli-sparkline-svg {

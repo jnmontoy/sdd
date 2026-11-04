@@ -122,10 +122,10 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: var(--topbar-height, 60px);
+  height: var(--topbar-height);
   padding: 0 1.5rem;
-  background: var(--glass-bg, rgba(26, 26, 46, 0.88));
-  border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.09));
+  background: var(--glass-bg);
+  border-bottom: 1px solid var(--glass-border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
@@ -141,17 +141,17 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+  background: var(--bg-hover);
   padding: 0.35rem 0.75rem;
-  border-radius: var(--radius-md, 8px);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.09));
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
 }
 
 .topheader-page-title {
   margin: 0;
   font-size: 0.88rem;
   font-weight: 700;
-  color: var(--text-primary, #ffffff);
+  color: var(--text-primary);
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
@@ -162,7 +162,7 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 2px 7px;
-  border-radius: var(--radius-pill, 9999px);
+  border-radius: var(--radius-full);
   background: rgba(16, 185, 129, 0.15);
   color: #10b981;
   border: 1px solid rgba(16, 185, 129, 0.3);
@@ -172,16 +172,16 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
 .topheader-divider {
   width: 1px;
   height: 22px;
-  background: var(--border-color, rgba(255, 255, 255, 0.09));
+  background: var(--border-color);
   margin: 0 0.15rem;
 }
-  gap: var(--space-4);
+  gap: 1rem;
 }
 
 .joli-brand {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 0.75rem;
 }
 
 .joli-navbar-logo {
@@ -190,14 +190,14 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
 }
 
 .joli-brand-divider {
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   font-weight: 300;
 }
 
 .joli-project-title {
-  font-size: var(--text-base);
-  font-weight: var(--weight-bold);
-  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
   letter-spacing: -0.3px;
 }
 
@@ -211,14 +211,14 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .joli-nav-icon-btn:hover {
-  background-color: var(--color-bg-card-hover);
-  color: var(--color-primary);
+  background-color: var(--bg-hover);
+  color: var(--brand-primary);
 }
 
 .joli-badge-counter {
@@ -232,9 +232,9 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
   height: 18px;
   padding: 0 4px;
   font-size: 10px;
-  font-weight: var(--weight-bold);
+  font-weight: var(--font-weight-bold);
   color: #ffffff;
-  background-color: var(--color-primary);
+  background-color: var(--brand-primary);
   border-radius: var(--radius-full);
 }
 
@@ -245,8 +245,8 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
   justify-content: center;
   width: 38px;
   height: 38px;
-  background: var(--color-bg-input);
-  border: 1px solid var(--color-border);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-full);
   cursor: pointer;
   font-size: 16px;
@@ -266,7 +266,7 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
 .joli-user-trigger {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 0.75rem;
   padding: 4px 8px;
   background: transparent;
   border: 1px solid transparent;
@@ -276,7 +276,7 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
 }
 
 .joli-user-trigger:hover {
-  background-color: var(--color-bg-card-hover);
+  background-color: var(--bg-hover);
 }
 
 .joli-avatar {
@@ -285,10 +285,10 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
   justify-content: center;
   width: 34px;
   height: 34px;
-  background: linear-gradient(135deg, var(--color-primary), #059669);
+  background: linear-gradient(135deg, var(--brand-primary), #059669);
   color: #ffffff;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   border-radius: var(--radius-full);
 }
 
@@ -299,19 +299,19 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
 }
 
 .joli-user-name {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
 .joli-user-role {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
 }
 
 .joli-dropdown-chevron {
-  color: var(--color-text-muted);
+  color: var(--text-muted);
 }
 
 .joli-dropdown-panel {
@@ -319,11 +319,11 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
   top: calc(100% + 8px);
   right: 0;
   min-width: 220px;
-  background-color: var(--color-bg-card);
-  border: 1px solid var(--color-border);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
-  padding: var(--space-2) 0;
+  box-shadow: var(--shadow-popover);
+  padding: 0.5rem 0;
   display: none;
 }
 
@@ -332,35 +332,35 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
 }
 
 .joli-dropdown-header {
-  padding: var(--space-3) var(--space-4);
+  padding: 0.75rem 1rem;
 }
 
 .joli-dropdown-user {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
   margin: 0;
 }
 
 .joli-dropdown-email {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
   margin: 0;
 }
 
 .joli-dropdown-divider {
   height: 1px;
-  background-color: var(--color-border);
-  margin: var(--space-2) 0;
+  background-color: var(--border-subtle);
+  margin: 0.5rem 0;
 }
 
 .joli-dropdown-item {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
+  padding: 0.5rem 1rem;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
   background: transparent;
   border: none;
   text-decoration: none;
@@ -369,12 +369,12 @@ Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día*
 }
 
 .joli-dropdown-item:hover {
-  background-color: var(--color-bg-card-hover);
-  color: var(--color-text-primary);
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .joli-dropdown-item.text-danger {
-  color: var(--color-danger);
+  color: var(--status-error);
 }
 
 .joli-dropdown-item.text-danger:hover {

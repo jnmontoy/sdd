@@ -1,46 +1,75 @@
-# Evaluación y Calificación Final del Ecosistema SDD — Versión Agentic 2.0
-## Ecosistema Jolifoods / Greenyard — Metodología Spec-Driven Development (SDD)
+# Evaluación de madurez del SDD
 
-**Fecha de Reevaluación**: 2026-10-13  
-**Alcance Evaluado**: Los 16 Protocolos Oficiales de Ingeniería (00 al 15), Catálogo de 36 Suites UI/UX, Motor de Memoria Persistente (`memory/`), Estándar de Cambios Atómicos (`changes_template/`), Agent Harness (`AGENTS.md` y `.cursorrules`), Principio ODD de Proporcionalidad, Validador Universal de Endpoints (`validate_endpoints.py`), Registro Centralizado y Scaffolding Automatizado con Inyección de Agentes.  
-**Entorno de Validación**: Validado en los proyectos del ecosistema y frente al estándar de agentes autónomos y LLMs (Gentle-AI + Engram + OpenSpec).
+**Fecha de la evaluación**: 2026-11-04
+**Alcance**: contenido del repositorio `.sdd/` (protocolos 00–15, catálogo de componentes, `stack/`, `mock/`, `memory/`, `changes_template/`).
+**Método**: revisión documental del repositorio. No se midió el uso del SDD en proyectos reales ni se ejecutaron sus plantillas en un proyecto de prueba como parte de esta evaluación.
 
----
-
-## 1. Matriz de Reevaluación por Pilares de Ingeniería y Agentes Autónomos (12 Pilares)
-
-| # | Pilar Evaluado | Criterios Auditados y Cobertura Técnica | Puntaje | Veredicto |
-|---|:---|:---|:---:|:---:|
-| **1** | **UX, Ergonomía & 36 Suites UI/UX** | • 36 suites atómicas desacopladas con tokens CSS (Noche/Día).<br>• Regla Inflexible 100% Horizontal (prohibido centrar pantallas).<br>• Right Sidebar Drawer obligatorio para CRUDs (prohibido modales para formularios).<br>• Tarjetas `CorporateCard` con Header, Body y Footer desacoplados.<br>• Suite `ProModal` (doble verificación OTP, Wizard y Split-Screen).<br>• Suite analítica avanzada (`AdvancedAnalyticsCharts`: Gantt, Radar 360°, Gauge SLA, Sankey, Heatmaps).<br>• Tutorial Interactivo Dividido (`SplitTutorialWalkthrough` con zoom Lightbox).<br>• Paginador superior integrado en toolbar de tabla (estándar `bi`). | **10.0 / 10.0** | **Perfección Absoluta** |
-| **2** | **Arquitectura Backend & Rendimiento ASGI** | • Servidor híbrido ASGI (Django + FastAPI en un solo proceso y puerto).<br>• Sub-rutas `/fast` con serialización Pydantic v2 en microsegundos.<br>• Erradicación absoluta de consultas N+1 (`select_related`, `prefetch_related`, `.values()`).<br>• Pooling de conexiones persistentes PostgreSQL y reciclaje post-request.<br>• Procesamiento asíncrono con Celery Worker y Celery Beat sobre Redis Broker. | **10.0 / 10.0** | **Perfección Absoluta** |
-| **3** | **Seguridad Perimetral, Hardening & OWASP** | • 35/35 vectores OWASP mitigados desde la plantilla de configuración.<br>• `DEBUG=False` forzado, `ALLOWED_HOSTS` estricto y CORS restringido.<br>• Cookies `HttpOnly=True`, `SameSite='Lax'`, Rate Limiting en Redis.<br>• Cabeceras HTTP endurecidas: `X_FRAME_OPTIONS='DENY'`, `NOSNIFF=True`, HSTS.<br>• Firma digital probatoria (`MultiPartySignature`) con SHA-256, GPS e IP. | **10.0 / 10.0** | **Perfección Absoluta** |
-| **4** | **Portabilidad, Rutas Relativas & Almacenamiento Media** | • **Rutas 100% Relativas** (BP-07): Cero rutas absolutas `C:\...` o `/home/...`; uso dinámico de `BASE_DIR`.<br>• **Carpeta Canónica `backend/media/`** (BP-08): Creada con `.gitkeep` y montada en volúmenes Docker persistentes para firmas, PDFs, fotos y evidencias.<br>• Aislamiento estricto de Python en `.venv` vía `init_project.py` (cero paquetes globales). | **10.0 / 10.0** | **Perfección Absoluta** |
-| **5** | **Centralización de Endpoints & Automatización de Testing** | • **Centralización de Rutas** (BP-09): `endpoints.ts` en frontend y `endpoints_registry.json` en backend (cero URLs quemadas en vistas).<br>• **Validador Universal Autónomo (`validate_endpoints.py`)**: Script en Python puro, sin dependencias, compatible con consolas Windows (UTF-8/cp1252), genera cURLs ejecutables (`--export-curls`), audita seguridad y retorna exit codes para CI/CD.<br>• Suite Pytest, Playwright E2E y cobertura obligatoria > 80%. | **10.0 / 10.0** | **Perfección Absoluta** |
-| **6** | **Prototipado No-Code & Filosofía Mock** | • Carpeta oficial `mock/` con paquetes modulares de 4 archivos (`.html`, `.css`, `.js`, `datos.md`) y `assets/` local portable.<br>• Apertura inmediata con doble clic en navegador sin instalar Node ni Docker.<br>• **Exención Total de Testing en Modo Mock** (BP-10): Cero pruebas automáticas ni validadores en prototipos de negocio, protegiendo la agilidad No-Code. | **10.0 / 10.0** | **Perfección Absoluta** |
-| **7** | **DevOps, CI/CD & Calidad de Código** | • Pre-commit hooks configurados: `ruff`, `black`, `eslint`, `detect-secrets`.<br>• Estrategia Git Flow estructurada con Semantic Versioning (SemVer).<br>• Quality Gates automatizados en pipelines que frenan pases a producción ante bugs. | **10.0 / 10.0** | **Perfección Absoluta** |
-| **8** | **Observabilidad, Telemetría & Gobernanza de APIs** | • Correlation ID (`X-Correlation-ID`) propagado extremo a extremo.<br>• Healthchecks duales: `/health/live` (liveness) y `/health/ready` (readiness de DB y Redis).<br>• SLOs estrictos: p95 < 45ms para `/fast/` y p95 < 500ms para APIs estándar.<br>• Gobernanza de APIs con verificación `oasdiff` y cabeceras RFC Sunset (90 días). | **10.0 / 10.0** | **Perfección Absoluta** |
-| **9** | **Resiliencia, Migraciones & Gestión de Incidentes SRE** | • Migraciones Zero-Downtime con patrón *Expand & Contract* y lotes Celery.<br>• Métricas RPO < 15 min y RTO < 30 min garantizadas.<br>• Gestión de Incidentes SRE clasificados (SEV-1 a SEV-3) con War Room.<br>• Plantilla formal de *Blameless Post-Mortem* (Autopsia sin culpa con los 5 Porqués). | **10.0 / 10.0** | **Perfección Absoluta** |
-| **10** | **Ciclo de Vida (SDLC), Mejora Continua & Ecosistema** | • Las 7 fases del software formalizadas de punta a punta.<br>• Matriz de roles: Técnico (operación, cero bugs) vs Senior (adopción, RICE, mejora continua).<br>• `PlatformUsageDashboard` con telemetría in-app y widget de encuestas.<br>• Catálogo de innovaciones probado en los 8 proyectos hermanos (`bi`, `app_tic`, etc.). | **10.0 / 10.0** | **Perfección Absoluta** |
-| **11** | **Memoria Persistente de Agentes & Anti-Amnesia (Engram)** | • **Motor de Memoria Persistente (`memory/`)** (Protocolo 15 / BP-22).<br>• Registro formal de decisiones arquitectónicas (`memory/adrs/` con ADR 0001 canónico).<br>• Catálogo anti-reincidencia de bugs históricos (`bug_lessons.md`) para que la IA no repita fallos de concurrencia, serialización o CORS.<br>• Convenciones de negocio y datos unificadas (`conventions.md`).<br>• Ciclos formales de *Recall* (inicio de sesión) y *Log Learnings* (cierre). | **9.8 / 10.0** | **Excelente (Referente)** |
-| **12** | **Cambios Atómicos, Especificaciones Vivas & ODD (OpenSpec)** | • **Estándar de Cambios Atómicos (`changes_template/`)** (Protocolo 14 / BP-21).<br>• Cuarteto canónico: `proposal.md` (con límites estrictos Out-of-Scope), `design.md` (contratos y edge cases), `tasks.md` (plan secuencial `[x]`) y `evidence.md` (salida real de herramientas).<br>• **Principio ODD de Proporcionalidad**: Nivel 1 (Hotfix rápido sin burocracia), Nivel 2 (Cambio Atómico Feature) y Nivel 3 (Greenfield Integral).<br>• **Agent Harness**: Directrices universales `AGENTS.md` y `.cursorrules` inyectadas en scaffolding. | **9.8 / 10.0** | **Excelente (Referente)** |
+> Este documento reemplaza una versión anterior que se autocalificaba con 99,7/100 y "CMMI nivel 5". Esa calificación no tenía método ni evidencia: el SDD se calificaba a sí mismo, sin mediciones de uso, y CMMI es un modelo que evalúa procesos de una organización mediante una valoración formal (SCAMPI), no un repositorio de documentos. Aquí no se asignan puntajes; se describe qué está respaldado por una herramienta, qué es solo una norma escrita y qué falta.
 
 ---
 
-## 2. Calificación Final Consolidada
+## 1. Cómo leer esta evaluación
 
-$$\Huge \mathbf{99.7\ /\ 100\quad (9.97\ /\ 10.0)}$$
+Cada capacidad se clasifica en uno de tres niveles:
 
-### 🏆 Nivel de Madurez: Élite Corporativa — CMMI Nivel 5 + Ecosistema Agentic AI Nativo
+| Nivel | Significado |
+|---|---|
+| **Implementado** | Existe un archivo ejecutable o una plantilla funcional en el SDD que lo genera o lo verifica. |
+| **Documentado** | Existe una norma o especificación escrita, pero ninguna herramienta del SDD la aplica ni la comprueba; su cumplimiento depende de la disciplina de cada equipo o de la revisión de código. |
+| **Ausente** | Se menciona como objetivo, pero no hay especificación suficiente ni herramienta. |
 
 ---
 
-## 3. Cuadro Comparativo: Evolución de las 3 Eras de SDD
+## 2. Estado por área
 
-| Dimensión | SDD 1.0 (Inicial) | SDD 1.5 (Corporativo) | SDD 2.0 (Agentic AI - Actual) |
-|:---|:---|:---|:---|
-| **Puntaje Global** | **65 / 100** | **70 / 100** *(Frente a agentes de IA)* | **99.7 / 100** |
-| **Relación con la IA** | Prompts libres en chat ("Vibe coding"). | Guías de texto en Markdown para lectura humana. | **Agent Harness nativo (`AGENTS.md`, `.cursorrules`) con deny-list de seguridad y reglas automáticas**. |
-| **Memoria del Agente** | Amnesia total (empieza de cero cada sesión). | Documentación estática pasiva. | **Motor de Memoria Persistente (`memory/`): ADRs inmutables + `bug_lessons.md` (Anti-Reincidencia)**. |
-| **Gestión de Cambios** | Peticiones sueltas en chat sin contrato. | Solo pensado para páginas completas desde cero. | **Ciclo de Cambios Atómicos OpenSpec (`proposal`, `design`, `tasks`, `evidence`)**. |
-| **Proporcionalidad** | Rígido o inexistente. | Mismo flujo pesado para cualquier requerimiento. | **Principio ODD (Nivel 1: Hotfix, Nivel 2: Feature Atómica, Nivel 3: Greenfield)**. |
-| **Aseguramiento de Calidad** | Asunción ciega de que el código funciona. | Validación manual con scripts. | **Quality Gates con evidencia técnica real obligatoria registrada en `evidence.md`**. |
+| Área | Qué hay | Nivel | Brecha principal |
+|---|---|---|---|
+| **Andamiaje de proyecto** | `stack/init_project.py` / `.ps1` crean la estructura, el `.venv`, `.vscode/settings.json`, `pytest.ini`, copian `memory/`, `changes_template/` y las instrucciones para agentes (`AGENTS.md`, `.cursorrules`). | Implementado | No hay prueba automática del propio script; un cambio puede romperlo sin que nadie lo note. |
+| **Validación de endpoints** | `stack/validate_endpoints.py` (prueba de humo HTTP: estado, latencia, exportación de cURL sin secretos, código de salida para CI) y `endpoints_registry_template.json`. | Implementado | Solo verifica lo que esté en el registro; no detecta endpoints sin registrar. |
+| **Infraestructura local** | `docker-compose.yml`, Dockerfiles, `entrypoint.sh`, `healthcheck.py`, `seed_data.py`, `settings_security_template.py`. | Implementado (plantillas) | Las rutas de salud del `healthcheck.py` deben coincidir con las canónicas (`/health/live`, `/health/ready`, `/fast/v1/health`); revisar en cada cambio de `stack/`. |
+| **Componentes de interfaz** | 36 carpetas en `components/` con especificaciones Markdown y código de ejemplo React/CSS, más `variables.css` con tokens de tema claro/oscuro. | Documentado | No es una librería instalable: el código se copia desde Markdown a cada proyecto, por lo que las copias divergen con el tiempo. No hay pruebas ni revisión automática de accesibilidad. |
+| **Normativa de buenas prácticas** | BP-01 a BP-22 en [`00_normativa_buenas_practicas_y_auditoria.md`](./00_normativa_buenas_practicas_y_auditoria.md). | Documentado (parcialmente implementado) | Algunas reglas están en las plantillas (p. ej. `SECRET_KEY` obligatoria con `DEBUG=False`, CORS restringido); la mayoría (N+1, `bulk_create`, transacciones) solo se verifica en revisión de código. |
+| **Pruebas automáticas** | Protocolo 11, guía `stack/e2e_testing_guide.md`, `pytest.ini` y `requirements-dev.txt` generados por el andamiaje. | Documentado / plantilla | No hay un proyecto de referencia con pruebas que demuestre la configuración funcionando de punta a punta. |
+| **CI/CD y control de calidad** | Protocolo 06 (pre-commit, ramas, Conventional Commits, puertas de calidad). | Documentado | No hay `.pre-commit-config.yaml` ni flujo de CI (GitHub Actions / GitLab CI) en `stack/`. Cada proyecto debe crearlos. |
+| **Observabilidad** | Protocolo 07 (Correlation ID, salud, SLO, Sentry). | Documentado | No hay middleware de Correlation ID, configuración de métricas ni de Sentry en `stack/`. Los SLO son objetivos sin medición base. |
+| **Migraciones y recuperación** | Protocolo 08 (*Expand & Contract*, índices concurrentes, RPO/RTO). | Documentado | No hay script de respaldo/restauración ni archivado de WAL configurado. RPO/RTO son metas, no capacidades comprobadas. |
+| **Gobierno de APIs** | Protocolo 09 (versionado en URL, `oasdiff`, cabeceras `Deprecation`/`Sunset`). | Documentado | No hay paso de `oasdiff` en CI ni middleware de deprecación en `stack/`. |
+| **Incidentes** | Protocolo 10 (severidades, roles, post-mortem sin culpa). | Documentado | No hay herramienta de guardia ni canal definidos para la organización; los tiempos de respuesta son referencias. |
+| **Ciclo de vida y mejora continua** | Protocolo 12, especificación `components/dashboard/platform_usage_dashboard.md`. | Documentado | No hay instrumentación de uso implementada ni política de tratamiento de datos de telemetría. |
+| **Prototipos sin código** | `mock/` (plantilla HTML autocontenida, plantilla de datos), metodología 05, ejemplo en `pages/dashboard/`. | Implementado (plantillas) | La plantilla depende de CDN (Bootstrap, Lucide, fuente Inter) para verse completa. |
+| **Cambios atómicos** | `changes_template/` (propuesta, diseño, tareas, evidencia) y protocolo 14. | Implementado (plantilla) | Su uso no se verifica; depende de la revisión de pull requests. |
+| **Memoria de proyecto** | `memory/` (ADR base, plantilla de ADR, lecciones y convenciones) y protocolo 15. | Implementado (plantilla) | Su valor depende de que se mantenga actualizada; no hay recordatorio ni verificación. |
+
+---
+
+## 3. Fortalezas verificables
+
+* Estructura de proyecto reproducible mediante un script, con entorno Python aislado.
+* Un validador de endpoints que puede ejecutarse en CI y devuelve código de salida.
+* Rutas canónicas definidas (`/api/v1/`, `/fast/v1/`, `/health/live`, `/health/ready`) y un registro único de endpoints.
+* Plantillas que separan decisión (ADR), alcance (propuesta) y evidencia (salida real de herramientas).
+* Prototipado sin código que permite validar pantallas con usuarios de negocio antes de programar.
+
+## 4. Debilidades y riesgos
+
+1. **Mucha norma y poca verificación automática.** La mayoría de las reglas dependen de la disciplina del equipo. Sin CI que las compruebe, se degradan.
+2. **Componentes como texto, no como paquete.** Cada proyecto copia el código; las correcciones no se propagan.
+3. **Sin evidencia de adopción.** No hay registro de qué proyectos usan el SDD ni de resultados (defectos, tiempos de entrega) antes y después.
+4. **Identidad visual no alineada.** `variables.css` usa una paleta verde esmeralda y tipografía Inter; la identidad corporativa de Joli Foods es morado, amarillo, azul y naranja con Gotham y Arvo. Es una decisión de negocio pendiente.
+5. **Riesgo de rigidez.** Varias convenciones de diseño (ancho completo, drawer para CRUD, paginador arriba) son preferencias razonables, no requisitos de seguridad; tratarlas como absolutas puede producir malas soluciones en casos que no encajan. Por eso se expresan como DEBERÍA, con desviación registrada en un ADR.
+
+## 5. Prioridades sugeridas
+
+| Prioridad | Acción | Efecto |
+|---|---|---|
+| 1 | Agregar a `stack/` un `.pre-commit-config.yaml` y un flujo de CI de referencia (lint, pruebas, `pip-audit`, `npm audit`, validador de endpoints). | Convierte varias normas "documentadas" en "implementadas". |
+| 2 | Crear un proyecto de ejemplo mínimo generado con el andamiaje y con pruebas pasando. | Prueba de que las plantillas funcionan juntas; detecta roturas. |
+| 3 | Decidir la paleta y tipografía corporativas y aplicarlas en `variables.css`. | Coherencia de marca en todas las aplicaciones. |
+| 4 | Evaluar publicar los componentes como paquete interno versionado. | Las correcciones llegan a todos los proyectos. |
+| 5 | Registrar qué proyectos adoptan el SDD y medir algunos indicadores (defectos en producción, tiempo de entrega). | Permite evaluar el SDD con datos y no con autocalificación. |
+
+---
+
+## 6. Cómo repetir esta evaluación
+
+Repetir la tabla de la sección 2 tras cada cambio relevante del SDD. Una capacidad solo pasa a "Implementado" cuando existe el archivo ejecutable o la plantilla en el repositorio y se ha probado al menos una vez en un proyecto generado. Las mejoras se registran con su evidencia (comando ejecutado y resultado), no con un puntaje.

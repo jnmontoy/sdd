@@ -56,7 +56,7 @@ export const Badge: React.FC<BadgeProps> = ({
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-weight: var(--weight-bold);
+  font-weight: var(--font-weight-bold);
   border-radius: var(--radius-full);
   line-height: 1;
   letter-spacing: 0.3px;
@@ -120,8 +120,8 @@ export const Badge: React.FC<BadgeProps> = ({
 }
 
 .joli-badge-neutral {
-  background-color: var(--color-bg-input);
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
+  background-color: var(--bg-input);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
 }
 ```

@@ -1,5 +1,5 @@
 ﻿# Módulo: Configuración del Sistema — Spec-Driven Development (SDD)
-## Ecosistema Jolifoods
+## Joli Foods
 
 Este módulo gestiona la parametrización institucional, políticas de seguridad de contraseñas y sesiones, canales SMTP y modo mantenimiento.
 

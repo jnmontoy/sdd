@@ -1,25 +1,27 @@
 # Catálogo de Modelos de Datos — Spec-Driven Development (SDD)
-## Ecosistema Jolifoods — Directorio: `.sdd/model/`
+## Joli Foods — Directorio: `.sdd/model/`
 
-Este directorio reúne las especificaciones formales de las entidades de persistencia y esquemas relacionales para el ecosistema corporativo **Jolifoods**.
+Especificaciones de las entidades de persistencia comunes a las aplicaciones de Joli Foods. Cada modelo tiene su DDL de referencia para **PostgreSQL** y su implementación en Django ORM, y ambos DEBEN coincidir en tipos, nulabilidad, índices, unicidad y `on_delete`.
 
 ---
 
-## 1. Módulos de Modelos
+## 1. Módulos
 
-| Módulo | Directorio | Modelos Clave | Propósito |
+| Módulo | Directorio | Modelos | Propósito |
 | :--- | :--- | :--- | :--- |
-| **Identidad & Autenticación** | [`login/`](./login/README.md) | `Usuario`, `SesionUsuario`, `AuditoriaAcceso`, `TokenRestablecimientoClave` | Cédula, email, credenciales con hash seguro, auditoría de login y tokens OTT de 15 min. |
-| **Bitácora de Auditoría** | [`auditoria/`](./auditoria/spec_model_bitacora.md) | `RegistroBitacoraAuditoria` | Trazabilidad inmutable de eventos, modificaciones y operaciones por módulo. |
-| **Roles & Sedes (RBAC)** | [`roles/`](./roles/spec_model_roles_permisos.md) | `Rol`, `Sede`, `RolPermiso` | Control de acceso basado en roles (`ADMIN`, `OPERADOR`, `AUDITOR`, `CONSULTA`) y permisos por módulo. |
-| **Telemetría & Adopción** | [`telemetria/`](./telemetria/spec_model_telemetria.md) | `EventoUsoPlataforma`, `RespuestaFeedback` | Tracking de módulos más usados, tiempo de sesión y micro-encuestas in-app para mejora continua (SDLC). |
-| **Archivos Adjuntos & Media** | [`archivos/`](./archivos/spec_model_archivos_media.md) | `ArchivoAdjunto` | Almacenamiento seguro en `backend/media/` con rutas relativas, hash SHA-256 para deduplicación y metadata MIME. |
-
+| **Identidad y autenticación** | [`login/`](./login/README.md) | `Usuario`, `SesionUsuario`, `RegistroAuditoriaAcceso`, `TokenRestablecimientoClave` | Usuario custom (`AbstractBaseUser` + `PermissionsMixin`), sesiones, bitácora de accesos solo-inserción y tokens de restablecimiento con hash. |
+| **Roles y sedes (RBAC)** | [`roles/`](./roles/spec_model_roles_permisos.md) | `Rol`, `Sede` | Roles en tabla propia con permisos `modulo.accion` (JSON) y relación M2M con usuarios (BP-19). |
+| **Bitácora de operaciones** | [`auditoria/`](./auditoria/spec_model_bitacora.md) | `RegistroBitacoraAuditoria` | Trazabilidad solo-inserción de cambios por módulo, sin datos sensibles en los payloads. |
+| **Telemetría y feedback** | [`telemetria/`](./telemetria/spec_model_telemetria.md) | `EventoUsoPlataforma`, `RespuestaFeedback` | Adopción por módulo y micro-encuestas, con minimización de datos personales. |
+| **Archivos adjuntos** | [`archivos/`](./archivos/spec_model_archivos_media.md) | `ArchivoAdjunto` | Archivos en `backend/media/` con validación de tipo/tamaño, SHA-256 y descarga controlada de archivos privados. |
 
 ---
 
-## 2. Principios de Persistencia en el SDD
+## 2. Principios de Persistencia
 
-1. **Agnóstico del Motor Relacional**: Todo esquema tiene su especificación DDL SQL estándar para PostgreSQL o MySQL.
-2. **Implementación de Referencia en Django ORM**: Modelos preparados para optimizaciones Anti-N+1 con `select_related()` y `prefetch_related()`.
-3. **Índices Estratégicos**: Todo campo consultado con frecuencia (`numero_documento`, `email`, `codigo`, `fecha_hora`, `modulo`) cuenta con `db_index=True` o índices compuestos explícitos.
+1. **DDL y ORM coinciden.** En proyectos Django las tablas las crean las migraciones; el DDL sirve para revisión y para otros backends.
+2. **Sin N+1.** Las relaciones se cargan con `select_related()` (FK) y `prefetch_related()` (M2M e inversas).
+3. **Índices justificados.** Se indexa lo que se filtra u ordena con frecuencia. Una restricción `UNIQUE` ya crea su índice; no se duplica con `CREATE UNIQUE INDEX`.
+4. **Bajas lógicas.** Usuarios y catálogos se desactivan (`is_active = false`) en lugar de borrarse, para conservar la trazabilidad.
+5. **Bitácoras solo-inserción** a nivel de aplicación y de permisos de base de datos.
+6. **Datos personales mínimos** (Ley 1581 de 2012): solo se guarda lo necesario para la finalidad declarada, con retención definida.

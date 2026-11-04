@@ -1,229 +1,202 @@
 # Especificación de Componente: Modal de Sesión Expirada (`SessionExpirationModal.tsx`)
-## Ecosistema Jolifoods — Manejo Desacoplado de Caducidad de Tokens
-### Basado en la Arquitectura de Doble Detección de `tiendita`
+## Aviso desacoplado de sesión vencida
 
-El componente `SessionExpirationModal` intercepta la pérdida o caducidad de la sesión de usuario y despliega un diálogo limpio y no bloqueante que notifica la situación e invita al usuario a reautenticarse sin perder su contexto de trabajo.
+> **Origen:** patrón tomado de tiendita (detección doble de vencimiento de sesión). Aquí se describe de forma genérica.
 
----
-
-### 1. Requisitos de Negocio y Arquitectura
-1. **Doble Detección de Caducidad (Dual Detection Engine)**:
-   - **Detección Reactiva (Backend HTTP 401)**: Intercepta cualquier respuesta `401 Unauthorized` desde la API (token vencido o revocado en servidor) y emite el evento global `window.dispatchEvent(new CustomEvent('session-expired'))`.
-   - **Detección Proactiva (Cliente JWT `exp`)**: Valida en el cliente la marca temporal de expiración (`exp`) del Access Token JWT. Si `Date.now() >= payload.exp * 1000`, activa de inmediato el modal sin esperar a que el usuario dispare una petición fallida.
-2. **Prevención de Pérdida de Contexto y Bucles**: Despliega un diálogo amigable con fondo difuminado (`backdrop-filter: blur(6px)`) en lugar de provocar redirecciones abruptas en blanco o bucles infinitos de reintento.
-3. **Purga Idempotente de Almacenamiento**: Al confirmar la salida, limpia todos los tokens (`access_token`, `refresh_token`), credenciales cacheadas (`auth_user`) y redirige limpiamente a la ruta de inicio `/login` preservando el destino previo.
+El componente `SessionExpirationModal` avisa que la sesión ya no se puede renovar y ofrece volver a iniciar sesión, sin pantallas en blanco ni redirecciones abruptas. Es la pieza visual de la cadena de autenticación descrita en [`context/auth_context.md`](../context/auth_context.md) (BP-20).
 
 ---
 
-### 2. Implementación TypeScript Canónica (`SessionExpirationModal.tsx`)
+### 1. Requisitos
+
+1. **Detección doble (la implementan otras piezas, el modal solo reacciona):**
+   - **Reactiva:** el interceptor de [`api_client.md`](../services/api_client.md) recibe un 401, intenta **un único** refresh y, si falla, emite el evento global `session-expired`.
+   - **Proactiva:** `AuthContext` lee `exp` del access token **en memoria** y lo renueva 60 s antes de que venza; si la renovación falla, emite el mismo evento. Así el usuario se entera antes de intentar guardar.
+2. **Un solo dueño del estado:** solo `AuthContext` escucha `session-expired` y abre el modal. El modal no lee tokens ni storage (el access token nunca está en `localStorage`).
+3. **Salida limpia:** "Volver a iniciar sesión" llama a `logout()` de `AuthContext` (revoca la cookie de refresh en servidor y limpia la memoria). `ProtectedRoute` redirige a `/login` conservando la ruta de origen en `state.from`.
+4. **Accesibilidad:** `role="alertdialog"`, `aria-modal="true"`, título y descripción enlazados, foco inicial en el botón, foco atrapado dentro del diálogo y fondo inerte.
+   - **Excepción a "cerrar con Escape":** este diálogo NO se cierra con Escape ni clic en el fondo. **Por qué:** la sesión ya no es válida; cerrarlo dejaría al usuario operando una pantalla cuyas peticiones fallarán.
+
+---
+
+### 2. Implementación TypeScript de referencia (`src/components/modal/SessionExpirationModal.tsx`)
 
 ```tsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { LogOut, Clock } from 'lucide-react';
+import { Clock, LogOut } from 'lucide-react';
 
-export const SESSION_EXPIRED_EVENT = 'session-expired';
-
-/** Disparador global utilizable desde interceptores de Axios / Fetch */
-export const dispatchSessionExpired = () => {
-  window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
-};
-
-export interface SessionExpiredModalProps {
+export interface SessionExpirationModalProps {
   isOpen: boolean;
+  /** Normalmente `() => logout()` de AuthContext. */
   onConfirm: () => void;
 }
 
-export const SessionExpiredModal: React.FC<SessionExpiredModalProps> = ({
-  isOpen,
-  onConfirm,
-}) => {
+export const SessionExpirationModal: React.FC<SessionExpirationModalProps> = ({ isOpen, onConfirm }) => {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const appRoot = document.getElementById('root');
+    appRoot?.setAttribute('inert', ''); // el fondo no recibe foco ni clics
+    buttonRef.current?.focus();
+
+    // Único elemento enfocable: Tab y Shift+Tab permanecen en el botón. Escape no cierra (ver §1.4).
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        buttonRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      appRoot?.removeAttribute('inert');
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return createPortal(
-    <div 
-      className="joli-session-modal-overlay" 
-      role="alertdialog" 
-      aria-modal="true"
-      aria-labelledby="session-expired-title"
-      aria-describedby="session-expired-desc"
-    >
-      <div className="joli-session-modal-card">
-        {/* Halo luminoso de advertencia */}
-        <div className="session-icon-halo">
-          <Clock size={38} className="session-icon text-warning" />
+    <div className="joli-session-modal-overlay">
+      <div
+        className="joli-session-modal-card"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="session-expired-title"
+        aria-describedby="session-expired-desc"
+        data-testid="session-expiration-modal"
+      >
+        <div className="joli-session-icon-halo" aria-hidden="true">
+          <Clock size={38} />
         </div>
 
-        <h4 id="session-expired-title" className="session-title">
-          Tu Sesión ha Expirado
-        </h4>
+        <h2 id="session-expired-title" className="joli-session-title">
+          Tu sesión ha expirado
+        </h2>
 
-        <p id="session-expired-desc" className="session-text">
-          Por políticas de seguridad corporativa, tu token de acceso ha caducado. 
-          Para continuar operando de forma segura, por favor inicia sesión nuevamente.
+        <p id="session-expired-desc" className="joli-session-text">
+          Por seguridad, tu sesión ya no está activa. Inicia sesión nuevamente para continuar.
         </p>
 
-        <button 
-          type="button" 
-          className="btn-session-relogin"
-          onClick={onConfirm}
-          autoFocus
-        >
-          <LogOut size={16} />
-          <span>Volver a Iniciar Sesión</span>
+        <button ref={buttonRef} type="button" className="joli-session-relogin-btn" onClick={onConfirm}>
+          <LogOut size={16} aria-hidden="true" />
+          <span>Volver a iniciar sesión</span>
         </button>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 ```
 
 ---
 
-### 3. Integración en `AuthContext.tsx` (Doble Detección Proactiva y Reactiva)
+### 3. Integración
 
-```tsx
-// src/context/AuthContext.tsx
-
-// 1. Escuchar eventos globales de 401 Unauthorized y validar expiración de token JWT
-useEffect(() => {
-  const handleExpiredEvent = () => {
-    setIsSessionExpired(true);
-  };
-
-  window.addEventListener('session-expired', handleExpiredEvent);
-
-  // Verificación proactiva al montar la app
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    try {
-      const payloadBase64 = token.split('.')[1];
-      if (payloadBase64) {
-        const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
-        const pad = base64.length % 4;
-        const paddedBase64 = pad ? base64 + '='.repeat(4 - pad) : base64;
-
-        const payload = JSON.parse(atob(paddedBase64));
-        if (payload.exp && Date.now() >= payload.exp * 1000) {
-          setIsSessionExpired(true);
-        }
-      }
-    } catch (e) {
-      console.error('Error al validar la expiración del token:', e);
-    }
-  }
-
-  return () => {
-    window.removeEventListener('session-expired', handleExpiredEvent);
-  };
-}, []);
-
-const handleConfirmExpiredSession = () => {
-  setIsSessionExpired(false);
-  logout();
-  window.location.href = import.meta.env.BASE_URL || '/login';
-};
-```
+- **En `AuthContext`** (ver código completo en [`auth_context.md`](../context/auth_context.md) §3): listener de `session-expired` con limpieza en el `return` del efecto, temporizador proactivo cancelado al desmontar, y render de `<SessionExpirationModal isOpen={isSessionExpired && user !== null} onConfirm={() => void logout()} />`.
+- **En el cliente HTTP** (ver [`api_client.md`](../services/api_client.md) §2): el evento se emite solo cuando falla el refresh, nunca en el primer 401, y nunca para las rutas `/auth/login/`, `/auth/refresh/` y `/auth/logout/`.
+- El layout maestro NO DEBE montar una segunda instancia del modal: el dueño es `AuthContext`.
 
 ---
 
-### 4. Interceptor de Red API (`apiClient.ts` / Fetch Wrapper)
-
-```typescript
-// Interceptor en llamadas fetch o axios ante respuestas 401
-if (response.status === 401) {
-  // Notificar al sistema global que la sesión ha vencido
-  window.dispatchEvent(new CustomEvent('session-expired'));
-}
-```
-
----
-
-### 5. Estilos CSS (`session_expiration_modal.css`)
+### 4. Estilos CSS (`session_expiration_modal.css`)
 
 ```css
 .joli-session-modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(6px);
-  z-index: 2000;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  animation: sessionFadeIn 0.2s ease-out;
+  background-color: color-mix(in srgb, var(--bg-viewport) 75%, transparent);
+  backdrop-filter: blur(6px);
+  animation: joli-session-fade-in 0.2s ease-out;
 }
 
 .joli-session-modal-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  max-width: 420px;
   width: 100%;
+  max-width: 420px;
   padding: 32px 24px;
-  background: var(--color-bg-surface, #1E293B);
-  border: 1px solid var(--color-border-subtle, #334155);
-  border-radius: var(--border-radius-lg, 14px);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-  animation: sessionScaleIn 0.2s ease-out;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
+  animation: joli-session-scale-in 0.2s ease-out;
 }
 
-.session-icon-halo {
+.joli-session-icon-halo {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 68px;
   height: 68px;
-  border-radius: 50%;
-  background: rgba(217, 119, 6, 0.15);
   margin-bottom: 16px;
+  border-radius: var(--radius-full);
+  background: var(--status-warning-bg);
+  color: var(--status-warning);
 }
 
-.session-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-text-primary, #F8FAFC);
-  margin-bottom: 8px;
+.joli-session-title {
+  margin: 0 0 8px;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
 }
 
-.session-text {
-  font-size: 13.5px;
-  color: var(--color-text-secondary, #94A3B8);
-  line-height: 1.5;
-  margin-bottom: 24px;
+.joli-session-text {
+  margin: 0 0 24px;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--text-secondary);
 }
 
-.btn-session-relogin {
+.joli-session-relogin-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
   height: 42px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-  background-color: var(--color-primary, #2D6A4F);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-on-brand);
+  background-color: var(--brand-primary);
   border: none;
-  border-radius: var(--border-radius-sm, 6px);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
 }
 
-.btn-session-relogin:hover {
-  background-color: var(--color-primary-dark, #1B4332);
+.joli-session-relogin-btn:hover {
+  background-color: var(--brand-primary-hover);
 }
 
-@keyframes sessionFadeIn {
+.joli-session-relogin-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-input-focus);
+}
+
+@keyframes joli-session-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@keyframes sessionScaleIn {
+@keyframes joli-session-scale-in {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .joli-session-modal-overlay,
+  .joli-session-modal-card { animation: none; }
 }
 ```

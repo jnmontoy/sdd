@@ -1,95 +1,106 @@
-# Suite Completa de Gráficas Analíticas Avanzadas (`AdvancedAnalyticsCharts`)
-## Componente UI Canónico — Spec-Driven Development (SDD)
+# Gráficas Analíticas Avanzadas (`AdvancedAnalyticsCharts`)
+## SDD Joli Foods — Spec-Driven Development
 
-Este catálogo complementa las gráficas estándar de área y barras con **visualizaciones analíticas de alta densidad y complejidad operativa**: Cronogramas Gantt, Radares Spider de evaluación 360°, Diagramas de Flujo Sankey, Mapas de Calor (Heatmaps) y Medidores de Aguja (Gauge SLA).
+Complementa las gráficas básicas de [`analytics_charts.md`](./analytics_charts.md) con visualizaciones de mayor densidad: cronogramas Gantt, radar (araña) para evaluaciones, diagramas Sankey (flujos), mapas de calor y medidores tipo velocímetro (*gauge*) para metas o SLA (*Service Level Agreement*: nivel de servicio acordado).
+
+Todas DEBEN usar los tokens de color de `variables.css` (`--chart-*`, `--status-*`) y cumplir las reglas de accesibilidad de la suite básica (`role="img"`, `aria-label`, leyenda con texto).
 
 ---
 
-## 1. Catálogo de Tipologías Soportadas
+## 1. Catálogo de tipos
 
-| Tipo de Gráfica | Caso de Uso Principal | Tecnologías Recomendadas |
+| Tipo | Caso de uso | Tecnología sugerida |
 | :--- | :--- | :--- |
-| **Gantt Interactivo** | Cronograma de proyectos TIC, paradas de planta, fases de despacho. | SVG interactivo / Frappe Gantt / Canvas |
-| **Radar / Spider** | Evaluación de competencias, matrices de madurez de seguridad y pentesting. | Recharts `RadarChart` / Chart.js |
-| **Diagrama Sankey** | Flujos de costos, dispersión de inventario de materias primas y presupuesto. | D3.js / Recharts Sankey |
-| **Mapa de Calor (Heatmap)** | Ocupación de turnos, densidad de incidentes por hora/día de la semana. | Recharts Treemap / CSS Grid Heatmap |
-| **Gauge / Tacómetro** | Porcentaje de cumplimiento de SLA, salud del servidor y nivel de batería/recurso. | SVG Circular con aguja reactiva |
+| **Gantt** | Cronograma de proyectos, paradas de planta, fases de despacho. | SVG propio o Frappe Gantt |
+| **Radar / araña** | Evaluación de competencias, matrices de madurez. | Recharts `RadarChart` |
+| **Sankey** | Flujos de costos, consumo de materias primas, presupuesto. | Recharts `Sankey` o D3 |
+| **Mapa de calor** | Ocupación de turnos, incidentes por hora y día. | Rejilla CSS (`display: grid`) |
+| **Gauge** | Cumplimiento de metas o SLA, uso de un recurso. | SVG con arco |
 
 ---
 
-## 2. Especificación: Gráfica Radar / Spider (Auditoría y Competencias)
+## 2. Radar / araña (evaluaciones)
 
 ```typescript
 export interface RadarDimension {
-  subject: string; // Ej: "Autenticación", "Criptografía", "Consultas N+1"
+  subject: string; // ej. "Autenticación", "Criptografía", "Consultas N+1"
   score: number;   // 0 - 100
-  fullMark: number;
 }
 
 export interface RadarChartProps {
   data: RadarDimension[];
   title: string;
-  fillColor?: string; // Por defecto: var(--color-primary, #10b981)
-  strokeColor?: string;
+  color?: string; // por defecto 'var(--chart-primary)'
 }
 ```
 
-### Renderizado con SVG Puro / Recharts:
 ```tsx
+import React from 'react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 
-export const SecurityRadar: React.FC<RadarChartProps> = ({ data, title }) => (
-  <div className="analytics-card">
-    <h4 className="analytics-card__title">{title}</h4>
-    <div style={{ width: '100%', height: 320 }}>
+export const ScoreRadar: React.FC<RadarChartProps> = ({ data, title, color = 'var(--chart-primary)' }) => (
+  <figure className="joli-chart-card">
+    <figcaption className="joli-chart-title">{title}</figcaption>
+    <div style={{ width: '100%', height: 320 }} role="img" aria-label={`${title}: ${data.map((d) => `${d.subject} ${d.score}`).join(', ')}`}>
       <ResponsiveContainer>
         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
-          <PolarGrid stroke="rgba(255,255,255,0.1)" />
-          <PolarAngleAxis dataKey="subject" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-          <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#475569" />
-          <Radar name="Puntaje" dataKey="score" stroke="#10b981" fill="#10b981" fillOpacity={0.4} />
+          <PolarGrid stroke="var(--chart-grid)" />
+          <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--chart-text)', fontSize: 12 }} />
+          <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="var(--chart-grid)" tick={{ fill: 'var(--chart-text)', fontSize: 10 }} />
+          <Radar name="Puntaje" dataKey="score" stroke={color} fill={color} fillOpacity={0.35} />
         </RadarChart>
       </ResponsiveContainer>
     </div>
-  </div>
+  </figure>
 );
 ```
 
 ---
 
-## 3. Especificación: Medidor Gauge / Tacómetro de SLA y Metas
+## 3. Gauge para metas y SLA
+
+Los umbrales son configurables (antes estaban fijos en el código e ignoraban la prop). El valor se limita a 0–100.
 
 ```tsx
+import React from 'react';
+
 export interface GaugeProps {
-  value: number; // 0 a 100%
+  value: number;  // 0 a 100 (%)
   label: string;
   sublabel?: string;
-  thresholds?: { warning: number; danger: number }; // Ej: warning: 80, danger: 60
+  /** Desde qué % el valor es "aceptable" (ámbar) y "bueno" (verde). */
+  thresholds?: { warning: number; good: number };
 }
 
-export const MetricGauge: React.FC<GaugeProps> = ({ value, label, sublabel }) => {
-  // Cálculo de rotación de aguja (-90deg a +90deg)
-  const angle = -90 + (value / 100) * 180;
-  const color = value >= 90 ? '#10b981' : value >= 75 ? '#f59e0b' : '#ef4444';
+// Longitud del semicírculo de radio 80: π × 80
+const ARC_LENGTH = Math.PI * 80;
+
+export const MetricGauge: React.FC<GaugeProps> = ({
+  value,
+  label,
+  sublabel,
+  thresholds = { warning: 75, good: 90 },
+}) => {
+  const pct = Math.min(Math.max(value, 0), 100);
+  const color =
+    pct >= thresholds.good ? 'var(--status-success)' : pct >= thresholds.warning ? 'var(--status-warning)' : 'var(--status-error)';
 
   return (
-    <div className="gauge-widget">
-      <svg viewBox="0 0 200 120" className="gauge-svg">
-        {/* Arco de fondo */}
-        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="16" strokeLinecap="round" />
-        {/* Arco activo */}
+    <div className="gauge-widget" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={label}>
+      <svg viewBox="0 0 200 120" className="gauge-svg" aria-hidden="true">
+        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="var(--border-subtle)" strokeWidth="16" strokeLinecap="round" />
         <path
           d="M 20 100 A 80 80 0 0 1 180 100"
           fill="none"
           stroke={color}
           strokeWidth="16"
           strokeLinecap="round"
-          strokeDasharray="251.2"
-          strokeDashoffset={251.2 - (251.2 * value) / 100}
+          strokeDasharray={ARC_LENGTH}
+          strokeDashoffset={ARC_LENGTH * (1 - pct / 100)}
           style={{ transition: 'stroke-dashoffset 0.8s ease' }}
         />
       </svg>
-      <div className="gauge-value" style={{ color }}>{value}%</div>
+      <div className="gauge-value" style={{ color }}>{pct.toLocaleString('es-CO', { maximumFractionDigits: 1 })}%</div>
       <div className="gauge-label">{label}</div>
       {sublabel && <div className="gauge-sublabel">{sublabel}</div>}
     </div>
@@ -97,20 +108,30 @@ export const MetricGauge: React.FC<GaugeProps> = ({ value, label, sublabel }) =>
 };
 ```
 
+```css
+.gauge-widget { display: flex; flex-direction: column; align-items: center; }
+.gauge-svg { width: 100%; max-width: 220px; }
+.gauge-value { font-size: var(--font-size-2xl); font-weight: var(--font-weight-extrabold); margin-top: -1.5rem; }
+.gauge-label { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); color: var(--text-primary); }
+.gauge-sublabel { font-size: var(--font-size-xs); color: var(--text-muted); }
+```
+
 ---
 
-## 4. Especificación: Cronograma Interactivo Gantt
+## 4. Cronograma Gantt (contrato)
 
 ```typescript
 export interface GanttTask {
   id: string;
   title: string;
-  startDate: string; // ISO AAAA-MM-DD
-  endDate: string;
-  progressPercent: number; // 0 - 100
+  startDate: string;        // AAAA-MM-DD
+  endDate: string;          // AAAA-MM-DD, >= startDate
+  progressPercent: number;  // 0 - 100
   assignedTo?: string;
   status: 'planned' | 'in_progress' | 'completed' | 'delayed';
-  dependencies?: string[]; // IDs de tareas predecesoras
+  dependencies?: string[];  // ids de tareas predecesoras
 }
 ```
-- **Capacidades**: Arrastre interactivo de bordes para extender fechas, zoom por días/semanas/meses, coloración por estado de cumplimiento y barra vertical roja indicadora del día de hoy (*Today line*).
+
+- **Capacidades esperadas**: zoom por días/semanas/meses, color por estado (tokens `--status-*`), línea vertical del día de hoy y, opcionalmente, arrastre de bordes para cambiar fechas.
+- Si se permite arrastrar, el cambio DEBE confirmarse con el backend (que valida dependencias y permisos) y la acción DEBE tener alternativa con teclado (editar fechas desde el panel lateral derecho).

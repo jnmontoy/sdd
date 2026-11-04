@@ -140,22 +140,22 @@ export const TableSkeleton: React.FC<TableSkeletonProps> = ({ rows = 5, columns 
 .joli-loader-title {
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--text-primary, #0F172A);
+  color: var(--text-primary);
   margin: 0;
 }
 
 .joli-loader-subtitle {
   font-size: 0.8rem;
-  color: var(--text-muted, #64748B);
+  color: var(--text-muted);
   margin: 4px 0 0 0;
 }
 
 /* Skeletons */
 .joli-table-skeleton {
   width: 100%;
-  background: var(--bg-card, #FFFFFF);
+  background: var(--bg-card);
   border-radius: 8px;
-  border: 1px solid var(--border-subtle, #E2E8F0);
+  border: 1px solid var(--border-subtle);
   overflow: hidden;
 }
 
@@ -163,8 +163,8 @@ export const TableSkeleton: React.FC<TableSkeletonProps> = ({ rows = 5, columns 
   display: flex;
   gap: 1rem;
   padding: 0.875rem 1.25rem;
-  background: var(--bg-surface, #F8FAFC);
-  border-bottom: 1px solid var(--border-subtle, #E2E8F0);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .joli-skeleton-bone {
@@ -189,7 +189,7 @@ export const TableSkeleton: React.FC<TableSkeletonProps> = ({ rows = 5, columns 
   display: flex;
   gap: 1rem;
   padding: 0.875rem 1.25rem;
-  border-bottom: 1px solid var(--border-subtle, #F1F5F9);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .skeleton-td {

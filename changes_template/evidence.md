@@ -1,46 +1,55 @@
-# Registro de Evidencia Técnica y Quality Gates: [Nombre Breve del Cambio]
+# Evidencia de verificación: [Nombre breve del cambio]
 
-> **PRINCIPIO DE AUDITORÍA SIN ALUCINACIONES**:
-> La Inteligencia Artificial NO PUEDE afirmar que un cambio está terminado mediante lenguaje conversacional (*"ya quedó listo y funciona perfectamente"*).
-> Debe adjuntar obligatoriamente en este archivo la evidencia objetiva generada por las herramientas del sistema.
+> **Regla**: el cambio no se declara terminado con frases como "ya quedó y funciona". Se pega aquí la salida real de cada herramienta. Si algo no se ejecutó, se marca **NO EJECUTADO** con el motivo; nunca se marca como aprobado por suposición.
 
 ---
 
-## 🚦 1. Verificación de Endpoints (`validate_endpoints.py`)
+## 1. Pruebas de backend (Pytest)
+* **Fecha**: `AAAA-MM-DD HH:MM`
+* **Comando**: `.\.venv\Scripts\python.exe -m pytest -m "not e2e"` (configuración en `pytest.ini`, `testpaths = pruebas`)
+* **Resultado**: `[N pasaron, N fallaron, N omitidas]`
 
-* **Fecha de Ejecución**: `[YYYY-MM-DD HH:MM]`
-* **Comando Ejecutado**: `python stack/validate_endpoints.py`
-* **Resultado**: `[PASÓ / FALLÓ]` (Score: 100%)
-
-### Salida de Consola (Snippet Real):
 ```text
-[PEGAR AQUÍ LA SALIDA REAL DEL SCRIPT VALIDATE_ENDPOINTS.PY]
+[PEGAR SALIDA REAL]
 ```
 
----
+## 2. Pruebas de frontend (Vitest)
+* **Comando**: `npm test` (en `frontend/`)
+* **Resultado**: `[...]`
 
-## 🧪 2. Pruebas Automáticas (`pytest` / `playwright`)
-
-* **Ubicación de Tests**: `pruebas/test_[modulo].py`
-* **Comando**: `pytest pruebas/ -v`
-* **Resultado**: `X pasaron, 0 fallaron`
-
-### Salida de Pruebas:
 ```text
-[PEGAR AQUÍ LA SALIDA REAL DE LOS TESTS]
+[PEGAR SALIDA REAL]
 ```
 
----
+## 3. Validador de endpoints (prueba de humo HTTP)
+* **Comando**: `.\.venv\Scripts\python.exe pruebas\validate_endpoints.py --base-url http://localhost:8000 --login-user <usuario>`
+  (la contraseña se toma de la variable de entorno `SDD_LOGIN_PASSWORD`; no se pasa por argumento ni se pega aquí)
+* **Código de salida**: `[0 / distinto de 0]`
 
-## 🎨 3. Verificación de Componentes UI Auditados
+```text
+[PEGAR SALIDA REAL — revisar que no contenga tokens ni contraseñas]
+```
 
-* [x] **Cero CSS improvisado**: Se utilizaron exclusivamente clases de `.sdd/components/` y tokens de `variables.css`.
-* [x] **Layout 100% Horizontal**: No se encogió ni centró la pantalla (`max-w` prohibido).
-* [x] **Right Drawer**: Creación y edición se abren lateralmente en drawer de 560px (no modales flotantes).
-* [x] **Auditoría**: Modales críticos exigen justificación mínima de 10 caracteres.
+## 4. Pruebas de extremo a extremo (si aplica)
+* **Comando**: `.\.venv\Scripts\python.exe -m pytest -m e2e pruebas\e2e`
+* **Resultado**: `[... / NO EJECUTADO: motivo]`
 
----
+## 5. Lint y dependencias
+* `ruff check .` → `[resultado]`
+* `npm run lint` → `[resultado]`
+* `pip-audit -r backend/requirements.txt` → `[resultado]`
+* `npm audit --audit-level=high` → `[resultado]`
 
-## ✍️ Declaración de Entrega
-* **Ingeniero / Agente Responsable**: `[Nombre o ID de Sesión]`
-* **Estado Final**: `COMPLETADO Y VALIDADO`
+## 6. Revisión de interfaz (manual)
+Marcar solo lo verificado; dejar sin marcar y explicar lo que no aplica.
+
+* [ ] Sin CSS nuevo fuera de componentes de `.sdd/components/` y tokens de `variables.css`.
+* [ ] Vista de ancho completo (sin contenedor centrado estrecho).
+* [ ] Crear/editar en drawer derecho (o desviación justificada en `design.md`).
+* [ ] Acciones críticas con `ConfirmModal` y motivo mínimo de 10 caracteres.
+* [ ] Revisado en tema claro y oscuro.
+
+## 7. Cierre
+* **Responsable (rol / sesión)**: `[...]`
+* **Estado**: `[COMPLETADO | COMPLETADO CON PENDIENTES | BLOQUEADO]`
+* **Pendientes**: `[...]`

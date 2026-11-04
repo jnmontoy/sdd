@@ -94,15 +94,15 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   justify-content: center;
   text-align: center;
   padding: 48px 24px;
-  background-color: var(--color-bg-card, #FFFFFF);
-  border-radius: var(--radius-xl, 12px);
-  border: 1px dashed var(--color-border, #E5E7EB);
+  background-color: var(--bg-card);
+  border-radius: var(--radius-xl);
+  border: 1px dashed var(--border-subtle);
   margin: 16px 0;
 }
 
 [data-theme="dark"] .joli-empty-state-card {
-  background-color: var(--color-bg-card, #1E293B);
-  border-color: var(--color-border, #334155);
+  background-color: var(--bg-card);
+  border-color: var(--border-subtle);
 }
 
 .empty-state-icon-wrapper {
@@ -112,8 +112,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: var(--color-bg-input, #F3F4F6);
-  color: var(--color-text-muted, #9CA3AF);
+  background: var(--bg-input);
+  color: var(--text-muted);
   margin-bottom: 16px;
 }
 
@@ -125,7 +125,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 .empty-state-title {
   font-size: 16px;
   font-weight: 700;
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
   margin-bottom: 6px;
 }
 
@@ -135,7 +135,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 
 .empty-state-description {
   font-size: 13.5px;
-  color: var(--color-text-secondary, #6B7280);
+  color: var(--text-secondary);
   max-width: 440px;
   margin-bottom: 20px;
   line-height: 1.5;

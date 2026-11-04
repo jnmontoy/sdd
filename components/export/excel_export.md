@@ -1,36 +1,43 @@
 ﻿# Especificación de Utilidad y Componente: Exportación a Excel
-## Ecosistema Jolifoods — Guía de Implementación SDD
+## SDD Joli Foods — Guía de implementación
 
-La utilidad y botón de exportación `ExcelExport` permite a los usuarios corporativos descargar listados tabulares con formato limpio, nombres de archivo estandarizados y respeto estricto a los filtros aplicados (incluyendo los filtros tipo Excel).
-
----
-
-### 1. Requisitos de Negocio
-1. **Nomenclatura Estandarizada**:
-   - Formato obligatorio: `[Modulo]_[YYYYMMDD]_[HHmmss].xlsx`
-   - Ejemplo: `Usuarios_20260930_123000.xlsx` o `Bitacora_Auditoria_20260930_123000.xlsx`.
-2. **Respeto a Filtros Activos**: Si el usuario aplicó filtros mediante el `ChecklistPopover` o el buscador general, la exportación debe procesar **únicamente el subconjunto de datos filtrados**, a menos que se ofrezca explícitamente "Exportar Todo".
-3. **Formato Automático de Celdas**:
-   - Cabeceras en negrita y centradas.
-   - Ajuste automático de ancho de columna (*Auto-fit column widths*) para evitar texto truncado (`###`).
-   - Fechas en formato `YYYY-MM-DD HH:mm:ss`.
-   - Valores booleanos o estados exportados en español legible (`Activo` / `Inactivo`, `Exitoso` / `Fallido`).
-4. **Doble Estrategia (Frontend / Backend)**:
-   - **Frontend (< 5,000 registros)**: Generación instantánea en el navegador usando la biblioteca `xlsx` (SheetJS).
-   - **Backend (> 5,000 registros)**: Streaming asíncrono desde FastAPI mediante `StreamingResponse` y `openpyxl`.
+La utilidad `exportToExcel` y el botón `ExportExcelButton` permiten descargar listados en `.xlsx` con nombre de archivo estandarizado y respetando los filtros aplicados (incluidos los filtros tipo Excel por columna).
 
 ---
 
-### 2. Implementación TypeScript / Frontend (`excelExport.ts`)
+### 1. Requisitos de negocio
 
-```tsx
+1. **Nombre de archivo**: `[Modulo]_[AAAAMMDD]_[HHmmss].xlsx` (hora local). Ej.: `Usuarios_20260930_123000.xlsx`.
+2. **Respeto a filtros**: si el usuario filtró (buscador o `ChecklistPopover`), se exporta **solo el subconjunto filtrado**, salvo que se ofrezca explícitamente "Exportar todo".
+3. **Formato de celdas**:
+   - Ancho de columna ajustado al contenido (evita `###`).
+   - Fechas como `AAAA-MM-DD HH:mm:ss`; booleanos y estados en español (`Activo` / `Inactivo`).
+   - Los estilos de celda (negrita, centrado, colores) **no** están disponibles en la edición comunitaria de SheetJS; si se requieren, la exportación DEBE hacerse en el backend con `openpyxl`.
+4. **Seguridad — inyección de fórmulas (DEBE)**: un texto que empiece por `=`, `+`, `-`, `@`, tabulador o retorno de carro se ejecuta como fórmula al abrir el archivo (*CSV/Formula Injection*). Todo valor de texto se exporta neutralizado con un apóstrofo inicial.
+5. **Dos estrategias**:
+   - **Navegador (hasta ~5.000 filas)**: biblioteca SheetJS (`xlsx`).
+   - **Backend (más de ~5.000 filas o con estilos)**: FastAPI con `StreamingResponse` y `openpyxl` en modo `write_only`, lanzado como tarea si tarda (ver [`js_polling_architecture.md`](../realtime/js_polling_architecture.md)).
+6. **Dependencia (DEBE)**: el paquete `xlsx` publicado en el registro público de npm quedó congelado en la versión 0.18.5, que tiene vulnerabilidades conocidas (CVE-2023-30533, contaminación de prototipo, y CVE-2024-22363, ReDoS). Se instala desde la distribución oficial de SheetJS:
+   ```bash
+   npm install https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz
+   ```
+
+---
+
+### 2. Utilidad TypeScript (`excelExport.ts`)
+
+```typescript
 // src/utils/excelExport.ts
 import * as XLSX from 'xlsx';
 
+export type CellValue = string | number | boolean | Date | null | undefined;
+
 export interface ExportColumn<T> {
   header: string;
-  key: keyof T | string;
-  formatter?: (value: any, row: T) => string | number | boolean;
+  /** Lectura del valor; usar una función si el dato está anidado o calculado. */
+  value: keyof T | ((row: T) => CellValue);
+  /** Formato de presentación (ej. estado legible). Recibe el valor ya leído. */
+  formatter?: (value: CellValue, row: T) => CellValue;
   width?: number;
 }
 
@@ -41,111 +48,93 @@ export interface ExportOptions<T> {
   data: T[];
 }
 
-export function exportToExcel<T>({
-  filenamePrefix,
-  sheetName = 'Datos',
-  columns,
-  data
-}: ExportOptions<T>): void {
-  // 1. Mapeo de datos con formateadores
-  const formattedRows = data.map((row) => {
-    const rowObj: Record<string, any> = {};
-    columns.forEach((col) => {
-      const rawValue = (row as any)[col.key];
-      rowObj[col.header] = col.formatter ? col.formatter(rawValue, row) : (rawValue ?? '');
-    });
-    return rowObj;
-  });
+const FORMULA_PREFIX = /^[=+\-@\t\r]/;
 
-  // 2. Creación de la hoja de cálculo
-  const worksheet = XLSX.utils.json_to_sheet(formattedRows);
+/** Neutraliza textos que Excel interpretaría como fórmula. */
+function sanitizeCell(value: CellValue): CellValue {
+  if (typeof value === 'string' && FORMULA_PREFIX.test(value)) return `'${value}`;
+  return value;
+}
 
-  // 3. Ajuste de ancho de columnas
-  const colWidths = columns.map((col) => {
+const pad = (n: number) => String(n).padStart(2, '0');
+
+function formatDate(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function readValue<T>(row: T, col: ExportColumn<T>): CellValue {
+  const raw = typeof col.value === 'function' ? col.value(row) : (row[col.value] as CellValue);
+  const formatted = col.formatter ? col.formatter(raw, row) : raw;
+  if (formatted instanceof Date) return formatDate(formatted);
+  return sanitizeCell(formatted ?? '');
+}
+
+export function exportToExcel<T>({ filenamePrefix, sheetName = 'Datos', columns, data }: ExportOptions<T>): void {
+  // 1. Matriz de celdas (encabezado + filas) ya formateadas y saneadas
+  const header = columns.map((c) => c.header);
+  const rows = data.map((row) => columns.map((col) => readValue(row, col)));
+  const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
+
+  // 2. Ancho de columnas a partir de los valores ya formateados (muestra de 200 filas)
+  worksheet['!cols'] = columns.map((col, idx) => {
     if (col.width) return { wch: col.width };
-    // Calcular ancho máximo basado en cabecera y datos
-    let maxLen = col.header.length;
-    data.slice(0, 100).forEach((row) => {
-      const val = (row as any)[col.key];
-      const strVal = String(val ?? '');
-      if (strVal.length > maxLen) maxLen = strVal.length;
-    });
-    return { wch: Math.min(Math.max(maxLen + 3, 12), 45) };
+    const maxLen = rows.slice(0, 200).reduce((max, r) => Math.max(max, String(r[idx] ?? '').length), col.header.length);
+    return { wch: Math.min(Math.max(maxLen + 2, 10), 50) };
   });
-  worksheet['!cols'] = colWidths;
 
-  // 4. Creación del libro de trabajo
+  // 3. Libro y descarga
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.slice(0, 31)); // Excel limita el nombre a 31 caracteres
 
-  // 5. Generación de Timestamp Jolifoods
   const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(
-    now.getHours()
-  )}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-
-  const fullFilename = `${filenamePrefix}_${timestamp}.xlsx`;
-
-  // 6. Descarga del archivo
-  XLSX.writeFile(workbook, fullFilename);
+  const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  XLSX.writeFile(workbook, `${filenamePrefix}_${timestamp}.xlsx`);
 }
 ```
 
 ---
 
-### 3. Componente de Botón `ExportExcelButton.tsx`
+### 3. Botón `ExportExcelButton.tsx`
+
+En barras de herramientas compactas se usa el icono `FileSpreadsheet` dentro del grupo de acciones de 28px (ver `button/icon_action_group.md`); este botón con texto es para vistas donde la exportación es la acción principal.
 
 ```tsx
 // src/components/ui/ExportExcelButton.tsx
 import React, { useState } from 'react';
 import { FileSpreadsheet, Loader2 } from 'lucide-react';
-import { exportToExcel, ExportColumn } from '../../utils/excelExport';
-import { showToast } from './ToastNotification';
+import { exportToExcel, type ExportColumn } from '@/utils/excelExport';
+import { showToast } from '@/components/ui/ToastNotification';
+import './ExportExcelButton.css';
 
 interface ExportExcelButtonProps<T> {
   filenamePrefix: string;
   columns: ExportColumn<T>[];
+  /** Devuelve las filas filtradas a exportar (puede consultar al backend). */
   getData: () => T[] | Promise<T[]>;
   totalCount?: number;
   className?: string;
 }
 
-export function ExportExcelButton<T>({
-  filenamePrefix,
-  columns,
-  getData,
-  totalCount,
-  className = ''
-}: ExportExcelButtonProps<T>) {
+export function ExportExcelButton<T>({ filenamePrefix, columns, getData, totalCount, className = '' }: ExportExcelButtonProps<T>) {
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
+    setIsExporting(true);
     try {
-      setIsExporting(true);
-      const data = await Promise.resolve(getData());
-
-      if (!data || data.length === 0) {
+      const data = await getData();
+      if (data.length === 0) {
         showToast.warning('Sin datos para exportar', {
-          description: 'No hay registros visibles o que cumplan con los filtros aplicados.'
+          description: 'No hay registros que cumplan con los filtros aplicados.',
         });
         return;
       }
-
-      exportToExcel({
-        filenamePrefix,
-        columns,
-        data
+      exportToExcel({ filenamePrefix, columns, data });
+      showToast.success('Archivo generado', {
+        description: `Se exportaron ${data.length.toLocaleString('es-CO')} registros.`,
       });
-
-      showToast.success('Archivo descargado con éxito', {
-        description: `Se exportaron ${data.length.toLocaleString('es-CO')} registros a Excel.`
-      });
-    } catch (err: any) {
-      console.error('Error al exportar Excel:', err);
-      showToast.error('Fallo al exportar archivo', {
-        description: 'Ocurrió un error inesperado al generar el archivo Excel.'
-      });
+    } catch (err: unknown) {
+      console.error('[ExportExcelButton] Error al exportar:', err);
+      showToast.error('No fue posible generar el archivo Excel');
     } finally {
       setIsExporting(false);
     }
@@ -153,17 +142,15 @@ export function ExportExcelButton<T>({
 
   return (
     <button
+      type="button"
       className={`btn-export-excel ${className}`}
       onClick={handleExport}
       disabled={isExporting}
-      title="Exportar registros filtrados a formato Excel"
+      aria-busy={isExporting}
+      title="Exportar los registros filtrados a Excel"
     >
-      {isExporting ? (
-        <Loader2 size={16} className="btn-spinner" />
-      ) : (
-        <FileSpreadsheet size={16} className="excel-icon" />
-      )}
-      <span>Exportar Excel {totalCount !== undefined ? `(${totalCount})` : ''}</span>
+      {isExporting ? <Loader2 size={16} className="btn-spinner" aria-hidden="true" /> : <FileSpreadsheet size={16} aria-hidden="true" />}
+      <span>Exportar Excel{totalCount !== undefined ? ` (${totalCount.toLocaleString('es-CO')})` : ''}</span>
     </button>
   );
 }
@@ -171,52 +158,46 @@ export function ExportExcelButton<T>({
 
 ---
 
-### 4. Estilos CSS (`export_button.css`)
+### 4. Estilos (`ExportExcelButton.css`)
+
+El verde de Excel se toma del token `--accent-excel` de `variables.css`.
 
 ```css
 .btn-export-excel {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   padding: 8px 14px;
   font-size: 13px;
-  font-weight: 600;
-  border-radius: var(--radius-sm, 6px);
-  border: 1px solid #107C41;
-  background: #107C41;
-  color: #FFFFFF;
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent-excel);
+  background: var(--accent-excel);
+  color: var(--text-on-brand);
   cursor: pointer;
-  transition: all 0.15s ease-in-out;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .btn-export-excel:hover:not(:disabled) {
-  background: #0E6835;
-  border-color: #0E6835;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(16, 124, 65, 0.2);
+  background: var(--accent-excel-hover);
+  border-color: var(--accent-excel-hover);
+}
+
+.btn-export-excel:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-input-focus);
 }
 
 .btn-export-excel:disabled {
   opacity: 0.65;
   cursor: not-allowed;
-  transform: none;
-}
-
-.btn-export-excel .excel-icon {
-  flex-shrink: 0;
 }
 
 .btn-export-excel .btn-spinner {
-  animation: spin 1s linear infinite;
+  animation: joliSpin 1s linear infinite;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+@keyframes joliSpin {
+  to { transform: rotate(360deg); }
 }
 ```

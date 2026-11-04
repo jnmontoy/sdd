@@ -1,88 +1,58 @@
-# Componente Maestro: Tabla de Datos Empresarial (Data Table)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
+# Componente Maestro: Tabla de Datos Empresarial (`DataTable`)
+## Spec-Driven Development (SDD)
 
-La **Data Table** es el componente nuclear de gestión de datos para listados operativos, inventarios, transacciones, auditorías y catálogos en las aplicaciones de Jolifoods.
+La **Data Table** es el componente base para listados operativos, inventarios, transacciones, auditorías y catálogos.
 
-Implementa **paginación del lado del servidor (Server-Side Pagination)** para evitar problemas de rendimiento y sobrecarga de memoria (Anti-N+1), buscador en tiempo real con debounce, exportación directa a Excel (`.xlsx`) y ordenamiento por columnas.
+Trabaja con **paginación en el servidor** (el navegador solo recibe la página visible), buscador con espera (*debounce*) de 350 ms, filtros por columna tipo Excel, ordenamiento, visibilidad y ancho de columnas persistidos, y exportación a Excel (`.xlsx`).
+
+> La paginación en servidor reduce memoria y tiempo de transferencia; **no** resuelve consultas N+1. Evitar N+1 es responsabilidad del backend (`select_related` / `prefetch_related` en Django, consultas agregadas en FastAPI).
+
+Piezas que lo componen:
+
+| Pieza | Documento |
+| :--- | :--- |
+| Filtro por columna | [`checklist_popover.md`](./checklist_popover.md) |
+| Visibilidad de columnas | [`column_visibility.md`](./column_visibility.md) |
+| Ancho de columnas | [`column_resizer.md`](./column_resizer.md) |
+| Paginador (en la barra superior) | [`../pagination/pagination.md`](../pagination/pagination.md) |
+| Acciones por fila (`btn-group`) | [`../button/icon_action_group.md`](../button/icon_action_group.md) |
+| Exportación | [`../export/excel_export.md`](../export/excel_export.md) |
 
 ---
 
-## 1. Contrato de Propiedades (TypeScript Genérico)
+## 1. Reglas de presentación (convenciones de diseño)
+
+Estas reglas son **DEBERÍA**: se pueden desviar con pedido explícito del usuario o una decisión registrada (ADR).
+
+1. **Paginador arriba, en la barra de herramientas.** **Por qué:** se controla página, tamaño y búsqueda sin desplazarse al pie de la tabla.
+2. **La tarjeta de la tabla llega hasta el borde inferior del viewport.** La tarjeta (`.joli-datatable-wrapper`) usa `flex: 1; min-height: 420px; display: flex; flex-direction: column; overflow: hidden;` dentro de una página `display: flex; flex-direction: column; min-height: calc(100vh - var(--topbar-height));`. La tabla interna (`.joli-table-container`) usa `flex: 1; overflow: auto;`. **Por qué:** aprovecha la altura disponible y deja el encabezado fijo con scroll interno.
+3. **Acciones de fila agrupadas.** Con 2 o más botones por fila, se agrupan en `<div className="btn-group btn-group-sm row-actions-group" role="group" aria-label="Acciones de fila">`; no se separan con márgenes. **Por qué:** lectura uniforme, menos ancho y una sola zona de clic por fila.
+4. **Datos en colores neutros.** Códigos, identificadores y fechas usan tipografía monoespaciada neutra (`--text-primary` / `--text-secondary`). El color se reserva para badges de estado ([`badge_status.md`](../badge/badge_status.md)). **Por qué:** el color debe significar estado, no decoración.
+
+---
+
+## 2. Contrato de propiedades
 
 ```typescript
-export interface ColumnDef<T> {
-  key: keyof T | string;
-  header: string;
-  render?: (row: T) => React.ReactNode;
-  sortable?: boolean;
-  filterable?: boolean;       // ⭐ Habilita el filtro de columna desplegable tipo Excel
-  dataType?: 'text' | 'number' | 'date';
-  width?: string;
-}
-
-export interface DataTableProps<T> {
-  columns: ColumnDef<T>[];
-  data: T[];
-  totalRows: number;
-  currentPage: number;
-  pageSize: number;
-  isLoading?: boolean;
-  onPageChange: (page: number) => void;
-  onSearchChange: (query: string) => void;
-  onFilterChange?: (filters: Record<string, string[]>) => void; // Filtros tipo Excel
-  onExportExcel?: () => void;
-  onExportPdf?: () => void;
-  actions?: (row: T) => React.ReactNode;
-}
-```
-
-> **FILTROS DE COLUMNA TIPO EXCEL**:
-> Cada columna con `filterable: true` renderiza un icono de filtro en su encabezado `<th>`.
-> Al hacer clic, despliega el componente **[`ChecklistPopover`](./checklist_popover.md)** con ordenamiento A-Z / Z-A, buscador interactivo, casilla "Seleccionar Todo" con soporte tri-estado, conteo de ocurrencias `(count)` y botón "Solo".
-
-> **REGLAS DE PRESENTACIÓN, ACCIONES POR FILA Y LAYOUT DE PANTALLA (UX/UI)**:
-> 1. **Paginador Superior Integrado en Toolbar**: En las aplicaciones de Jolifoods, el paginador **NO se ubica al pie de la tabla**. Se ubica **ARRIBA DE LA TABLA**, integrado directamente en la barra superior (`.joli-table-toolbar.pagination-container` / `.table-header-toolbar`), unificando el selector "Mostrar [10 v] por página", el buscador, los filtros activos, la visibilidad de columnas, la info de registros y los botones de cambio de página (`<<`, `<`, 1, 2, 3, `>`, `>>`).
-> 2. **Card Contenedora hasta Abajo de la Pantalla (`.joli-table-card`)**: La card principal que contiene la tabla utiliza `flex: 1; min-height: 420px; display: flex; flex-direction: column; overflow: hidden;` dentro de un layout de página `min-height: calc(100vh - 80px)` (o `height: 100vh; overflow: hidden;`), garantizando que la card se extienda hasta el límite inferior del área visible sin dejar huecos vacíos. La tabla interna (`.joli-table-wrapper`) utiliza `flex: 1; overflow: auto; min-height: 250px;`.
-> 3. **Acciones Agrupadas Obligatorias con Bootstrap (`btn-group btn-group-sm`)**: Si en la columna de opciones/acciones (`<th>Acciones</th>`) hay **2 o más botones**, los botones **NUNCA DEBEN ESTAR SUELTOS O SEPARADOS CON MÁRGENES**. Deben agruparse obligatoriamente usando un Button Group de Bootstrap (`<div className="btn-group btn-group-sm row-actions-group" role="group" aria-label="Acciones de fila">...</div>`) o el contenedor compacto segmentado de 26px con divisores de 1px entre cada botón (Ver [`../button/icon_action_group.md`](../button/icon_action_group.md)).
-> 4. **Tipografía y Colores Neutros (Cero Textos Azules o Verdes Indebidos)**: Los códigos de registro, identificadores y fechas se renderizan en tipografía monospace neutra (`font-mono text-primary` o `text-secondary`). **Queda estrictamente prohibido usar texto verde o azul suelto en datos tabulares ordinarios**. Los colores se reservan exclusivamente para badges de estado semánticos (`OPTIMO`, `EN VIVO`, `CRITICO`).
-
----
-
-## 2. Código JSX / React 19 Canónico (`DataTable.tsx`)
-
-```tsx
-import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { 
-  Search, 
-  X, 
-  Filter, 
-  FilterX, 
-  Columns3, 
-  ChevronUp, 
-  ChevronDown, 
-  FileSpreadsheet, 
-  FileText, 
-  Loader2,
-  Inbox,
-  RotateCcw
-} from 'lucide-react';
-import { ChecklistPopover } from './ChecklistPopover';
-import { Pagination } from '../pagination/Pagination';
-import { ExportExcelButton } from '../export/ExportExcelButton';
-import '../../styles/variables.css';
+import type { ChecklistOption } from './ChecklistPopover';
 
 export interface ColumnDef<T> {
-  key: keyof T | string;
+  key: Extract<keyof T, string>;
   header: string;
   render?: (row: T) => React.ReactNode;
+  /** Por defecto true. */
   sortable?: boolean;
+  /** Habilita el filtro tipo Excel en el encabezado (por defecto false). */
   filterable?: boolean;
   dataType?: 'text' | 'number' | 'date';
+  /** Ancho por defecto en píxeles. */
   width?: number;
-  formatValue?: (val: any) => string;
+  formatValue?: (value: unknown) => string;
 }
 
 export interface DataTableProps<T extends { id: string | number }> {
+  /** Identificador del módulo: prefijo de las preferencias guardadas (STORAGE_KEYS). */
+  modulo: string;
   columns: ColumnDef<T>[];
   data: T[];
   totalRows: number;
@@ -91,16 +61,40 @@ export interface DataTableProps<T extends { id: string | number }> {
   isLoading?: boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  /** Se llama con debounce (350 ms). */
   onSearchChange: (query: string) => void;
   onFilterChange?: (filters: Record<string, string[]>) => void;
   onSortChange?: (field: string, order: 'ASC' | 'DESC') => void;
+  /** Valores distintos por columna calculados por el servidor (ver ChecklistPopover). */
+  filterOptions?: Record<string, ChecklistOption[]>;
+  /** Obtiene TODOS los registros filtrados para exportar (no solo la página visible). */
+  getExportData?: () => Promise<T[]>;
   filenameExportPrefix?: string;
+  /** Botones de la fila; se renderizan dentro del btn-group. */
   actions?: (row: T) => React.ReactNode;
   onRowClick?: (row: T) => void;
   selectedRowId?: string | number | null;
 }
+```
+
+---
+
+## 3. Código JSX / React de referencia (`DataTable.tsx`)
+
+```tsx
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, ChevronUp, Filter, FilterX, Inbox, Loader2, RotateCcw, Search, X } from 'lucide-react';
+import { ChecklistPopover, type ChecklistOption } from './ChecklistPopover';
+import { ColumnVisibilityDropdown } from './ColumnVisibilityDropdown';
+import { Pagination } from '../pagination/Pagination';
+import { ExportExcelButton } from '../export/ExportExcelButton';
+import { useColumnResize } from '../../hooks/useColumnResize';
+import { useVisibleColumns } from '../../hooks/useVisibleColumns';
+
+const SEARCH_DEBOUNCE_MS = 350;
 
 export function DataTable<T extends { id: string | number }>({
+  modulo,
   columns,
   data,
   totalRows,
@@ -112,252 +106,227 @@ export function DataTable<T extends { id: string | number }>({
   onSearchChange,
   onFilterChange,
   onSortChange,
+  filterOptions,
+  getExportData,
   filenameExportPrefix = 'Reporte',
   actions,
   onRowClick,
-  selectedRowId
+  selectedRowId,
 }: DataTableProps<T>) {
-  // 1. Estados de búsqueda y ordenamiento
+  // 1. Búsqueda con debounce (se cancela el temporizador al teclear de nuevo o desmontar)
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<string>('');
-  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('ASC');
+  const onSearchChangeRef = useRef(onSearchChange);
+  useEffect(() => {
+    onSearchChangeRef.current = onSearchChange;
+  }, [onSearchChange]);
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const timer = setTimeout(() => onSearchChangeRef.current(searchTerm.trim()), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  // 2. Filtros de columna tipo Excel
+  // 2. Ordenamiento
+  const [sortField, setSortField] = useState('');
+  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('ASC');
+  const applySort = (field: string, order: 'ASC' | 'DESC') => {
+    setSortField(field);
+    setSortOrder(order);
+    onSortChange?.(field, order);
+  };
+
+  // 3. Filtros tipo Excel
   const [columnFilters, setColumnFilters] = useState<Record<string, string[]>>({});
   const [activeFilterCol, setActiveFilterCol] = useState<string | null>(null);
   const filterPopoverRef = useRef<HTMLDivElement>(null);
 
-  // 3. Visibilidad de columnas
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(() => 
-    columns.map(c => String(c.key))
-  );
-  const [isColMenuOpen, setIsColMenuOpen] = useState(false);
-  const colMenuRef = useRef<HTMLDivElement>(null);
-
-  // 4. Ancho interactivo de columnas
-  const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
-    const initial: Record<string, number> = {};
-    columns.forEach(c => {
-      initial[String(c.key)] = c.width || 150;
-    });
-    return initial;
-  });
-
-  // Cerrar popovers al hacer clic fuera
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    if (!activeFilterCol) return;
+    const onMouseDown = (e: MouseEvent) => {
       if (filterPopoverRef.current && !filterPopoverRef.current.contains(e.target as Node)) {
         setActiveFilterCol(null);
       }
-      if (colMenuRef.current && !colMenuRef.current.contains(e.target as Node)) {
-        setIsColMenuOpen(false);
-      }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [activeFilterCol]);
 
-  // Manejo de búsqueda con limpieza
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setSearchTerm(val);
-    onSearchChange(val);
+  const handleApplyColumnFilter = (colKey: string, values: string[]) => {
+    const next = { ...columnFilters };
+    if (values.length === 0) delete next[colKey];
+    else next[colKey] = values;
+    setColumnFilters(next);
+    onFilterChange?.(next); // efecto fuera del actualizador de estado (seguro en StrictMode)
   };
 
-  const handleClearSearch = () => {
-    setSearchTerm('');
-    onSearchChange('');
-  };
-
-  // Manejo de filtros por columna
-  const handleApplyColumnFilter = (colKey: string, selectedValues: string[]) => {
-    const updated = { ...columnFilters };
-    if (selectedValues.length === 0) {
-      delete updated[colKey];
-    } else {
-      updated[colKey] = selectedValues;
-    }
-    setColumnFilters(updated);
-    onFilterChange?.(updated);
-    setActiveFilterCol(null);
-  };
-
-  const handleResetAllFilters = () => {
+  const handleResetAll = () => {
     setColumnFilters({});
     setSearchTerm('');
-    onSearchChange('');
     onFilterChange?.({});
     setActiveFilterCol(null);
   };
 
   const activeFiltersCount = Object.keys(columnFilters).length + (searchTerm ? 1 : 0);
 
-  // Columnas activas para renderizado
-  const renderedColumns = useMemo(() => {
-    return columns.filter(c => visibleColumns.includes(String(c.key)));
-  }, [columns, visibleColumns]);
+  // 4. Preferencias persistidas por módulo (claves con prefijo de app)
+  const allKeys = useMemo(() => columns.map((c) => c.key), [columns]);
+  const { visibleColumns, setVisibleColumns, resetVisibleColumns } = useVisibleColumns(modulo, allKeys);
+  const defaultWidths = useMemo(
+    () => Object.fromEntries(columns.map((c) => [c.key, c.width ?? 150])),
+    [columns],
+  );
+  const { colWidths, handleStartResize, handleResetWidth, handleKeyResize } = useColumnResize(modulo, defaultWidths);
+
+  const renderedColumns = useMemo(
+    () => columns.filter((c) => visibleColumns.includes(c.key)),
+    [columns, visibleColumns],
+  );
+  const colSpan = renderedColumns.length + (actions ? 1 : 0);
+
+  const renderCell = (row: T, col: ColumnDef<T>) => {
+    if (col.render) return col.render(row);
+    const value = row[col.key];
+    return col.formatValue ? col.formatValue(value) : String(value ?? '');
+  };
 
   return (
     <div className="joli-datatable-wrapper">
-      {/* 1. BARRA DE HERRAMIENTAS CORPORATIVA */}
+      {/* 1. BARRA DE HERRAMIENTAS CON PAGINADOR INTEGRADO */}
       <div className="joli-datatable-toolbar">
         <div className="toolbar-left">
-          {/* Buscador reactivo */}
           <div className="joli-search-box">
-            <Search size={16} className="joli-search-icon" />
-            <input 
-              type="text" 
-              className="joli-search-input" 
-              placeholder="Buscar en registros..." 
+            <Search size={16} className="joli-search-icon" aria-hidden="true" />
+            <input
+              type="search"
+              className="joli-search-input"
+              placeholder="Buscar en registros..."
+              aria-label="Buscar en registros"
               value={searchTerm}
-              onChange={handleSearch}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              data-testid="datatable-search-input"
             />
             {searchTerm && (
-              <button className="joli-search-clear" onClick={handleClearSearch} title="Limpiar búsqueda">
-                <X size={14} />
+              <button
+                type="button"
+                className="joli-search-clear"
+                onClick={() => setSearchTerm('')}
+                aria-label="Limpiar búsqueda"
+              >
+                <X size={14} aria-hidden="true" />
               </button>
             )}
           </div>
 
-          {/* Botón Restablecer Filtros */}
           {activeFiltersCount > 0 && (
-            <button 
-              type="button" 
-              className="joli-btn-reset-filters" 
-              onClick={handleResetAllFilters}
-              title="Limpiar todos los filtros y búsqueda"
-            >
-              <FilterX size={14} />
+            <button type="button" className="joli-btn-reset-filters" onClick={handleResetAll}>
+              <FilterX size={14} aria-hidden="true" />
               <span>Limpiar filtros ({activeFiltersCount})</span>
             </button>
           )}
         </div>
 
         <div className="toolbar-right">
-          {/* Selector de Visibilidad de Columnas */}
-          <div className="joli-col-visibility-wrapper" ref={colMenuRef}>
-            <button 
-              type="button" 
-              className="joli-btn-secondary"
-              onClick={() => setIsColMenuOpen(!isColMenuOpen)}
-              title="Configurar columnas visibles"
-            >
-              <Columns3 size={15} />
-              <span>Columnas</span>
-            </button>
+          <ColumnVisibilityDropdown
+            columns={columns.map((c) => ({ key: c.key, label: c.header }))}
+            visibleColumns={visibleColumns}
+            onChange={setVisibleColumns}
+            onResetDefault={resetVisibleColumns}
+          />
 
-            {isColMenuOpen && (
-              <div className="joli-col-visibility-menu">
-                <div className="menu-header">Columnas Visibles</div>
-                <div className="menu-body">
-                  {columns.map(col => {
-                    const keyStr = String(col.key);
-                    const isVisible = visibleColumns.includes(keyStr);
-                    return (
-                      <label key={keyStr} className="col-checkbox-label">
-                        <input
-                          type="checkbox"
-                          checked={isVisible}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setVisibleColumns([...visibleColumns, keyStr]);
-                            } else {
-                              if (visibleColumns.length > 1) {
-                                setVisibleColumns(visibleColumns.filter(k => k !== keyStr));
-                              }
-                            }
-                          }}
-                        />
-                        <span>{col.header}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
+          {getExportData && (
+            <ExportExcelButton
+              filenamePrefix={filenameExportPrefix}
+              columns={renderedColumns.map((c) => ({
+                header: c.header,
+                key: c.key,
+                formatter: c.formatValue ? (value: unknown) => c.formatValue!(value) : undefined,
+              }))}
+              getData={getExportData}
+              totalCount={totalRows}
+            />
+          )}
 
-          {/* Botón de Exportación a Excel */}
-          <ExportExcelButton
-            filenamePrefix={filenameExportPrefix}
-            columns={renderedColumns.map(c => ({
-              header: c.header,
-              key: c.key,
-              formatter: c.formatValue
-            }))}
-            getData={() => data}
-            totalCount={totalRows}
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalRows}
+            pageSize={pageSize}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+            disabled={isLoading}
           />
         </div>
       </div>
 
-      {/* 2. TABLA RESPONSIVE CON FILTROS TIPO EXCEL */}
-      <div className="table-responsive joli-table-container">
-        <table className="table joli-table">
+      {/* 2. TABLA CON ENCABEZADO FIJO Y SCROLL INTERNO */}
+      <div className="joli-table-container">
+        <table className="joli-table" aria-busy={isLoading}>
           <thead>
             <tr>
               {renderedColumns.map((col) => {
-                const keyStr = String(col.key);
-                const isFiltered = Boolean(columnFilters[keyStr] && columnFilters[keyStr].length > 0);
-                const isSorted = sortField === keyStr;
-                const isOpen = activeFilterCol === keyStr;
+                const isFiltered = (columnFilters[col.key]?.length ?? 0) > 0;
+                const isSorted = sortField === col.key;
+                const isOpen = activeFilterCol === col.key;
+                const sortable = col.sortable !== false;
 
                 return (
-                  <th 
-                    key={keyStr} 
-                    style={{ width: colWidths[keyStr] || 'auto', minWidth: 120 }}
-                    className={isFiltered ? 'th-filtered' : ''}
+                  <th
+                    key={col.key}
+                    scope="col"
+                    style={{ width: colWidths[col.key] }}
+                    className={`resizable-th ${isFiltered ? 'th-filtered' : ''}`}
+                    aria-sort={isSorted ? (sortOrder === 'ASC' ? 'ascending' : 'descending') : undefined}
                   >
                     <div className="th-content-wrapper">
-                      {/* Título de columna y trigger de ordenamiento */}
-                      <span 
-                        className={`th-label ${col.sortable !== false ? 'sortable' : ''}`}
-                        onClick={() => {
-                          if (col.sortable !== false) {
-                            const newOrder = isSorted && sortOrder === 'ASC' ? 'DESC' : 'ASC';
-                            setSortField(keyStr);
-                            setSortOrder(newOrder);
-                            onSortChange?.(keyStr, newOrder);
-                          }
-                        }}
-                      >
-                        {col.header}
-                        {isSorted && (
-                          sortOrder === 'ASC' ? <ChevronUp size={14} className="sort-icon" /> : <ChevronDown size={14} className="sort-icon" />
-                        )}
-                      </span>
+                      {sortable ? (
+                        <button
+                          type="button"
+                          className="th-sort-btn"
+                          onClick={() => applySort(col.key, isSorted && sortOrder === 'ASC' ? 'DESC' : 'ASC')}
+                        >
+                          {col.header}
+                          {isSorted && (sortOrder === 'ASC'
+                            ? <ChevronUp size={14} aria-hidden="true" />
+                            : <ChevronDown size={14} aria-hidden="true" />)}
+                        </button>
+                      ) : (
+                        <span className="th-label">{col.header}</span>
+                      )}
 
-                      {/* Botón de Filtro tipo Excel */}
-                      {col.filterable !== false && (
+                      {col.filterable && (
                         <button
                           type="button"
                           className={`th-filter-btn ${isFiltered ? 'active' : ''}`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setActiveFilterCol(isOpen ? null : keyStr);
+                            setActiveFilterCol(isOpen ? null : col.key);
                           }}
-                          title={isFiltered ? `Filtro activo (${columnFilters[keyStr].length}): ${col.header}` : `Filtrar por ${col.header}`}
+                          aria-label={isFiltered
+                            ? `Filtro activo en ${col.header} (${columnFilters[col.key].length} valores)`
+                            : `Filtrar por ${col.header}`}
+                          aria-expanded={isOpen}
+                          aria-haspopup="dialog"
                         >
-                          <Filter size={12} />
-                          {isFiltered && <span className="th-filter-dot" />}
+                          <Filter size={12} aria-hidden="true" />
+                          {isFiltered && <span className="th-filter-dot" aria-hidden="true" />}
                         </button>
                       )}
                     </div>
 
-                    {/* Popover Checklist tipo Excel */}
                     {isOpen && (
                       <div className="th-filter-popover-container" ref={filterPopoverRef}>
-                        <ChecklistPopover
-                          colKey={keyStr}
+                        <ChecklistPopover<T>
+                          colKey={col.key}
                           colLabel={col.header}
                           dataType={col.dataType}
                           items={data}
-                          activeValues={columnFilters[keyStr]}
-                          onApply={(vals) => handleApplyColumnFilter(keyStr, vals)}
+                          options={filterOptions?.[col.key]}
+                          activeValues={columnFilters[col.key]}
+                          onApply={(values) => handleApplyColumnFilter(col.key, values)}
                           onSort={(field, order) => {
-                            setSortField(field);
-                            setSortOrder(order);
-                            onSortChange?.(field, order);
+                            applySort(field, order);
                             setActiveFilterCol(null);
                           }}
                           currentSortField={sortField}
@@ -367,39 +336,46 @@ export function DataTable<T extends { id: string | number }>({
                         />
                       </div>
                     )}
+
+                    <div
+                      className="resizable-th-resizer"
+                      role="separator"
+                      aria-orientation="vertical"
+                      aria-label={`Ajustar ancho de ${col.header}`}
+                      tabIndex={0}
+                      onMouseDown={(e) => handleStartResize(col.key, e)}
+                      onDoubleClick={() => handleResetWidth(col.key)}
+                      onKeyDown={(e) => handleKeyResize(col.key, e)}
+                    />
                   </th>
                 );
               })}
-              {actions && <th className="text-end" style={{ width: 100 }}>Acciones</th>}
+              {actions && <th scope="col" className="text-end th-actions">Acciones</th>}
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={renderedColumns.length + (actions ? 1 : 0)} className="text-center py-5">
-                  <Loader2 size={32} className="table-spinner mb-2 text-primary" />
-                  <p className="text-muted mb-0 small">Consultando registros...</p>
+                <td colSpan={colSpan} className="text-center py-5" role="status">
+                  <Loader2 size={32} className="table-spinner mb-2" aria-hidden="true" />
+                  <p className="table-state-text mb-0">Consultando registros...</p>
                 </td>
               </tr>
             ) : data.length === 0 ? (
               <tr>
-                <td colSpan={renderedColumns.length + (actions ? 1 : 0)} className="text-center py-5">
+                <td colSpan={colSpan} className="text-center py-5">
                   <div className="table-empty-state">
-                    <Inbox size={40} className="empty-icon text-muted mb-2" />
-                    <h6 className="empty-title">Sin registros encontrados</h6>
-                    <p className="empty-desc text-muted">
-                      {activeFiltersCount > 0 
-                        ? 'No hay registros que coincidan con los filtros aplicados.' 
-                        : 'No se encontraron datos disponibles en este módulo.'}
+                    <Inbox size={40} className="empty-icon mb-2" aria-hidden="true" />
+                    <p className="empty-title">Sin registros encontrados</p>
+                    <p className="empty-desc">
+                      {activeFiltersCount > 0
+                        ? 'No hay registros que coincidan con los filtros aplicados.'
+                        : 'No hay datos disponibles en este módulo.'}
                     </p>
                     {activeFiltersCount > 0 && (
-                      <button 
-                        type="button" 
-                        className="joli-btn-outline btn-sm mt-2"
-                        onClick={handleResetAllFilters}
-                      >
-                        <RotateCcw size={13} className="me-1" />
-                        <span>Restablecer Filtros</span>
+                      <button type="button" className="joli-btn-secondary mt-2" onClick={handleResetAll}>
+                        <RotateCcw size={13} aria-hidden="true" />
+                        <span>Restablecer filtros</span>
                       </button>
                     )}
                   </div>
@@ -407,23 +383,27 @@ export function DataTable<T extends { id: string | number }>({
               </tr>
             ) : (
               data.map((row) => {
-                const isSelected = selectedRowId !== undefined && selectedRowId === row.id;
+                const isSelected = selectedRowId != null && selectedRowId === row.id;
                 return (
-                  <tr 
-                    key={row.id} 
+                  <tr
+                    key={row.id}
+                    data-testid="datatable-row"
                     className={`${isSelected ? 'row-selected' : ''} ${onRowClick ? 'row-clickable' : ''}`}
-                    onClick={() => onRowClick?.(row)}
+                    aria-selected={onRowClick ? isSelected : undefined}
+                    tabIndex={onRowClick ? 0 : undefined}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    onKeyDown={onRowClick ? (e) => {
+                      if (e.key === 'Enter' && e.target === e.currentTarget) onRowClick(row);
+                    } : undefined}
                   >
-                    {renderedColumns.map((col, idx) => (
-                      <td key={String(col.key) + idx}>
-                        {col.render ? col.render(row) : (
-                          col.formatValue ? col.formatValue((row as any)[col.key]) : String((row as any)[col.key] ?? '')
-                        )}
-                      </td>
+                    {renderedColumns.map((col) => (
+                      <td key={col.key}>{renderCell(row, col)}</td>
                     ))}
                     {actions && (
                       <td className="text-end" onClick={(e) => e.stopPropagation()}>
-                        <div className="d-inline-flex gap-1">{actions(row)}</div>
+                        <div className="btn-group btn-group-sm row-actions-group" role="group" aria-label="Acciones de fila">
+                          {actions(row)}
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -433,39 +413,33 @@ export function DataTable<T extends { id: string | number }>({
           </tbody>
         </table>
       </div>
-
-      {/* 3. PAGINACIÓN CORPORATIVA INTEGRADA */}
-      <Pagination
-        currentPage={currentPage}
-        totalItems={totalRows}
-        pageSize={pageSize}
-        onPageChange={onPageChange}
-        onPageSizeChange={onPageSizeChange}
-        disabled={isLoading}
-      />
     </div>
   );
 }
 ```
 
+**Notas:**
+- Los botones que entrega `actions(row)` DEBEN ser solo-ícono con `aria-label` y `title` (ver [`icon_action_group.md`](../button/icon_action_group.md)). Con más de 3 acciones, las secundarias van en un `dropdown-toggle` dentro del mismo grupo.
+- La exportación usa `getExportData` para pedir al backend **todos** los registros filtrados; exportar `data` solo incluiría la página visible.
+- El botón de exportación expone `data-testid="btn-export-excel"` (definido en `ExportExcelButton`).
+
 ---
 
-## 3. Estilos CSS Canónicos (Gobernados por `variables.css`)
+## 4. Estilos CSS (`data_table.css`)
+
+Todos los colores salen de tokens de [`variables.css`](../variables.css); por eso no hacen falta reglas `[data-theme="dark"]` separadas.
 
 ```css
 .joli-datatable-wrapper {
-  background-color: var(--color-bg-card, #FFFFFF);
-  border: 1px solid var(--color-border, #E5E7EB);
-  border-radius: var(--radius-xl, 12px);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-[data-theme="dark"] .joli-datatable-wrapper {
-  background-color: var(--color-bg-card, #1E293B);
-  border-color: var(--color-border, #334155);
+  flex: 1;
+  min-height: 420px;
+  overflow: hidden;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
 }
 
 /* 1. BARRA SUPERIOR */
@@ -473,23 +447,19 @@ export function DataTable<T extends { id: string | number }>({
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--color-border, #E5E7EB);
-  gap: 12px;
   flex-wrap: wrap;
-  background: var(--bg-surface, #FFFFFF);
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-card);
 }
 
-[data-theme="dark"] .joli-datatable-toolbar {
-  background: var(--bg-surface, #1E293B);
-  border-color: var(--color-border, #334155);
-}
-
-.toolbar-left, .toolbar-right {
+.toolbar-left,
+.toolbar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 10px;
 }
 
 .joli-search-box {
@@ -502,213 +472,106 @@ export function DataTable<T extends { id: string | number }>({
 .joli-search-icon {
   position: absolute;
   left: 10px;
-  color: var(--color-text-muted, #9CA3AF);
+  color: var(--text-muted);
   pointer-events: none;
 }
 
 .joli-search-input {
   width: 100%;
-  height: 36px;
+  height: 32px;
   padding: 0 30px 0 32px;
-  background-color: var(--color-bg-input, #F9FAFB);
-  border: 1px solid var(--color-border, #D1D5DB);
-  border-radius: var(--radius-md, 8px);
-  color: var(--color-text-primary, #111827);
-  font-size: 13px;
-  outline: none;
-  transition: all 0.15s ease;
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  color: var(--input-text);
+  font-size: var(--font-size-xs);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-[data-theme="dark"] .joli-search-input {
-  background-color: var(--color-bg-input, #0F172A);
-  border-color: var(--color-border, #334155);
-  color: #F8FAFC;
+.joli-search-input::placeholder {
+  color: var(--input-placeholder);
 }
 
 .joli-search-input:focus {
-  border-color: var(--color-primary, #2D6A4F);
-  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.15);
-  background-color: var(--bg-surface, #FFFFFF);
+  outline: none;
+  border-color: var(--input-focus-border);
+  box-shadow: var(--shadow-input-focus);
+  background-color: var(--bg-input-focus);
 }
 
 .joli-search-clear {
   position: absolute;
   right: 8px;
+  display: flex;
+  padding: 2px;
   background: transparent;
   border: none;
-  color: var(--color-text-muted, #9CA3AF);
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
   cursor: pointer;
-  padding: 2px;
-  border-radius: 50%;
-  display: flex;
 }
 
 .joli-search-clear:hover {
-  color: var(--color-text-primary, #111827);
+  color: var(--text-primary);
 }
 
 .joli-btn-reset-filters {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 36px;
+  height: 28px;
   padding: 0 12px;
-  font-size: 12.5px;
-  font-weight: 600;
-  border-radius: var(--radius-md, 8px);
-  border: 1px solid #FECACA;
-  background: #FEF2F2;
-  color: #DC2626;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--alert-error-border);
+  background: var(--alert-error-bg);
+  color: var(--status-error);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: filter var(--transition-fast);
 }
 
 .joli-btn-reset-filters:hover {
-  background: #FEE2E2;
-  border-color: #FCA5A5;
+  filter: brightness(1.1);
 }
 
-[data-theme="dark"] .joli-btn-reset-filters {
-  background: rgba(220, 38, 38, 0.15);
-  border-color: rgba(220, 38, 38, 0.3);
-  color: #F87171;
-}
+/* .joli-btn-secondary se define en ../button/icon_action_group.md §5 */
 
-/* MENÚ VISIBILIDAD DE COLUMNAS */
-.joli-col-visibility-wrapper {
-  position: relative;
-}
-
-.joli-btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 12px;
-  font-size: 12.5px;
-  font-weight: 500;
-  border-radius: var(--radius-md, 8px);
-  border: 1px solid var(--color-border, #D1D5DB);
-  background: var(--bg-surface, #FFFFFF);
-  color: var(--color-text-secondary, #4B5563);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-[data-theme="dark"] .joli-btn-secondary {
-  background: var(--bg-surface, #1E293B);
-  border-color: #334155;
-  color: #CBD5E1;
-}
-
-.joli-btn-secondary:hover {
-  border-color: var(--color-primary, #2D6A4F);
-  color: var(--color-primary, #2D6A4F);
-}
-
-.joli-col-visibility-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 100;
-  width: 220px;
-  background: var(--bg-surface, #FFFFFF);
-  border: 1px solid var(--color-border, #E5E7EB);
-  border-radius: var(--radius-md, 8px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-  padding: 8px 0;
-  animation: fadeIn 0.15s ease-out;
-}
-
-[data-theme="dark"] .joli-col-visibility-menu {
-  background: #1E293B;
-  border-color: #334155;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
-}
-
-.joli-col-visibility-menu .menu-header {
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--color-text-muted, #9CA3AF);
-  padding: 4px 14px 8px;
-  border-bottom: 1px solid var(--color-border, #F3F4F6);
-}
-
-.joli-col-visibility-menu .menu-body {
-  max-height: 240px;
-  overflow-y: auto;
-  padding: 4px 8px;
-}
-
-.col-checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 4px;
-  font-size: 12.5px;
-  color: var(--color-text-primary, #111827);
-  cursor: pointer;
-}
-
-[data-theme="dark"] .col-checkbox-label {
-  color: #F1F5F9;
-}
-
-.col-checkbox-label:hover {
-  background: var(--color-bg-input, #F3F4F6);
-}
-
-[data-theme="dark"] .col-checkbox-label:hover {
-  background: #0F172A;
-}
-
-/* 2. TABLA RESPONSIVE Y ENCABEZADOS */
+/* 2. TABLA Y ENCABEZADOS */
 .joli-table-container {
-  max-height: calc(100vh - 280px);
-  overflow-y: auto;
-  overflow-x: auto;
   position: relative;
+  flex: 1;
+  min-height: 250px;
+  overflow: auto;
 }
 
 .joli-table {
   width: 100%;
-  margin-bottom: 0;
+  margin: 0;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 13px;
+  font-size: var(--font-size-xs);
 }
 
 .joli-table thead th {
   position: sticky;
   top: 0;
-  z-index: 10;
-  background: #F8FAFC;
-  color: var(--color-text-secondary, #475569);
-  font-size: 11px;
-  font-weight: 700;
+  z-index: var(--z-card);
+  padding: 8px 12px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 10px 14px;
-  border-bottom: 2px solid var(--color-border, #E2E8F0);
   white-space: nowrap;
-}
-
-[data-theme="dark"] .joli-table thead th {
-  background: #0F172A;
-  color: #94A3B8;
-  border-bottom-color: #334155;
+  border-bottom: 2px solid var(--border-subtle);
 }
 
 .joli-table thead th.th-filtered {
-  background: #F0FDF4;
-  color: var(--color-primary, #2D6A4F);
-}
-
-[data-theme="dark"] .joli-table thead th.th-filtered {
-  background: rgba(45, 106, 79, 0.2);
-  color: #6EE7B7;
+  background: var(--status-success-bg);
+  color: var(--text-primary);
 }
 
 .th-content-wrapper {
@@ -718,19 +581,30 @@ export function DataTable<T extends { id: string | number }>({
   gap: 8px;
 }
 
-.th-label {
+.th-label,
+.th-sort-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   user-select: none;
 }
 
-.th-label.sortable {
+.th-sort-btn {
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
   cursor: pointer;
 }
 
-.th-label.sortable:hover {
-  color: var(--color-primary, #2D6A4F);
+.th-sort-btn:hover {
+  color: var(--text-primary);
 }
 
 .th-filter-btn {
@@ -738,31 +612,33 @@ export function DataTable<T extends { id: string | number }>({
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   width: 22px;
   height: 22px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: transparent;
-  color: var(--color-text-muted, #94A3B8);
+  color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .th-filter-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--color-text-primary, #0F172A);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .th-filter-btn.active {
-  background: #E8F5E9;
-  border-color: #A7F3D0;
-  color: var(--color-primary, #2D6A4F);
+  background: var(--status-success-bg);
+  border-color: var(--border-card-accent);
+  color: var(--brand-primary);
 }
 
-[data-theme="dark"] .th-filter-btn.active {
-  background: rgba(45, 106, 79, 0.3);
-  border-color: #2D6A4F;
-  color: #6EE7B7;
+.th-sort-btn:focus-visible,
+.th-filter-btn:focus-visible,
+.joli-table tbody tr.row-clickable:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
 }
 
 .th-filter-dot {
@@ -771,39 +647,37 @@ export function DataTable<T extends { id: string | number }>({
   right: 2px;
   width: 5px;
   height: 5px;
-  border-radius: 50%;
-  background: var(--color-primary, #2D6A4F);
+  border-radius: var(--radius-full);
+  background: var(--brand-primary);
 }
 
 .th-filter-popover-container {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: 50;
+  z-index: var(--z-popover);
+  font-weight: var(--font-weight-regular);
   text-transform: none;
-  font-weight: normal;
   letter-spacing: normal;
 }
 
-/* 3. CUERPO DE LA TABLA Y FILAS */
-.joli-table tbody td {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--color-border, #E5E7EB);
-  color: var(--color-text-primary, #1F2937);
-  vertical-align: middle;
+.th-actions {
+  width: 110px;
 }
 
-[data-theme="dark"] .joli-table tbody td {
-  border-bottom-color: #334155;
-  color: #F1F5F9;
+/* 3. CUERPO Y FILAS */
+.joli-table tbody td {
+  padding: 8px 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .joli-table tbody tr:hover td {
-  background-color: var(--color-bg-card-hover, #F8FAFC);
-}
-
-[data-theme="dark"] .joli-table tbody tr:hover td {
-  background-color: #243044;
+  background-color: var(--bg-hover);
 }
 
 .joli-table tbody tr.row-clickable {
@@ -811,11 +685,17 @@ export function DataTable<T extends { id: string | number }>({
 }
 
 .joli-table tbody tr.row-selected td {
-  background-color: #ECFDF5 !important;
+  background-color: var(--status-success-bg);
 }
 
-[data-theme="dark"] .joli-table tbody tr.row-selected td {
-  background-color: rgba(45, 106, 79, 0.25) !important;
+.table-spinner {
+  color: var(--brand-primary);
+  animation: joliSpin 1s linear infinite;
+}
+
+.table-state-text {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
 }
 
 /* ESTADO VACÍO */
@@ -825,26 +705,29 @@ export function DataTable<T extends { id: string | number }>({
   align-items: center;
   justify-content: center;
   padding: 24px;
+  white-space: normal;
 }
 
 .table-empty-state .empty-icon {
-  opacity: 0.4;
+  color: var(--text-muted);
+  opacity: 0.6;
 }
 
 .table-empty-state .empty-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-text-primary, #111827);
-  margin-bottom: 4px;
+  margin: 0 0 4px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 .table-empty-state .empty-desc {
-  font-size: 13px;
   max-width: 360px;
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes joliSpin {
+  to { transform: rotate(360deg); }
 }
 ```

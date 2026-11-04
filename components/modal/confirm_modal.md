@@ -1,35 +1,31 @@
-# Componente UI: Modal de Confirmación Corporativo (Confirm Modal)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
-### Patrón Canónico de Referencia: Módulo BI / UI
+# Componente UI: Modal de Confirmación Corporativo (`ConfirmModal`)
+## Spec-Driven Development (SDD)
 
-El **Confirm Modal** es el estándar obligatorio para reemplazar todas las llamadas a las funciones nativas del navegador (`window.confirm()` o `window.alert()`). 
+> **Origen:** patrón tomado de bi (módulo de cartera). Aquí se describe de forma genérica.
 
-Provee un diálogo modal seguro, accesible, enfocado en el usuario y con soporte para **estados de carga asíncrona (`isLoading`)**, inversión de peso visual para acciones destructivas (`emphasizeCancel`) e iconos cromáticos enmarcados con halo.
-
----
-
-## 1. Regla Inflexible de Usabilidad y Seguridad
-
-> **PROHIBIDO EL USO DE `window.confirm()` O `window.alert()`**:
-> Los diálogos nativos del navegador bloquean el hilo principal de JavaScript, no respetan el tema Modo Noche/Día y ofrecen una experiencia de usuario deficiente.
-> **Toda acción destructiva, cierre de sesión, eliminación de registros o confirmación de cambios sensibles debe invocar obligatoriamente a `ConfirmModal`**.
+`ConfirmModal` reemplaza las funciones nativas del navegador (`window.confirm()` / `window.alert()`) con un diálogo accesible, con tema Noche/Día, estado de carga asíncrona (`isLoading`), inversión de peso visual para acciones destructivas (`emphasizeCancel`) y campo opcional de justificación para trazabilidad.
 
 ---
 
-## 2. Código JSX / React 19 Canónico (`ConfirmModal.tsx`)
+## 1. Regla de uso
+
+- **Regla:** las acciones destructivas o sensibles (eliminar, desactivar, cerrar sesión con cambios sin guardar, aprobar cambios) DEBEN pedir confirmación con `ConfirmModal`; el código NO DEBE usar `window.confirm()` ni `window.alert()`.
+- **Por qué:** los diálogos nativos bloquean el hilo principal, no respetan el tema, no se pueden probar con E2E de forma confiable y no permiten capturar una justificación auditable.
+- **Excepciones:** ninguna en código de aplicación.
+
+---
+
+## 2. Código JSX / React de referencia (`ConfirmModal.tsx`)
+
+Usa el hook compartido `useModalA11y` definido en [`modal_dialog.md`](./modal_dialog.md) §2 (foco atrapado, Escape, foco devuelto al disparador, bloqueo de scroll y soporte para diálogos apilados).
 
 ```tsx
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  AlertTriangle, 
-  X, 
-  Loader2, 
-  Info, 
-  CheckCircle2, 
-  AlertOctagon 
-} from 'lucide-react';
-import '../../styles/variables.css';
+import { AlertOctagon, AlertTriangle, CheckCircle2, Info, Loader2, X } from 'lucide-react';
+import { useModalA11y } from '../../hooks/useModalA11y';
+
+export type ConfirmModalType = 'danger' | 'warning' | 'info' | 'primary' | 'success';
 
 export interface ConfirmModalProps {
   isOpen: boolean;
@@ -39,19 +35,26 @@ export interface ConfirmModalProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
-  type?: 'danger' | 'warning' | 'info' | 'primary' | 'success';
+  type?: ConfirmModalType;
   isLoading?: boolean;
-  /** Invierte el peso visual: Cancelar resalta (color + foco), Confirmar queda neutro.
-   *  Evita clics accidentales por hábito en acciones destructivas. */
+  /** Invierte el peso visual: Cancelar resalta y recibe el foco; Confirmar queda neutro.
+   *  Evita confirmaciones accidentales por hábito en acciones destructivas. */
   emphasizeCancel?: boolean;
-  /** Habilita el campo obligatorio de justificación para trazabilidad y auditoría */
+  /** Exige una justificación escrita (se envía a onConfirm para el registro de auditoría). */
   requiresJustification?: boolean;
-  /** Cantidad mínima de caracteres exigida para habilitar la confirmación (por defecto 10) */
+  /** Caracteres mínimos de la justificación (por defecto 10). */
   justificationMinLength?: number;
   justificationLabel?: string;
   justificationPlaceholder?: string;
-  zIndex?: number;
 }
+
+const ICONS: Record<ConfirmModalType, React.ReactNode> = {
+  danger: <AlertOctagon size={36} aria-hidden="true" />,
+  warning: <AlertTriangle size={36} aria-hidden="true" />,
+  info: <Info size={36} aria-hidden="true" />,
+  primary: <Info size={36} aria-hidden="true" />,
+  success: <CheckCircle2 size={36} aria-hidden="true" />,
+};
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
@@ -66,35 +69,30 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   emphasizeCancel = false,
   requiresJustification = false,
   justificationMinLength = 10,
-  justificationLabel = 'Motivo o Justificación Obligatoria',
-  justificationPlaceholder = 'Escriba detalladamente el motivo de esta acción...',
-  zIndex = 100005
+  justificationLabel = 'Motivo o justificación',
+  justificationPlaceholder = 'Describa el motivo de esta acción...',
 }) => {
-  const [justification, setJustification] = React.useState('');
+  const [justification, setJustification] = useState('');
+  const dialogRef = useRef<HTMLDivElement>(null);
   const cancelBtnRef = useRef<HTMLButtonElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const titleId = useId();
+  const messageId = useId();
+  const justificationId = useId();
+  const counterId = useId();
 
-  // Reiniciar justificación al abrir o cerrar
+  // Foco inicial: justificación si se exige; si no, Cancelar (acción segura por defecto)
+  useModalA11y(dialogRef, {
+    isOpen,
+    onClose,
+    closeOnEscape: !isLoading,
+    initialFocusRef: requiresJustification ? textareaRef : cancelBtnRef,
+  });
+
+  // Reiniciar la justificación al cerrar
   useEffect(() => {
     if (!isOpen) setJustification('');
   }, [isOpen]);
-
-  // Cerrar con Escape
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isLoading) onClose();
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleEscape);
-    }
-    return () => {
-      window.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen, onClose, isLoading]);
-
-  // Si se resalta Cancelar, recibe el foco por defecto (Enter accidental no dispara la acción)
-  useEffect(() => {
-    if (isOpen && emphasizeCancel) cancelBtnRef.current?.focus();
-  }, [isOpen, emphasizeCancel]);
 
   if (!isOpen) return null;
 
@@ -104,72 +102,68 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const cancelClassName = emphasizeCancel ? `joli-btn-modal-primary ${type}` : 'joli-btn-modal-secondary';
   const confirmClassName = emphasizeCancel ? 'joli-btn-modal-secondary' : `joli-btn-modal-primary ${type}`;
 
-  const renderIcon = () => {
-    switch (type) {
-      case 'danger':
-        return <AlertOctagon size={36} />;
-      case 'warning':
-        return <AlertTriangle size={36} />;
-      case 'info':
-        return <Info size={36} />;
-      case 'success':
-        return <CheckCircle2 size={36} />;
-      default:
-        return <AlertTriangle size={36} />;
-    }
-  };
-
   const handleConfirmClick = () => {
     if (!isJustificationValid || isLoading) return;
-    onConfirm(requiresJustification ? justification.trim() : undefined);
+    void onConfirm(requiresJustification ? justification.trim() : undefined);
   };
 
   return createPortal(
-    <div className="joli-modal-overlay" style={{ zIndex }}>
-      <div className="joli-confirm-modal-container joli-modal-fade-in" role="dialog" aria-modal="true">
-        {/* BOTÓN X SUPERIOR */}
-        <button 
-          type="button" 
-          className="joli-modal-close-icon" 
-          onClick={onClose} 
+    <div className="joli-modal-overlay">
+      <div
+        ref={dialogRef}
+        className="joli-confirm-modal-container joli-modal-fade-in"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={messageId}
+        aria-busy={isLoading}
+        tabIndex={-1}
+        data-testid="confirm-modal"
+      >
+        <button
+          type="button"
+          className="joli-modal-close-icon"
+          onClick={onClose}
           disabled={isLoading}
-          aria-label="Cerrar modal"
+          aria-label="Cerrar"
         >
-          <X size={20} />
+          <X size={20} aria-hidden="true" />
         </button>
 
-        {/* ÍCONO CON WRAPPER DE COLOR */}
-        <div className={`joli-modal-icon-wrapper ${type}`}>
-          {renderIcon()}
-        </div>
+        <div className={`joli-modal-icon-wrapper ${type}`}>{ICONS[type]}</div>
 
-        {/* CONTENIDO TEXTUAL */}
         <div className="joli-confirm-modal-content">
-          <h3 className="joli-confirm-modal-title">{title}</h3>
-          <p className="joli-confirm-modal-message">{message}</p>
+          <h2 id={titleId} className="joli-confirm-modal-title">{title}</h2>
+          <p id={messageId} className="joli-confirm-modal-message">{message}</p>
         </div>
 
-        {/* CAMPO DE JUSTIFICACIÓN DE AUDITORÍA (OBLIGATORIO) */}
         {requiresJustification && (
           <div className="joli-modal-justification-box">
-            <label className="joli-modal-justification-label">
-              <span>{justificationLabel}</span>
-              <span className={`joli-modal-justification-counter ${isJustificationValid ? 'is-valid' : ''}`}>
+            <div className="joli-modal-justification-label">
+              <label htmlFor={justificationId}>{justificationLabel}</label>
+              <span
+                id={counterId}
+                className={`joli-modal-justification-counter ${isJustificationValid ? 'is-valid' : ''}`}
+              >
                 {currentLength} / {justificationMinLength} mín.
               </span>
-            </label>
+            </div>
             <textarea
+              ref={textareaRef}
+              id={justificationId}
               className="joli-modal-textarea"
               placeholder={justificationPlaceholder}
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
               disabled={isLoading}
+              required
+              aria-describedby={counterId}
+              aria-invalid={!isJustificationValid}
               rows={3}
             />
           </div>
         )}
 
-        {/* ACCIONES (BOTONES) */}
         <div className="joli-confirm-modal-actions">
           {cancelText && (
             <button
@@ -187,11 +181,10 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             className={confirmClassName}
             onClick={handleConfirmClick}
             disabled={!isJustificationValid || isLoading}
-            title={!isJustificationValid ? `Debe ingresar al menos ${justificationMinLength} caracteres de motivo` : undefined}
           >
             {isLoading ? (
               <>
-                <Loader2 size={16} className="joli-spin me-2" />
+                <Loader2 size={16} className="joli-spin me-2" aria-hidden="true" />
                 <span>Procesando...</span>
               </>
             ) : (
@@ -201,44 +194,50 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 ```
 
+**Contrato con el backend:** si `requiresJustification` está activo, el texto DEBE enviarse en la petición (p. ej. `{ "justificacion": "..." }`) y el backend DEBE validarlo y guardarlo en el registro de auditoría; la validación del frontend es solo de experiencia de usuario.
+
 ---
 
-## 3. Estilos CSS Canónicos (`variables.css`)
+## 3. Estilos CSS (`confirm_modal.css`)
+
+Los estilos del campo de justificación (`.joli-modal-justification-*`, `.joli-modal-textarea`) viven en [`variables.css`](../variables.css) §5 y no se duplican aquí.
 
 ```css
 .joli-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  inset: 0;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100005;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--bg-viewport) 75%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .joli-confirm-modal-container {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
-  padding: 2.25rem;
-  width: 90%;
-  max-width: 460px;
   position: relative;
-  box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 90%;
+  max-width: 460px;
+  padding: 2.25rem;
   text-align: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-modal);
+}
+
+.joli-confirm-modal-container:focus {
+  outline: none;
 }
 
 .joli-modal-close-icon {
@@ -247,53 +246,62 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   right: 1.25rem;
   background: none;
   border: none;
-  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
   cursor: pointer;
   transition: color var(--transition-fast);
 }
 
 .joli-modal-close-icon:hover {
-  color: var(--color-text-primary);
+  color: var(--text-primary);
+}
+
+.joli-modal-close-icon:focus-visible,
+.joli-btn-modal-primary:focus-visible,
+.joli-btn-modal-secondary:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
 .joli-modal-icon-wrapper {
-  width: 76px;
-  height: 76px;
-  border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 76px;
+  height: 76px;
   margin-bottom: 1.25rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid transparent;
 }
 
 .joli-modal-icon-wrapper.danger {
-  background: rgba(239, 68, 68, 0.12);
-  color: var(--color-danger);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: var(--status-error-bg);
+  color: var(--status-error);
+  border-color: var(--status-error);
 }
 
 .joli-modal-icon-wrapper.warning {
-  background: rgba(245, 158, 11, 0.12);
-  color: var(--color-warning);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: var(--status-warning-bg);
+  color: var(--status-warning);
+  border-color: var(--status-warning);
 }
 
 .joli-modal-icon-wrapper.info {
-  background: rgba(14, 165, 233, 0.12);
-  color: #0ea5e9;
-  border: 1px solid rgba(14, 165, 233, 0.25);
+  background: var(--status-info-bg);
+  color: var(--status-info);
+  border-color: var(--status-info);
 }
 
 .joli-modal-icon-wrapper.primary {
-  background: rgba(16, 185, 129, 0.12);
-  color: var(--color-primary);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: var(--status-success-bg);
+  color: var(--brand-primary);
+  border-color: var(--border-card-accent);
 }
 
 .joli-modal-icon-wrapper.success {
-  background: rgba(34, 197, 94, 0.12);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  background: var(--status-success-bg);
+  color: var(--status-success);
+  border-color: var(--status-success);
 }
 
 .joli-confirm-modal-content {
@@ -301,165 +309,78 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 }
 
 .joli-confirm-modal-title {
-  font-size: var(--text-xl);
-  font-weight: var(--weight-bold);
-  color: var(--color-text-primary);
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
 }
 
 .joli-confirm-modal-message {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-  line-height: 1.6;
   max-height: 220px;
-  overflow-y: auto;
+  margin: 0;
   padding-right: 4px;
-}
-
-/* ==========================================================================
-   CAMPO DE JUSTIFICACIÓN DE AUDITORÍA (OBLIGATORIO PARA ACCIONES DELICADAS)
-   Garantiza ancho al 100%, textarea estilizado con tokens y contador en vivo
-   ========================================================================== */
-.joli-modal-justification-box {
-  width: 100%;
-  margin: 0.5rem 0 1.5rem 0;
-  text-align: left;
-  box-sizing: border-box;
-}
-
-.joli-modal-justification-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-secondary, #94a3b8);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.4rem;
-  user-select: none;
-}
-
-.joli-modal-justification-counter {
-  font-size: 0.7rem;
-  font-family: var(--font-family-mono, monospace);
-  color: var(--text-muted, #64748b);
-  transition: color 0.2s ease;
-}
-
-.joli-modal-justification-counter.is-valid {
-  color: var(--status-success, #10b981);
-  font-weight: 700;
-}
-
-.joli-modal-textarea {
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 84px;
-  max-height: 160px;
-  background: var(--input-bg, var(--bg-card, #151928));
-  border: 1px solid var(--input-border, var(--border-subtle, rgba(255, 255, 255, 0.1)));
-  border-radius: var(--radius-md, 8px);
-  padding: 0.65rem 0.85rem;
-  font-family: inherit;
-  font-size: 0.84rem;
-  color: var(--input-text, var(--text-primary, #f8fafc));
-  line-height: 1.45;
-  resize: vertical;
-  outline: none !important;
-  transition: border-color var(--transition-fast, 150ms ease), box-shadow var(--transition-fast, 150ms ease);
-}
-
-.joli-modal-textarea:focus {
-  border-color: var(--brand-primary, #6366f1);
-  box-shadow: 0 0 0 3px var(--input-focus-ring, rgba(16, 185, 129, 0.25));
-}
-
-.joli-modal-textarea::placeholder {
-  color: var(--input-placeholder, var(--text-muted, #64748b));
-  opacity: 0.75;
-}
-
-.joli-modal-textarea:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  overflow-y: auto;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--text-secondary);
 }
 
 .joli-confirm-modal-actions {
   display: flex;
-  gap: var(--space-3);
+  gap: 0.75rem;
   width: 100%;
 }
 
 .joli-btn-modal-secondary {
   flex: 1;
-  background: var(--color-bg-input);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
   padding: 0.75rem 1rem;
+  background: var(--bg-btn-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  font-weight: var(--weight-semibold);
-  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.joli-btn-modal-secondary:hover {
-  background: var(--color-bg-card-hover);
-  border-color: var(--color-text-muted);
+.joli-btn-modal-secondary:hover:not(:disabled) {
+  background: var(--bg-btn-secondary-hover);
 }
 
 .joli-btn-modal-primary {
   flex: 1;
-  color: #ffffff;
-  border: none;
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-lg);
-  font-weight: var(--weight-semibold);
-  font-size: var(--text-sm);
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition-fast);
+  padding: 0.75rem 1rem;
+  color: var(--text-on-brand);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: filter var(--transition-fast), transform var(--transition-fast);
 }
 
-.joli-btn-modal-primary.danger {
-  background: #ef4444;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
-}
-
-.joli-btn-modal-primary.danger:hover:not(:disabled) {
-  background: #dc2626;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.45);
-}
-
-.joli-btn-modal-primary.warning {
-  background: #f59e0b;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
-}
-
-.joli-btn-modal-primary.warning:hover:not(:disabled) {
-  background: #d97706;
+.joli-btn-modal-primary:hover:not(:disabled) {
+  filter: brightness(0.92);
   transform: translateY(-1px);
 }
 
-.joli-btn-modal-primary.primary {
-  background: var(--color-primary);
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
-}
-
-.joli-btn-modal-primary.primary:hover:not(:disabled) {
-  background: #059669;
-  transform: translateY(-1px);
-}
+.joli-btn-modal-primary.danger  { background: var(--status-error); }
+.joli-btn-modal-primary.warning { background: var(--status-warning); }
+.joli-btn-modal-primary.info    { background: var(--status-info); }
+.joli-btn-modal-primary.primary { background: var(--brand-primary); }
+.joli-btn-modal-primary.success { background: var(--status-success); }
+/* Pendiente de paleta: texto blanco sobre --status-warning / --brand-primary no alcanza 4.5:1.
+   Se propone un token --text-on-status (texto oscuro) en variables.css. */
 
 .joli-btn-modal-primary:disabled,
 .joli-btn-modal-secondary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none !important;
+  transform: none;
 }
 
 .joli-spin {
@@ -467,7 +388,6 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 }
 
 @keyframes joliSpin {
-  from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 
@@ -478,5 +398,10 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 @keyframes joliModalZoom {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .joli-modal-fade-in,
+  .joli-spin { animation: none; }
 }
 ```

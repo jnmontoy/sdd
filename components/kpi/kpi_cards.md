@@ -1,44 +1,36 @@
 # Componente UI: Tarjetas de Indicadores KPI (KPI Cards)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
-### Patrón Canónico de Referencia: Módulo BI Cartera
+## SDD Joli Foods — Spec-Driven Development
 
-Las **KPI Cards** son el componente estándar de visualización de indicadores operativos, financieros y métricas de desempeño en Jolifoods.
+> **Origen:** patrón tomado de bi (módulo cartera). Aquí se describe de forma genérica.
 
-Inspirado en el estándar de mayor fidelidad de **BI Cartera**, este componente admite **KPIs interactivos / clickeables** que actúan como **filtros rápidos de tabla**, estados de carga esqueleto (*Skeleton Loaders*), badges de filtro activo y cajas de iconos cromáticas con soporte nativo de Modo Noche y Día gobernadas por [`variables.css`](../variables.css).
-
----
-
-## 1. Características Técnicas
-
-1. **KPI Clickeable como Filtro (`clickable-kpi-card`)**:
-   - Al hacer clic en la tarjeta, activa o desactiva un filtro global en la tabla asociada (ej. *"Ver solo registros con mora"* o *"Ver solo usuarios inactivos"*).
-   - Muestra un badge pulsante `kpi-filter-badge` con el texto `FILTRO ACTIVO`.
-   - Modifica el borde y fondo de la tarjeta con un resplandor (*glow*) identificativo.
-2. **Cajas de Iconos Cromáticas (`kpi-icon-box`)**:
-   - Iconos enmarcados en contenedores con esquinas redondeadas (`border-radius: 10px`), fondo elevado y bordes con colores institucionales:
-     - `.icon-blue`: Azul corporativo (Total general).
-     - `.icon-amber`: Ámbar preventivo (Vencimientos / Advertencias).
-     - `.icon-pink` / `.icon-danger`: Rojo / Carmesí crítico (Mora, Bloqueados, Errores).
-     - `.icon-emerald` / `.icon-success`: Verde esmeralda (Completados, Saludables).
-     - `.icon-cyan`: Cian (En tránsito, En proceso).
-3. **Soporte de Estado Esqueleto (`is-skeleton`)**:
-   - Renderiza esqueletos animados (`joli-skeleton-bone`) mientras el backend resuelve las consultas.
+Las **KPI Cards** (tarjetas de indicador clave) muestran indicadores operativos, financieros y de desempeño. Admiten **KPIs clicables** que funcionan como **filtros rápidos de la tabla asociada**, estados de carga con esqueleto (*skeleton*: silueta animada mientras llegan los datos), badge de filtro activo y cajas de icono por color. Los colores salen de [`variables.css`](../variables.css), por lo que funcionan en Modo Noche y Modo Día.
 
 ---
 
-## 2. Código JSX / React 19 Canónico (`KPICards.tsx`)
+## 1. Características técnicas
+
+1. **KPI clicable como filtro (`clickable-kpi-card`)**
+   - Al activarlo (clic, `Enter` o `Espacio`) se activa o desactiva un filtro de la tabla asociada (ej. *"Ver solo registros con mora"* o *"Ver solo usuarios inactivos"*).
+   - Un KPI clicable DEBE renderizarse como `<button>` con `aria-pressed` para que funcione con teclado y lector de pantalla.
+   - Muestra el badge `joli-kpi-filter-badge` con el texto `FILTRO ACTIVO` y resalta borde y fondo.
+2. **Cajas de icono por color (`joli-kpi-icon-box`)**:
+   - `.icon-blue`: total general.
+   - `.icon-amber`: vencimientos / advertencias.
+   - `.icon-pink`: crítico (mora, bloqueados, errores).
+   - `.icon-emerald`: completados, saludables.
+   - `.icon-cyan`: en tránsito, en proceso.
+   - `.icon-indigo`: categoría adicional.
+   - El color NO DEBE ser el único portador del significado: la etiqueta del KPI debe decir qué mide.
+3. **Estado esqueleto (`is-skeleton`)**: renderiza siluetas animadas (`joli-skeleton-bone`) mientras el backend responde, con `aria-busy="true"`.
+
+---
+
+## 2. Código React + TypeScript (`KPICards.tsx`)
 
 ```tsx
 import React from 'react';
-import { 
-  TrendingUp, 
-  Clock, 
-  AlertCircle, 
-  ShieldCheck, 
-  Activity, 
-  ArrowUpRight 
-} from 'lucide-react';
-import '../../styles/variables.css';
+
+export type KPIIconColor = 'icon-blue' | 'icon-amber' | 'icon-pink' | 'icon-emerald' | 'icon-cyan' | 'icon-indigo';
 
 export interface KPICardItem {
   id: string;
@@ -46,7 +38,7 @@ export interface KPICardItem {
   value: string | number;
   subtext?: string;
   icon: React.ReactNode;
-  iconColorClass: 'icon-blue' | 'icon-amber' | 'icon-pink' | 'icon-emerald' | 'icon-cyan' | 'icon-indigo';
+  iconColorClass: KPIIconColor;
   isClickable?: boolean;
   isActiveFilter?: boolean;
   onClick?: () => void;
@@ -55,14 +47,31 @@ export interface KPICardItem {
 export interface KPIRowProps {
   items: KPICardItem[];
   loading?: boolean;
+  skeletonCount?: number;
 }
 
-export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false }) => {
+const KPICardContent: React.FC<{ kpi: KPICardItem }> = ({ kpi }) => (
+  <>
+    <div className="joli-kpi-content">
+      <div className="joli-kpi-label-row">
+        <span className="joli-kpi-label">{kpi.label}</span>
+        {kpi.isActiveFilter && <span className="joli-kpi-filter-badge">FILTRO ACTIVO</span>}
+      </div>
+      <div className="joli-kpi-value">{kpi.value}</div>
+      {kpi.subtext && <span className="joli-kpi-subtext">{kpi.subtext}</span>}
+    </div>
+    <div className={`joli-kpi-icon-box ${kpi.iconColorClass}`} aria-hidden="true">
+      {kpi.icon}
+    </div>
+  </>
+);
+
+export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false, skeletonCount = 4 }) => {
   if (loading) {
     return (
-      <div className="joli-kpi-row" aria-busy="true">
-        {[1, 2, 3, 4].map((idx) => (
-          <div key={idx} className="joli-kpi-card is-skeleton">
+      <div className="joli-kpi-row" aria-busy="true" aria-label="Cargando indicadores">
+        {Array.from({ length: skeletonCount }, (_, idx) => (
+          <div key={`skeleton-${idx}`} className="joli-kpi-card is-skeleton">
             <div className="joli-kpi-content w-100">
               <div className="joli-skeleton-bone skeleton-title" />
               <div className="joli-skeleton-bone skeleton-value" />
@@ -77,29 +86,25 @@ export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false }) => {
 
   return (
     <div className="joli-kpi-row">
-      {items.map((kpi) => (
-        <div
-          key={kpi.id}
-          className={`joli-kpi-card ${kpi.isClickable ? 'clickable-kpi-card' : ''} ${kpi.isActiveFilter ? 'active-filter' : ''}`}
-          onClick={kpi.isClickable ? kpi.onClick : undefined}
-          role={kpi.isClickable ? 'button' : undefined}
-          tabIndex={kpi.isClickable ? 0 : undefined}
-        >
-          <div className="joli-kpi-content">
-            <div className="joli-kpi-label-row">
-              <span className="joli-kpi-label">{kpi.label}</span>
-              {kpi.isActiveFilter && (
-                <span className="joli-kpi-filter-badge">FILTRO ACTIVO</span>
-              )}
-            </div>
-            <div className="joli-kpi-value">{kpi.value}</div>
-            {kpi.subtext && <span className="joli-kpi-subtext">{kpi.subtext}</span>}
+      {items.map((kpi) =>
+        kpi.isClickable ? (
+          // KPI interactivo: <button> nativo => foco, Enter y Espacio sin código extra.
+          <button
+            key={kpi.id}
+            type="button"
+            className={`joli-kpi-card clickable-kpi-card ${kpi.isActiveFilter ? 'active-filter' : ''}`}
+            onClick={kpi.onClick}
+            aria-pressed={Boolean(kpi.isActiveFilter)}
+            title={kpi.isActiveFilter ? 'Quitar filtro' : `Filtrar la tabla por: ${kpi.label}`}
+          >
+            <KPICardContent kpi={kpi} />
+          </button>
+        ) : (
+          <div key={kpi.id} className="joli-kpi-card">
+            <KPICardContent kpi={kpi} />
           </div>
-          <div className={`joli-kpi-icon-box ${kpi.iconColorClass}`}>
-            {kpi.icon}
-          </div>
-        </div>
-      ))}
+        )
+      )}
     </div>
   );
 };
@@ -107,10 +112,12 @@ export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false }) => {
 
 ---
 
-## 3. Estilos CSS Canónicos (`variables.css`)
+## 3. Estilos CSS del componente
+
+Los estilos consumen solo tokens de `variables.css`. Los fondos translúcidos se derivan con `color-mix()` en lugar de quemar `rgba()`.
 
 ```css
-/* REJILLA RESPONSIVE INTELIGENTE */
+/* REJILLA RESPONSIVE */
 .joli-kpi-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -119,21 +126,15 @@ export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false }) => {
 }
 
 @media (max-width: 1200px) {
-  .joli-kpi-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+  .joli-kpi-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 768px) {
-  .joli-kpi-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  .joli-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 480px) {
-  .joli-kpi-row {
-    grid-template-columns: 1fr;
-  }
+  .joli-kpi-row { grid-template-columns: 1fr; }
 }
 
 /* TARJETA KPI */
@@ -141,36 +142,46 @@ export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false }) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--color-bg-card);
-  border: 1px solid var(--color-border);
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   padding: 1rem 1.25rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
   min-width: 0;
   transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .joli-kpi-card:hover {
   transform: translateY(-2px);
-  border-color: var(--color-text-muted);
-  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-popover);
 }
 
-/* KPI INTERACTIVO / CLICKEABLE */
+/* KPI CLICABLE */
 .joli-kpi-card.clickable-kpi-card {
   cursor: pointer;
   position: relative;
 }
 
 .joli-kpi-card.clickable-kpi-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2);
+  border-color: var(--brand-primary);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--brand-primary) 20%, transparent);
+}
+
+.joli-kpi-card.clickable-kpi-card:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-input-focus);
+  border-color: var(--border-focus);
 }
 
 .joli-kpi-card.clickable-kpi-card.active-filter {
-  border-color: var(--color-primary);
-  background: rgba(16, 185, 129, 0.08);
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+  border-color: var(--brand-primary);
+  background: color-mix(in srgb, var(--brand-primary) 8%, var(--bg-card));
+  box-shadow: 0 0 16px var(--brand-glow);
 }
 
 .joli-kpi-label-row {
@@ -182,12 +193,12 @@ export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false }) => {
 
 .joli-kpi-filter-badge {
   font-size: 9px;
-  font-weight: 800;
+  font-weight: var(--font-weight-extrabold);
   padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(16, 185, 129, 0.2);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: var(--radius-sm);
+  background: var(--status-success-bg);
+  color: var(--status-success);
+  border: 1px solid color-mix(in srgb, var(--status-success) 40%, transparent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   animation: pulseFilter 2s infinite;
@@ -198,6 +209,11 @@ export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false }) => {
   50% { opacity: 0.6; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .joli-kpi-filter-badge, .joli-skeleton-bone { animation: none; }
+  .joli-kpi-card:hover { transform: none; }
+}
+
 .joli-kpi-content {
   display: flex;
   flex-direction: column;
@@ -206,10 +222,10 @@ export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false }) => {
 }
 
 .joli-kpi-label {
-  font-size: 11px;
-  font-weight: var(--weight-bold);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.05em;
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
@@ -217,10 +233,10 @@ export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false }) => {
 }
 
 .joli-kpi-value {
-  font-size: var(--text-2xl);
-  font-weight: var(--weight-extrabold);
-  color: var(--color-text-primary);
-  line-height: 1.2;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-primary);
+  line-height: var(--line-height-tight);
   margin: 0.2rem 0;
   white-space: nowrap;
   overflow: hidden;
@@ -228,70 +244,43 @@ export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false }) => {
 }
 
 .joli-kpi-subtext {
-  font-size: 11px;
-  color: var(--color-text-muted);
+  font-size: var(--font-size-2xs);
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* CAJA DE ICONOS */
+/* CAJA DE ICONO */
 .joli-kpi-icon-box {
+  --kpi-accent: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
   border-radius: var(--radius-lg);
-  background: var(--color-bg-input);
-  border: 1px solid var(--color-border);
+  color: var(--kpi-accent);
+  background: color-mix(in srgb, var(--kpi-accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--kpi-accent) 25%, transparent);
   flex-shrink: 0;
   margin-left: 0.5rem;
 }
 
-.joli-kpi-icon-box.icon-blue {
-  color: #3b82f6;
-  border-color: rgba(59, 130, 246, 0.25);
-  background: rgba(59, 130, 246, 0.08);
-}
+.joli-kpi-icon-box.icon-blue    { --kpi-accent: var(--accent-blue); }
+.joli-kpi-icon-box.icon-amber   { --kpi-accent: var(--status-warning); }
+.joli-kpi-icon-box.icon-pink    { --kpi-accent: var(--status-error); }
+.joli-kpi-icon-box.icon-emerald { --kpi-accent: var(--status-success); }
+.joli-kpi-icon-box.icon-cyan    { --kpi-accent: var(--accent-cyan); }
+.joli-kpi-icon-box.icon-indigo  { --kpi-accent: var(--accent-indigo); }
 
-.joli-kpi-icon-box.icon-amber {
-  color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.25);
-  background: rgba(245, 158, 11, 0.08);
-}
-
-.joli-kpi-icon-box.icon-pink {
-  color: #f43f5e;
-  border-color: rgba(244, 63, 94, 0.25);
-  background: rgba(244, 63, 94, 0.08);
-}
-
-.joli-kpi-icon-box.icon-emerald {
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.25);
-  background: rgba(16, 185, 129, 0.08);
-}
-
-.joli-kpi-icon-box.icon-cyan {
-  color: #06b6d4;
-  border-color: rgba(6, 182, 212, 0.25);
-  background: rgba(6, 182, 212, 0.08);
-}
-
-.joli-kpi-icon-box.icon-indigo {
-  color: #6366f1;
-  border-color: rgba(99, 102, 241, 0.25);
-  background: rgba(99, 102, 241, 0.08);
-}
-
-/* SKELETON LOADERS */
+/* ESQUELETOS DE CARGA */
 .joli-kpi-card.is-skeleton {
   pointer-events: none;
 }
 
 .joli-skeleton-bone {
-  background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg-card-hover) 50%, var(--color-border) 75%);
+  background: linear-gradient(90deg, var(--border-subtle) 25%, var(--bg-hover) 50%, var(--border-subtle) 75%);
   background-size: 200% 100%;
   animation: joliSkeletonLoading 1.5s infinite;
   border-radius: var(--radius-sm);
@@ -307,3 +296,5 @@ export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false }) => {
   100% { background-position: -200% 0; }
 }
 ```
+
+> `--kpi-accent` es una variable local del componente (no un color nuevo): solo apunta a un token de `variables.css` según la clase.

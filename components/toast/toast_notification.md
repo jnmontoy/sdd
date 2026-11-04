@@ -150,9 +150,9 @@ export const CorporateToaster: React.FC = () => {
   min-width: 320px;
   max-width: 440px;
   padding: 12px 16px;
-  border-radius: var(--radius-md, 8px);
-  background: var(--bg-surface, #FFFFFF);
-  border: 1px solid var(--border-default, #E5E7EB);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
   font-family: inherit;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -160,8 +160,8 @@ export const CorporateToaster: React.FC = () => {
 }
 
 [data-theme="dark"] .joli-toast {
-  background: var(--bg-surface, #1E293B);
-  border-color: var(--border-default, #334155);
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
 }
 
 @keyframes toastSlideIn {
@@ -194,13 +194,13 @@ export const CorporateToaster: React.FC = () => {
 .toast-title {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--text-primary, #111827);
+  color: var(--text-primary);
   line-height: 1.35;
 }
 
 .toast-desc {
   font-size: 12px;
-  color: var(--text-secondary, #6B7280);
+  color: var(--text-secondary);
   margin-top: 2px;
   line-height: 1.4;
   word-break: break-word;
@@ -211,7 +211,7 @@ export const CorporateToaster: React.FC = () => {
   border: none;
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-primary, #2D6A4F);
+  color: var(--brand-primary);
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
@@ -225,7 +225,7 @@ export const CorporateToaster: React.FC = () => {
 .toast-close-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted, #9CA3AF);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
@@ -235,13 +235,13 @@ export const CorporateToaster: React.FC = () => {
 }
 
 .toast-close-btn:hover {
-  color: var(--text-primary, #111827);
+  color: var(--text-primary);
   background: rgba(0, 0, 0, 0.05);
 }
 
 /* Variantes Cromáticas */
 .toast-success {
-  border-left: 4px solid var(--color-primary, #2D6A4F);
+  border-left: 4px solid var(--brand-primary);
 }
 .toast-success .toast-icon-box {
   background: #E8F5E9;
@@ -249,7 +249,7 @@ export const CorporateToaster: React.FC = () => {
 }
 
 .toast-error {
-  border-left: 4px solid var(--color-danger, #C53030);
+  border-left: 4px solid var(--status-error);
 }
 .toast-error .toast-icon-box {
   background: #FEE2E2;

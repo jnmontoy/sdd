@@ -9,6 +9,8 @@ Este documento detalla las estructuras de contenedor autorizadas para la página
 
 Contenedor flotante centralizado en la pantalla con efecto `backdrop-filter: blur()`, acento superior esmeralda y sombras volumétricas.
 
+> El centrado es una excepción explícita a la regla de layout horizontal ([`layout_rules.md`](../layout/layout_rules.md)): solo aplica a la tarjeta de inicio de sesión y a los modales.
+
 ### 1.1. Estructura HTML / JSX
 ```html
 <main class="login-viewport">
@@ -38,7 +40,7 @@ Contenedor flotante centralizado en la pantalla con efecto `backdrop-filter: blu
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #0b0f19; /* Slate 950 */
+  background-color: var(--bg-viewport);
   padding: 1.5rem;
   box-sizing: border-box;
   overflow: hidden;
@@ -47,16 +49,15 @@ Contenedor flotante centralizado en la pantalla con efecto `backdrop-filter: blu
 /* Halos decorativos en segundo plano */
 .login-orb {
   position: absolute;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   filter: blur(100px);
   pointer-events: none;
-  opacity: 0.35;
 }
 
 .login-orb-top {
   width: 420px;
   height: 420px;
-  background: radial-gradient(circle, #10b981 0%, transparent 70%);
+  background: radial-gradient(circle, var(--orb-color-primary) 0%, transparent 70%);
   top: -10%;
   right: -5%;
 }
@@ -64,7 +65,7 @@ Contenedor flotante centralizado en la pantalla con efecto `backdrop-filter: blu
 .login-orb-bottom {
   width: 380px;
   height: 380px;
-  background: radial-gradient(circle, #065f46 0%, transparent 70%);
+  background: radial-gradient(circle, var(--orb-color-secondary) 0%, transparent 70%);
   bottom: -10%;
   left: -5%;
 }
@@ -72,25 +73,23 @@ Contenedor flotante centralizado en la pantalla con efecto `backdrop-filter: blu
 /* Contenedor Glassmorphic */
 .login-card {
   position: relative;
-  z-index: 10;
+  z-index: var(--z-card);
   width: 100%;
   max-width: 440px;
-  background-color: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-top: 1px solid rgba(16, 185, 129, 0.35); /* Acento esmeralda */
-  border-radius: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75),
-              0 0 20px -5px rgba(16, 185, 129, 0.15);
+  background-color: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid var(--border-card-accent);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--glass-shadow);
+  color: var(--text-primary);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   box-sizing: border-box;
 }
 
 .login-card:hover {
-  border-top-color: rgba(52, 211, 153, 0.55);
-  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.85),
-              0 0 30px -5px rgba(16, 185, 129, 0.25);
+  border-top-color: var(--brand-primary-light);
 }
 
 .login-card-inner {
@@ -122,8 +121,8 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
 ```html
 <main class="login-split-root">
   <!-- Panel de Marca (Solo visible en pantallas de más de 1024px) -->
-  <aside class="login-split-hero">
-    <div class="login-split-hero-overlay"></div>
+  <aside class="login-split-hero" aria-label="Presentación de la plataforma">
+    <div class="login-split-hero-overlay" aria-hidden="true"></div>
     <div class="login-split-hero-content">
       <span class="login-split-tag">Ecosistema Digital</span>
       <h2 class="login-split-title">Innovación y Seguridad Corporativa</h2>
@@ -150,7 +149,7 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
   display: flex;
   min-height: 100vh;
   width: 100%;
-  background-color: #0b0f19;
+  background-color: var(--bg-viewport);
   box-sizing: border-box;
 }
 
@@ -158,7 +157,8 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
   display: none;
   flex: 1;
   position: relative;
-  background: linear-gradient(135deg, #064e3b 0%, #022c22 100%);
+  /* Panel de marca: tonos derivados de los tokens para respetar el tema activo */
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 30%, var(--bg-viewport)) 0%, var(--bg-viewport) 100%);
   align-items: flex-end;
   padding: 4rem;
   overflow: hidden;
@@ -174,7 +174,7 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
 .login-split-hero-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 30% 30%, rgba(16, 185, 129, 0.35), transparent 60%);
+  background: radial-gradient(circle at 30% 30%, var(--orb-color-primary), transparent 60%);
   pointer-events: none;
 }
 
@@ -187,10 +187,10 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
 .login-split-tag {
   display: inline-block;
   padding: 0.35rem 0.85rem;
-  background-color: rgba(16, 185, 129, 0.2);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  border-radius: 9999px;
-  color: #34d399;
+  background-color: var(--status-success-bg);
+  border: 1px solid var(--border-card-accent);
+  border-radius: var(--radius-full);
+  color: var(--brand-primary);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -199,16 +199,16 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
 }
 
 .login-split-title {
-  color: #f8fafc;
-  font-size: 2.25rem;
+  color: var(--text-primary);
+  font-size: var(--font-size-4xl);
   font-weight: 800;
   line-height: 1.2;
   margin: 0 0 1rem 0;
 }
 
 .login-split-desc {
-  color: #94a3b8;
-  font-size: 1rem;
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
   line-height: 1.6;
   margin: 0;
 }

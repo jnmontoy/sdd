@@ -64,8 +64,8 @@ export interface CorporateCardProps {
 .corp-card {
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg-surface, #1e293b);
-  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   overflow: hidden;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -73,7 +73,7 @@ export interface CorporateCardProps {
 }
 
 .corp-card:hover {
-  border-color: var(--color-border-hover, rgba(16, 185, 129, 0.3));
+  border-color: var(--border-strong);
 }
 
 .corp-card--glow {
@@ -86,8 +86,8 @@ export interface CorporateCardProps {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  background-color: var(--color-bg-surface-elevated, rgba(255, 255, 255, 0.02));
-  border-bottom: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
+  background-color: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .corp-card__title-group {
@@ -104,26 +104,26 @@ export interface CorporateCardProps {
   height: 36px;
   border-radius: 8px;
   background: rgba(16, 185, 129, 0.12);
-  color: var(--color-primary, #10b981);
+  color: var(--brand-primary);
 }
 
 .corp-card__title {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--color-text-main, #f8fafc);
+  color: var(--text-primary);
 }
 
 .corp-card__subtitle {
   margin: 2px 0 0 0;
   font-size: 0.8rem;
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--text-muted);
 }
 
 /* Body de la Tarjeta */
 .corp-card__body {
   padding: 20px;
-  color: var(--color-text-main, #e2e8f0);
+  color: var(--text-primary);
   flex: 1 1 auto;
 }
 
@@ -133,10 +133,10 @@ export interface CorporateCardProps {
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background-color: var(--color-bg-surface-dim, rgba(0, 0, 0, 0.15));
-  border-top: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.06));
+  background-color: var(--bg-viewport);
+  border-top: 1px solid var(--border-subtle);
   font-size: 0.82rem;
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--text-muted);
 }
 
 .corp-card__footer-actions {

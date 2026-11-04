@@ -1,87 +1,70 @@
-﻿# 06. Diseño UI/UX, Design Tokens y Accesibilidad
-## Módulo de Login / Autenticación — SDD Greenyard (`GY-SPEC-AUTH-001`)
+﻿# 06. Diseño UI/UX, Tokens de Diseño y Accesibilidad
+## Módulo de Login / Autenticación — SDD Joli Foods (`SPEC-AUTH-001`)
 
-Este documento establece la identidad visual, tokens de diseño, ergonomía interactiva y lineamientos de accesibilidad para la interfaz de inicio de sesión de Greenyard.
-
----
-
-## 1. Sistema Central de Textos y Temas: `variables.css`
-
-La página de Login y todos sus componentes consumen obligatoriamente el archivo central [`variables.css`](../../../components/variables.css), el cual define la tipografía, escala de textos y el soporte reactivo para **Modo Noche (Dark Mode)** y **Modo Día (Light Mode)** mediante el atributo `[data-theme='light']`.
-
-### 1.1. Tokens Clave Consumidos por el Login
-- **Tipografía Global**: `var(--font-family)`, `var(--font-size-sm)`, `var(--font-size-base)`.
-- **Textos Reactivos**: `var(--text-primary)`, `var(--text-secondary)`, `var(--text-muted)`.
-- **Superficie de Tarjeta**: `var(--bg-card)`, `var(--glass-blur)`, `var(--glass-shadow)`.
-- **Campos de Entrada**: `var(--bg-input)`, `var(--border-subtle)`, `var(--shadow-input-focus)`.
-- **Marca y Acciones**: `var(--brand-primary)`, `var(--brand-primary-hover)`, `var(--brand-glow)`.
-- **Alertas y Errores**: `var(--status-error)`, `var(--alert-error-bg)`, `var(--alert-error-border)`.
+Identidad visual, interacción y accesibilidad de la pantalla de inicio de sesión. La composición de componentes y su código están en [`11_componentes_de_la_pagina.md`](./11_componentes_de_la_pagina.md).
 
 ---
 
-## 2. Anatomía de la Interfaz y Jerarquía de Componentes
+## 1. Tokens de `variables.css`
 
-La página de inicio de sesión sigue un patrón de **Tarjeta Flotante Centralizada (Centered Glass Card)** para resoluciones móviles y medianas, y opcionalmente **Pantalla Dividida (Split Screen)** para pantallas grandes con arte corporativo institucional.
+La página DEBERÍA consumir solo los tokens de [`variables.css`](../../../components/variables.css), que define modo noche y modo día (`[data-theme='light']`). **Por qué:** el contraste se verifica una sola vez en los tokens y no se rompe al cambiar de tema.
+
+| Uso | Tokens |
+| :--- | :--- |
+| Tipografía | `--font-family`, `--font-size-sm`, `--font-size-base` |
+| Texto | `--text-primary`, `--text-secondary`, `--text-muted` |
+| Tarjeta | `--glass-bg`, `--glass-blur`, `--glass-border`, `--glass-shadow`, `--border-card-accent` |
+| Campos | `--input-bg`, `--input-border`, `--input-focus-border`, `--input-focus-ring`, `--input-placeholder` |
+| Marca y acción | `--brand-primary`, `--brand-primary-hover`, `--brand-glow`, `--text-on-brand` |
+| Error | `--status-error`, `--alert-error-bg`, `--alert-error-border`, `--alert-error-text` |
+| Fondo | `--bg-viewport`, `--orb-color-primary`, `--orb-color-secondary` |
+
+> La paleta actual de `variables.css` (verde) está pendiente de alinearse con la identidad de marca Joli (morado, amarillo, azul, naranja; Gotham y Arvo). Es una decisión de negocio fuera de este documento; al cambiar los tokens, el login se actualiza sin tocar su CSS.
+
+---
+
+## 2. Anatomía
+
+El login es una de las excepciones permitidas al diseño a todo lo ancho: la **tarjeta de inicio de sesión se centra** en el viewport. Variante opcional: pantalla dividida (arte institucional a la izquierda, tarjeta a la derecha) en pantallas ≥ 1200 px.
 
 ```
 +-------------------------------------------------------------+
+|                 [ LOGO DE LA APLICACIÓN ]                   |
+|                  <Nombre del proyecto>                      |
 |                                                             |
-|                    [ LOGO GREENYARD ]                       |
-|               "Portal de Identidad Digital"                 |
+|   Número de documento                                       |
+|   [ [IdCard] 1000000001                                 ]   |
+|   (error en línea si aplica)                                |
 |                                                             |
-|   +-----------------------------------------------------+   |
-|   | Documento de Identidad                              |   |
-|   | [ [Icon: IdCard] Ingrese su cédula                ] |   |
-|   | Error en línea si aplica                            |   |
-|   +-----------------------------------------------------+   |
+|   Contraseña                                                |
+|   [ [Lock] ••••••••••••                        [Ojo]    ]   |
 |                                                             |
-|   +-----------------------------------------------------+   |
-|   | Contraseña                                          |   |
-|   | [ [Icon: Lock] ••••••••••••••••   [Icon: Eye/Off] ] |   |
-|   +-----------------------------------------------------+   |
+|   [x] Recordar mi documento    ¿Olvidaste tu contraseña?    |
 |                                                             |
-|   [x] Recordar mi documento      ¿Olvidaste tu contraseña?  |
+|   [            INGRESAR  (o spinner de carga)           ]   |
 |                                                             |
-|   +-----------------------------------------------------+   |
-|   | [   INICIAR SESIÓN  (o Spinner de carga)   ]        |   |
-|   +-----------------------------------------------------+   |
+|   ------------------- o continúa con -------------------    |
+|   [ [MS] Iniciar sesión con Microsoft 365               ]   |
 |                                                             |
-|   ------------------ o también ----------------------       |
-|                                                             |
-|   +-----------------------------------------------------+   |
-|   | [Icon: MS Logo] Iniciar sesión con Microsoft 365    |   |
-|   +-----------------------------------------------------+   |
-|                                                             |
-|             Greenyard © 2026 — Acceso Seguro                |
+|              Joli Foods • Acceso corporativo                |
 +-------------------------------------------------------------+
 ```
 
 ---
 
-## 3. Microinteracciones y Estados de Interacción
+## 3. Estados de Interacción
 
-1. **Estado Hover en Botón Principal**:
-   - Transición de 200ms `ease-in-out` con elevación leve de escala (`scale: 1.01`) y halo esmeralda `box-shadow: 0 10px 25px -5px var(--gy-brand-glow)`.
-2. **Estado Focus Visible en Inputs**:
-   - Anillo de enfoque de 2px `focus:ring-2 focus:ring-emerald-500` con contraste superior a 3:1 frente al fondo.
-3. **Estado de Carga (Submitting)**:
-   - Botón deshabilitado (`pointer-events: none; opacity: 0.75`).
-   - El texto del botón es reemplazado por un spinner `animate-spin` y la etiqueta *"Autenticando..."*.
-4. **Retroalimentación de Error**:
-   - El campo inválido se ilumina con borde carmesí (`--gy-status-error`).
-   - Animación de sacudida leve (Shake animation de 300ms) para advertir visualmente del fallo.
+1. **Hover del botón principal:** transición `var(--transition-fast)`, color `--brand-primary-hover` y sombra con `--brand-glow`.
+2. **Foco visible:** anillo `box-shadow: var(--shadow-input-focus)` (color base `--input-focus-ring`) con contraste ≥ 3:1 frente al fondo (WCAG 2.4.7 / 1.4.11). NO DEBE quitarse el `outline` sin reemplazo.
+3. **Enviando:** botón e inputs deshabilitados (`disabled`), spinner y texto "Ingresando…"; el botón conserva su ancho para evitar saltos.
+4. **Error:** borde `--status-error` en el campo, mensaje en línea y animación de sacudida de 300 ms que DEBE desactivarse con `@media (prefers-reduced-motion: reduce)`.
 
 ---
 
-## 4. Requisitos de Accesibilidad (WCAG 2.1 AA)
+## 4. Accesibilidad (WCAG 2.1 AA)
 
-- **A11y-01 (Ratio de Contraste)**: Todos los textos principales tienen un ratio de contraste mínimo de **4.5:1** frente a su fondo contenedor. Los textos grandes cumplen al menos 3:1.
-- **A11y-02 (Navegación por Teclado)**:
-  - Secuencia de tabulación lógica: `Documento -> Contraseña -> Toggle Ojo -> Checkbox -> Botón Submit -> Enlace Olvido -> Botón Microsoft`.
-  - La tecla `Enter` en cualquier input desencadena el envío del formulario.
-  - La tecla `Espacio` conmuta el checkbox de "Recuérdame" y el botón de visibilidad de contraseña.
-- **A11y-03 (Lectores de Pantalla - ARIA)**:
-  - Campos de entrada provistos de `aria-required="true"`, `aria-invalid="true|false"` y `aria-describedby` apuntando al identificador del mensaje de error correspondiente.
-  - Botón de alternar contraseña con `aria-label="Mostrar contraseña"` o `aria-label="Ocultar contraseña"` dinámico.
-- **A11y-04 (Zoom y Reflow)**:
-  - La interfaz se adapta sin pérdida de funcionalidad ni solapamiento de elementos con niveles de zoom de hasta 200%.
+- **A11y-01 Contraste:** texto normal ≥ 4.5:1 y texto grande ≥ 3:1 en ambos temas.
+- **A11y-02 Teclado:** orden de tabulación `Documento → Contraseña → Ver contraseña → Recordar → ¿Olvidaste…? → Ingresar → Microsoft`. `Enter` en un campo envía el formulario; `Espacio` activa casilla y botones.
+- **A11y-03 ARIA:** cada campo tiene `<label htmlFor>`, `aria-invalid` y `aria-describedby` hacia su mensaje de error; el botón de ojo usa `aria-label` dinámico ("Mostrar contraseña" / "Ocultar contraseña") y `aria-pressed`; la alerta general usa `role="alert"`.
+- **A11y-04 Zoom:** sin pérdida de contenido ni scroll horizontal al 200 % de zoom y a 320 px de ancho (reflow 1.4.10).
+- **A11y-05 Autocompletado:** `autoComplete="username"` en documento y `autoComplete="current-password"` en contraseña, para que los gestores de contraseñas funcionen.
