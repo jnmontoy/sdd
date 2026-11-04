@@ -1,11 +1,19 @@
 # Especificación de Componente: Panel Lateral Derecho (`Drawer` / Slide-Over)
 ## Guía de implementación SDD
 
+<<<<<<< HEAD
 ### Regla de uso: CRUD en el panel lateral derecho
 
 - **Regla:** los formularios de creación (`+ Nuevo`) y edición (`Editar`) de registros CRUD DEBERÍAN abrirse en este panel lateral derecho, no en modales centrados ni en páginas separadas (`/crear`, `/editar/:id`).
 - **Por qué:** el usuario conserva a la vista la tabla de contexto, el formulario tiene scroll propio y la experiencia es igual en todos los módulos.
 - **Excepciones:** pedido explícito del usuario o decisión registrada (ADR). Los modales se reservan para confirmaciones, firmas, escáneres y sesión expirada (ver [`modal_dialog.md`](../modal/modal_dialog.md)).
+=======
+> [!CAUTION]
+> **REGLA DE ORO DE EXPERIENCIA DE USUARIO (UX) — JOLIFOODS & PANDORA ADMIN**:
+> **TODO FORMULARIO DE CREACIÓN O EDICIÓN CRUD (AGREGAR / EDITAR USUARIOS, ROLES, REGISTROS, ETC.) DEBE ABRIRSE OBLIGATORIAMENTE EN EL SIDEBAR LATERAL DERECHO (`RightDrawer` / `.joli-drawer-container`)**.
+> Queda **TERMINANTEMENTE PROHIBIDO** abrir formularios de creación o edición en modales flotantes centrados (`.modal-card-dialog` / `.modal-backdrop-overlay`) o redirigir a páginas separadas (`/crear`, `/editar`), a menos que el usuario lo pida explícitamente.
+> El Right Drawer garantiza que el usuario nunca pierda el contexto visual de la tabla o cards principales mientras agrega o edita información, e incluye en modo edición una franja de Mini-KPIs contextuales (`.drawer-kpi-grid`).
+>>>>>>> dfa6d576ff1a43eacc452032a5ce4df42852bd45
 
 ---
 

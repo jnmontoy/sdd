@@ -155,10 +155,16 @@ Los estilos consumen solo tokens de `variables.css`. Los fondos translúcidos se
   transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
+/* Sin transform: ninguna tarjeta se mueve al pasar el mouse (regla en card/corporate_card.md) */
 .joli-kpi-card:hover {
+<<<<<<< HEAD
   transform: translateY(-2px);
   border-color: var(--border-strong);
   box-shadow: var(--shadow-popover);
+=======
+  border-color: var(--color-text-muted);
+  box-shadow: var(--shadow-md);
+>>>>>>> dfa6d576ff1a43eacc452032a5ce4df42852bd45
 }
 
 /* KPI CLICABLE */
