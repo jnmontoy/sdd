@@ -1,36 +1,23 @@
-# Componente Maestro: Menú Desplegable de Perfil de Usuario (UserProfileDropdown)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
-### Referencia Canónica: Implementaciones de Producción en `vibra` y `tiendita`
+# Componente: Menú de Perfil de Usuario (`UserProfileDropdown`)
+## Spec-Driven Development (SDD)
 
-El **UserProfileDropdown** es el componente oficial de gestión de sesión y acceso al perfil del colaborador en el **TopHeader**.
+> **Origen:** patrón tomado de vibra y tiendita (menú de perfil del encabezado). Aquí se describe de forma genérica.
 
-Al presionar el botón de perfil (`.user-profile-badge` o `.profile-trigger`), se despliega un menú flotante con efecto *glassmorphism* que presenta la identidad del usuario activo, sus permisos/roles, enlaces de cuenta y el disparador de **Cierre de Sesión Seguro** protegido por el componente **`ConfirmModal`**.
-
----
-
-## 1. Características Arquitectónicas Clave
-
-1. **Gatillador en TopHeader (`.user-profile-badge` / `.profile-trigger`)**:
-   - Muestra el avatar con iniciales o fotografía corporativa.
-   - Indicador de estado de conexión verde en línea (*online status dot*).
-   - Nombre de pila o nombre completo del usuario y chevron indicador de despliegue (`ChevronDown`).
-2. **Encabezado del Menú (`.profile-dropdown-header`)**:
-   - Avatar en mayor escala.
-   - Nombre completo del colaborador.
-   - Correo electrónico corporativo (`@jolifoods.com`).
-   - Badge de rol o perfil activo (ej. *ADMINISTRADOR*, *SUPERVISOR*, *OPERADOR*).
-3. **Acciones Rápidas del Menú**:
-   - **Mi Perfil (`User`)**: Navega a la vista de perfil `/perfil` o abre el panel de edición de datos personales.
-   - **Conmutador de Tema Noche / Día**: Acceso rápido alternativo con badge de estado.
-4. **Cierre de Sesión Protegido (`.dropdown-item.logout`)**:
-   - Ítem resaltado con icono `LogOut` y acento de peligro sutil.
-   - **NUNCA cierra la sesión inmediatamente sin confirmación**: Invoca siempre el componente canónico **`ConfirmModal`** de Jolifoods solicitando confirmación explícita para evitar pérdida accidental del trabajo o filtros activos.
-5. **Cierre Automático**:
-   - Cierre al presionar la tecla `Escape` o al hacer clic fuera del menú (*Click Outside Listener*).
+`UserProfileDropdown` es el menú de sesión del encabezado ([`navbar.md`](./navbar.md)). Al pulsar el botón de perfil se despliega un panel con la identidad del usuario, su rol, accesos de cuenta y el cierre de sesión, que siempre pasa por [`ConfirmModal`](../modal/confirm_modal.md).
 
 ---
 
-## 2. Contrato de Datos e Interfaz TypeScript
+## 1. Características
+
+1. **Disparador** con avatar (foto o iniciales), punto de estado, primer nombre y chevron. Patrón *disclosure*: `aria-expanded` y `aria-controls`.
+2. **Encabezado del panel:** avatar grande, nombre completo, correo y badge de rol (*ADMINISTRADOR*, *SUPERVISOR*, *OPERADOR*).
+3. **Acciones:** "Mi perfil" y, opcionalmente, cambio de tema Noche/Día.
+4. **Cerrar sesión:** nunca cierra de inmediato; abre `ConfirmModal` y, al confirmar, llama a `logout()` de [`AuthContext`](../context/auth_context.md) (revoca la cookie de refresh en el servidor).
+5. **Cierre del panel** con `Escape` (devuelve el foco al disparador) o clic fuera.
+
+---
+
+## 2. Contrato TypeScript
 
 ```typescript
 export interface UserSessionData {
@@ -39,12 +26,11 @@ export interface UserSessionData {
   email: string;
   role: string;
   avatarUrl?: string;
-  initials?: string;
 }
 
 export interface UserProfileDropdownProps {
   user: UserSessionData;
-  onLogoutClick: () => void;
+  onLogout: () => void | Promise<void>;
   onProfileClick?: () => void;
   onThemeToggle?: () => void;
   currentTheme?: 'light' | 'dark';
@@ -53,157 +39,156 @@ export interface UserProfileDropdownProps {
 
 ---
 
-## 3. Código JSX / React 19 Canónico (`UserProfileDropdown.tsx`)
+## 3. Código JSX / React de referencia (`UserProfileDropdown.tsx`)
 
 ```tsx
-import React, { useState, useRef, useEffect } from 'react';
-import { User, LogOut, ChevronDown, Sun, Moon, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useId, useRef, useState } from 'react';
+import { ChevronDown, LogOut, Moon, ShieldCheck, Sun, User } from 'lucide-react';
 import { ConfirmModal } from '../modal/ConfirmModal';
-import './UserProfileDropdown.css';
+import type { UserProfileDropdownProps } from './types';
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+}
 
 export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   user,
-  onLogoutClick,
+  onLogout,
   onProfileClick,
   onThemeToggle,
   currentTheme = 'dark',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
+  const initials = getInitials(user.name);
 
-  const initials = user.initials || user.name.slice(0, 2).toUpperCase();
-
-  // Cerrar al hacer clic fuera
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+    if (!isOpen) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
         setIsOpen(false);
+        triggerRef.current?.focus();
       }
     };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleKeyDown);
-    }
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('keydown', onKeyDown);
     };
   }, [isOpen]);
 
-  const handleLogoutTrigger = () => {
-    setIsOpen(false);
-    setShowLogoutConfirm(true);
+  const avatar = (className: string) => (
+    <span className={className} aria-hidden="true">
+      {user.avatarUrl ? <img src={user.avatarUrl} alt="" className="avatar-img-fit" /> : initials}
+    </span>
+  );
+
+  const handleConfirmLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await onLogout();
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutConfirm(false);
+    }
   };
 
   return (
     <>
       <div className="user-profile-menu-container" ref={containerRef}>
-        {/* Gatillador en TopHeader */}
         <button
+          ref={triggerRef}
           type="button"
           className={`user-profile-badge ${isOpen ? 'active' : ''}`}
-          onClick={() => setIsOpen(prev => !prev)}
-          aria-haspopup="true"
+          onClick={() => setIsOpen((prev) => !prev)}
           aria-expanded={isOpen}
+          aria-controls={panelId}
+          aria-label={`Menú de usuario: ${user.name}`}
         >
-          <div className="user-avatar-circle">
-            {user.avatarUrl ? (
-              <img src={user.avatarUrl} alt={user.name} className="avatar-img-fit" />
-            ) : (
-              initials
-            )}
-            <span className="status-indicator-dot online"></span>
-          </div>
-          <span className="d-none d-sm-inline font-sm fw-medium user-display-name">
-            {user.name.split(' ')[0]}
+          <span className="user-avatar-circle">
+            {avatar('user-avatar-content')}
+            <span className="status-indicator-dot online" aria-hidden="true" />
           </span>
-          <ChevronDown size={14} className={`chevron-icon ${isOpen ? 'rotate' : ''}`} />
+          <span className="d-none d-sm-inline user-display-name">{user.name.split(' ')[0]}</span>
+          <ChevronDown size={14} className={`chevron-icon ${isOpen ? 'rotate' : ''}`} aria-hidden="true" />
         </button>
 
-        {/* Menú Desplegable Flotante */}
         {isOpen && (
-          <div className="profile-dropdown-menu fade-in">
-            {/* Encabezado con información del Colaborador */}
+          <div id={panelId} className="profile-dropdown-menu">
             <div className="profile-dropdown-header">
-              <div className="dropdown-avatar-lg">
-                {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={user.name} className="avatar-img-fit" />
-                ) : (
-                  initials
-                )}
-              </div>
+              {avatar('dropdown-avatar-lg')}
               <div className="dropdown-user-info">
                 <span className="dropdown-user-name">{user.name}</span>
                 <span className="dropdown-user-email">{user.email}</span>
                 <span className="dropdown-user-role-badge">
-                  <ShieldCheck size={11} />
+                  <ShieldCheck size={11} aria-hidden="true" />
                   <span>{user.role}</span>
                 </span>
               </div>
             </div>
 
-            <div className="dropdown-divider"></div>
+            <div className="dropdown-divider" />
 
-            {/* Opciones */}
             <div className="profile-dropdown-items">
-              <button
-                type="button"
-                className="dropdown-item"
-                onClick={() => {
-                  setIsOpen(false);
-                  onProfileClick?.();
-                }}
-              >
-                <User size={16} />
-                <span>Mi Perfil</span>
-              </button>
-
-              {onThemeToggle && (
+              {onProfileClick && (
                 <button
                   type="button"
-                  className="dropdown-item theme-toggle-item"
-                  onClick={onThemeToggle}
+                  className="dropdown-item"
+                  onClick={() => {
+                    setIsOpen(false);
+                    onProfileClick();
+                  }}
                 >
-                  {currentTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                  <span>Modo {currentTheme === 'dark' ? 'Claro' : 'Oscuro'}</span>
+                  <User size={16} aria-hidden="true" />
+                  <span>Mi perfil</span>
+                </button>
+              )}
+
+              {onThemeToggle && (
+                <button type="button" className="dropdown-item" onClick={onThemeToggle}>
+                  {currentTheme === 'dark' ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
+                  <span>Modo {currentTheme === 'dark' ? 'claro' : 'oscuro'}</span>
                 </button>
               )}
             </div>
 
-            <div className="dropdown-divider"></div>
+            <div className="dropdown-divider" />
 
-            {/* Botón de Cerrar Sesión */}
             <div className="profile-dropdown-footer">
               <button
                 type="button"
                 className="dropdown-item logout"
-                onClick={handleLogoutTrigger}
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowLogoutConfirm(true);
+                }}
               >
-                <LogOut size={16} />
-                <span>Cerrar Sesión</span>
+                <LogOut size={16} aria-hidden="true" />
+                <span>Cerrar sesión</span>
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Modal Canónico de Confirmación de Cierre de Sesión */}
       <ConfirmModal
         isOpen={showLogoutConfirm}
         onClose={() => setShowLogoutConfirm(false)}
-        onConfirm={() => {
-          setShowLogoutConfirm(false);
-          onLogoutClick();
-        }}
-        title="Cerrar Sesión"
-        message="¿Estás seguro de que deseas salir del ecosistema Jolifoods? Deberás iniciar sesión nuevamente para acceder."
-        confirmText="Confirmar Salida"
-        cancelText="Permanecer Conectado"
+        onConfirm={handleConfirmLogout}
+        isLoading={isLoggingOut}
+        title="Cerrar sesión"
+        message="¿Desea cerrar la sesión? Deberá iniciar sesión nuevamente para continuar."
+        confirmText="Cerrar sesión"
+        cancelText="Permanecer conectado"
         type="warning"
       />
     </>
@@ -211,125 +196,144 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
 };
 ```
 
+Integración con la sesión:
+
+```tsx
+const { user, logout, theme, toggleTheme } = useAuth();
+
+{user && (
+  <UserProfileDropdown
+    user={{ id: user.id, name: user.nombre, email: user.email, role: user.rol.nombre, avatarUrl: user.avatar_url }}
+    onLogout={() => logout()}
+    onProfileClick={() => navigate('/perfil')}
+    onThemeToggle={toggleTheme}
+    currentTheme={theme}
+  />
+)}
+```
+
 ---
 
-## 4. Estilos CSS Canónicos (`UserProfileDropdown.css`)
+## 4. Estilos CSS (`UserProfileDropdown.css`)
 
 ```css
-/* ==========================================================================
-   USER PROFILE DROPDOWN — ESTÁNDAR JOLIFOODS (VIBRA / TIENDITA)
-   ========================================================================== */
-
 .user-profile-menu-container {
   position: relative;
   display: inline-flex;
   align-items: center;
 }
 
-/* Gatillador en TopHeader */
 .user-profile-badge {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 4px 10px 4px 5px;
-  background: var(--surface-card);
-  border: 1px solid var(--border-color);
-  border-radius: 9999px;
-  cursor: pointer;
-  color: var(--text-primary);
-  transition: all 0.18s ease;
   font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .user-profile-badge:hover,
 .user-profile-badge.active {
-  background: var(--surface-active);
-  border-color: rgba(16, 185, 129, 0.4);
+  background: var(--bg-active);
+  border-color: var(--border-card-accent);
+}
+
+.user-profile-badge:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.user-avatar-circle,
+.dropdown-avatar-lg {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--status-success-bg);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
 }
 
 .user-avatar-circle {
   width: 28px;
   height: 28px;
-  border-radius: 50%;
-  background: rgba(16, 185, 129, 0.2);
-  color: #10b981;
-  font-weight: 700;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
+  overflow: visible;
+  font-size: var(--font-size-2xs);
+}
+
+.dropdown-avatar-lg {
+  width: 40px;
+  height: 40px;
+  font-size: var(--font-size-sm);
+}
+
+.avatar-img-fit {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-full);
 }
 
 .status-indicator-dot {
   position: absolute;
-  bottom: 0;
   right: 0;
+  bottom: 0;
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  border: 2px solid var(--surface-card);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--bg-card);
 }
 
 .status-indicator-dot.online {
-  background: #10b981;
+  background: var(--status-success);
 }
 
 .user-display-name {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-secondary);
 }
 
 .chevron-icon {
   color: var(--text-muted);
-  transition: transform 0.2s ease;
+  transition: transform var(--transition-fast);
 }
 
 .chevron-icon.rotate {
   transform: rotate(180deg);
 }
 
-/* Panel Desplegable Flotante */
 .profile-dropdown-menu {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 260px;
-  background: var(--surface-card);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(16px);
-  z-index: 1050;
-  overflow: hidden;
-  animation: notifFadeSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: var(--z-popover);
   display: flex;
   flex-direction: column;
+  width: 260px;
+  overflow: hidden;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-popover);
+  backdrop-filter: var(--glass-blur);
+  animation: profileFadeSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Encabezado */
 .profile-dropdown-header {
-  padding: 14px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(0, 0, 0, 0.15);
-}
-
-.dropdown-avatar-lg {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  font-weight: 800;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  padding: 14px 16px;
+  background: var(--bg-elevated);
 }
 
 .dropdown-user-info {
@@ -338,52 +342,52 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   min-width: 0;
 }
 
-.dropdown-user-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-  white-space: nowrap;
+.dropdown-user-name,
+.dropdown-user-email {
   overflow: hidden;
+  white-space: nowrap;
   text-overflow: ellipsis;
 }
 
+.dropdown-user-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
 .dropdown-user-email {
-  font-size: 11px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   margin-bottom: 4px;
+  font-size: var(--font-size-2xs);
+  color: var(--text-muted);
 }
 
 .dropdown-user-role-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 9.5px;
-  font-weight: 700;
+  width: fit-content;
+  padding: 1px 6px;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  padding: 1px 6px;
-  border-radius: 4px;
-  width: fit-content;
+  color: var(--text-primary);
+  background: var(--status-success-bg);
+  border-radius: var(--radius-sm);
 }
 
 .dropdown-divider {
   height: 1px;
-  background: var(--border-color);
   margin: 0;
+  background: var(--border-subtle);
 }
 
-/* Ítems del Menú */
 .profile-dropdown-items,
 .profile-dropdown-footer {
-  padding: 6px;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 6px;
 }
 
 .dropdown-item {
@@ -392,29 +396,40 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   gap: 10px;
   width: 100%;
   padding: 8px 12px;
+  text-align: left;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
   background: transparent;
   border: none;
-  border-radius: 8px;
-  color: var(--text-secondary);
-  font-size: 12.5px;
-  font-weight: 500;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.15s ease;
-  text-align: left;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
-.dropdown-item:hover {
-  background: var(--surface-active);
+.dropdown-item:hover,
+.dropdown-item:focus-visible {
+  background: var(--bg-active);
   color: var(--text-primary);
+  outline: none;
 }
 
-/* Botón de Cerrar Sesión */
 .dropdown-item.logout {
-  color: #ef4444;
+  color: var(--status-error);
 }
 
-.dropdown-item.logout:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+.dropdown-item.logout:hover,
+.dropdown-item.logout:focus-visible {
+  background: var(--status-error-bg);
+  color: var(--status-error);
+}
+
+@keyframes profileFadeSlide {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-dropdown-menu { animation: none; }
 }
 ```

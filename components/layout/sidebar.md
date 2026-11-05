@@ -1,192 +1,161 @@
-# Especificación UI: Barra Lateral de Navegación (Sidebar Colapsable)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
+# Especificación UI: Barra Lateral de Navegación (`Sidebar` colapsable)
+## Spec-Driven Development (SDD)
 
-> **DIRECTRIZ DE ARQUITECTURA SDD — COMPONENTE OPTATIVO (NO POR DEFECTO)**:
-> El Sidebar de navegación **NO se incluye por defecto** en prototipos ni aplicaciones de Jolifoods.
-> Por defecto, la interfaz utiliza un **Layout Full-Width (ancho completo)** gobernado por la Top Navbar.
-> **El Sidebar ÚNICAMENTE se incluye si el usuario solicita explícitamente navegación lateral multifuncional**.
+### Regla de uso: componente opcional
 
-La **Sidebar** proporciona la estructura de navegación principal de la aplicación cuando se requiere acceso a múltiples módulos, soportando **control de acceso basado en roles (RBAC)** y estados colapsado/expandido con micro-animaciones fluidas en CSS puro.
+- **Regla:** la barra lateral NO DEBERÍA incluirse por defecto. El layout base es de ancho completo con la barra superior ([`navbar.md`](./navbar.md)); la barra lateral se agrega cuando el usuario la pide o cuando la app tiene muchos módulos (regla práctica: más de 6 destinos de primer nivel).
+- **Por qué:** en apps de pocos módulos, una barra lateral fija resta ancho a las tablas sin aportar navegación útil.
+- **Excepciones:** decisión registrada (ADR).
 
----
-
-## 1. Estados e Interacción
-
-- **Estado Expandido (Desktop, 260px)**: Muestra ícono, etiqueta de texto, submenús y badges informativos.
-- **Estado Colapsado (Desktop Mini, 76px)**: Oculta etiquetas y expande tooltips flotantes al pasar el cursor sobre los íconos.
-- **Botón Flotante de Apertura / Cierre (`.sidebar-collapse-toggle`)**: 
-  - Ubicado en el borde superior derecho de la barra lateral, centrado sobre la línea divisoria.
-  - Diseño circular con halo turquesa / cyan (`border: 2px solid #22d3ee; box-shadow: 0 0 12px rgba(6, 182, 212, 0.45)`).
-  - Ícono de Lucide React: `ChevronRight` cuando está colapsado para abrir, y `ChevronLeft` cuando está expandido para cerrar.
-  - **Reemplaza obligatoriamente al botón de tres líneas (hamburguesa)** en la navegación principal.
-- **Iconografía Oficial**: Catálogo estándar de **Lucide React** (`User`, `Users`, `Bell`, `Wallet`, `Globe`, `Scale`, `Siren`, `Ticket`, `Banknote`, `Landmark`, `ShieldCheck`).
+La barra lateral ofrece navegación entre módulos con filtrado por rol/permiso (RBAC) y estados expandido/colapsado.
 
 ---
 
-## 2. Código HTML / JSX Canónico
+## 1. Estados e interacción
 
-```html
-<aside class="joli-sidebar" id="mainSidebar" aria-label="Navegación principal">
-  <!-- BOTÓN CIRCULAR FLOTANTE DE APERTURA / CIERRE (FLECHA CHEVRON) -->
-  <button 
-    type="button" 
-    class="sidebar-collapse-toggle" 
-    aria-label="Alternar barra lateral"
-    title="Alternar barra lateral"
-  >
-    <!-- ChevronRight (colapsado) o ChevronLeft (expandido) -->
-    <svg class="sidebar-toggle-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none">
-      <polyline points="9 18 15 12 9 6"></polyline>
-    </svg>
-  </button>
+- **Expandida (escritorio, 260px):** ícono, etiqueta, badges.
+- **Colapsada (76px):** solo íconos; cada enlace conserva su nombre accesible (`aria-label`) y un `title` como tooltip.
+- **Botón de colapsar (`.sidebar-collapse-toggle`):** circular, en el borde derecho; `ChevronLeft` (expandida) / `ChevronRight` (colapsada); `aria-expanded` y `aria-controls`. Reemplaza al botón de tres líneas (hamburguesa) en escritorio.
+- **Preferencia:** el estado colapsado PUEDE recordarse en `localStorage` con una clave de `STORAGE_KEYS` (prefijo de app).
+- **RBAC:** cada ítem declara `permissionKey` o `roles`; los ítems sin permiso no se renderizan. Las rutas siguen protegidas por [`ProtectedRoute`](../routing/protected_route.md) y por el backend.
+- **Íconos:** catálogo de Lucide React.
 
-  <!-- CABECERA SIDEBAR CON LOGO PANDORA -->
-  <div class="joli-sidebar-header">
-    <div class="joli-sidebar-brand">
-      <img src="/logo.png" alt="Pandora" class="joli-sidebar-logo" />
-    </div>
-    <span class="joli-sidebar-section-title">MÓDULOS DEL SISTEMA</span>
-  </div>
+---
 
-  <!-- NAVEGACIÓN PRINCIPAL -->
-  <nav class="joli-sidebar-nav">
-    <ul class="joli-nav-list">
-      
-      <!-- ITEM: DASHBOARD -->
-      <li class="joli-nav-item active">
-        <a href="#dashboard" class="joli-nav-link">
-          <svg class="joli-nav-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none">
-            <rect x="3" y="3" width="7" height="7"></rect>
-            <rect x="14" y="3" width="7" height="7"></rect>
-            <rect x="14" y="14" width="7" height="7"></rect>
-            <rect x="3" y="14" width="7" height="7"></rect>
-          </svg>
-          <span class="joli-nav-label">Tablero Principal</span>
-        </a>
-      </li>
+## 2. Componente React de referencia (`Sidebar.tsx`)
 
-      <!-- ITEM: OPERACIONES (ROL OPERADOR / ADMIN) -->
-      <li class="joli-nav-item">
-        <a href="#operaciones" class="joli-nav-link">
-          <svg class="joli-nav-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-          </svg>
-          <span class="joli-nav-label">Operaciones</span>
-          <span class="joli-nav-badge">En vivo</span>
-        </a>
-      </li>
+```tsx
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, type LucideIcon } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
-      <!-- ITEM: REPORTES & EXCEL (ROL ADMIN / AUDITOR) -->
-      <li class="joli-nav-item">
-        <a href="#reportes" class="joli-nav-link">
-          <svg class="joli-nav-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
-          </svg>
-          <span class="joli-nav-label">Reportes & Excel</span>
-        </a>
-      </li>
+export interface SidebarItem {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  permissionKey?: string;
+  roles?: string[];
+  badge?: string;
+}
 
-      <!-- ITEM: AUDITORÍA & ACCESOS (ROL ADMIN EXCLUSIVO) -->
-      <li class="joli-nav-item">
-        <a href="#auditoria" class="joli-nav-link">
-          <svg class="joli-nav-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-          </svg>
-          <span class="joli-nav-label">Auditoría de Accesos</span>
-        </a>
-      </li>
+interface SidebarProps {
+  items: SidebarItem[];
+  collapsed: boolean;
+  onToggle: () => void;
+  logoSrc: string;
+  appName: string;
+}
 
-    </ul>
-  </nav>
+export const Sidebar: React.FC<SidebarProps> = ({ items, collapsed, onToggle, logoSrc, appName }) => {
+  const { hasPermission, hasRole } = useAuth();
+  const visibleItems = items.filter(
+    (item) =>
+      (!item.permissionKey || hasPermission(item.permissionKey)) &&
+      (!item.roles || hasRole(item.roles)),
+  );
 
-  <!-- PIE DE LA SIDEBAR (ESTADO DEL SISTEMA) -->
-  <div class="joli-sidebar-footer">
-    <div class="joli-system-status">
-      <span class="joli-status-dot online"></span>
-      <span class="joli-status-text">Backend Conectado</span>
-    </div>
-  </div>
-</aside>
+  return (
+    <aside id="main-sidebar" className={`joli-sidebar ${collapsed ? 'collapsed' : ''}`} aria-label="Navegación principal">
+      <button
+        type="button"
+        className="sidebar-collapse-toggle"
+        onClick={onToggle}
+        aria-expanded={!collapsed}
+        aria-controls="main-sidebar"
+        aria-label={collapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
+        title={collapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
+      >
+        {collapsed ? <ChevronRight size={18} aria-hidden="true" /> : <ChevronLeft size={18} aria-hidden="true" />}
+      </button>
+
+      <div className="joli-sidebar-header">
+        <img src={logoSrc} alt={appName} className="joli-sidebar-logo" />
+        <span className="joli-sidebar-section-title">Módulos</span>
+      </div>
+
+      <nav className="joli-sidebar-nav">
+        <ul className="joli-nav-list">
+          {visibleItems.map(({ to, label, icon: Icon, badge }) => (
+            <li key={to} className="joli-nav-item">
+              <NavLink
+                to={to}
+                className={({ isActive }) => `joli-nav-link ${isActive ? 'active' : ''}`}
+                aria-label={collapsed ? label : undefined}
+                title={collapsed ? label : undefined}
+              >
+                <Icon size={20} className="joli-nav-icon" aria-hidden="true" />
+                <span className="joli-nav-label">{label}</span>
+                {badge && <span className="joli-nav-badge">{badge}</span>}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </aside>
+  );
+};
 ```
 
+`NavLink` agrega `aria-current="page"` al enlace activo.
+
 ---
 
-## 3. Estilos CSS Canónicos (Gobernados por `variables.css`)
+## 3. Estilos CSS
 
 ```css
 .joli-sidebar {
   position: fixed;
-  top: 64px; /* Debajo de la navbar */
-  left: 0;
+  top: var(--topbar-height);
   bottom: 0;
-  width: 260px;
-  background-color: var(--bg-card);
-  border-right: 1px solid var(--border-subtle);
+  left: 0;
+  z-index: var(--z-sticky);
   display: flex;
   flex-direction: column;
-  z-index: 900;
-<<<<<<< HEAD
-  transition: width var(--transition-base), transform var(--transition-base);
-  overflow-x: hidden;
-=======
-  transition: width var(--transition-normal), transform var(--transition-normal);
+  width: 260px;
   overflow-x: visible;
+  background-color: var(--bg-card);
+  border-right: 1px solid var(--border-subtle);
+  transition: width var(--transition-base);
 }
 
-/* BOTÓN FLOTANTE CIRCULAR DE APERTURA / CIERRE */
 .sidebar-collapse-toggle {
   position: absolute;
   top: 18px;
   right: -15px;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--color-bg-card, #131924);
-  border: 2px solid #22d3ee;
-  box-shadow: 0 0 12px rgba(6, 182, 212, 0.45);
+  z-index: calc(var(--z-sticky) + 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 30px;
+  height: 30px;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
-  z-index: 1001;
-  color: #22d3ee;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
 .sidebar-collapse-toggle:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 16px rgba(6, 182, 212, 0.75);
+  color: var(--brand-primary);
+  border-color: var(--brand-primary);
+  transform: scale(1.08);
 }
 
-/* VARIANTE MODO CLARO (SOBRIO Y CORPORATIVO) */
-[data-theme="light"] .sidebar-collapse-toggle {
-  background: #ffffff;
-  border: 1.5px solid #cbd5e1;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
-  color: #475569;
+.sidebar-collapse-toggle:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
-[data-theme="light"] .sidebar-collapse-toggle:hover {
-  background: #ffffff;
-  border-color: #10b981;
-  color: #10b981;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.22);
->>>>>>> dfa6d576ff1a43eacc452032a5ce4df42852bd45
-}
-
-/* ESTADO COLAPSADO */
 .joli-sidebar.collapsed {
   width: 76px;
 }
 
 .joli-sidebar.collapsed .joli-nav-label,
 .joli-sidebar.collapsed .joli-nav-badge,
-.joli-sidebar.collapsed .joli-sidebar-section-title,
-.joli-sidebar.collapsed .joli-status-text {
+.joli-sidebar.collapsed .joli-sidebar-section-title {
   display: none;
 }
 
@@ -196,15 +165,23 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
 }
 
 .joli-sidebar-header {
-  padding: 1rem 1.25rem 0.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 0.5rem;
+}
+
+.joli-sidebar-logo {
+  height: 28px;
+  width: auto;
 }
 
 .joli-sidebar-section-title {
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-bold);
-  color: var(--text-muted);
   letter-spacing: 1px;
   text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .joli-sidebar-nav {
@@ -214,12 +191,12 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
 }
 
 .joli-nav-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .joli-nav-link {
@@ -227,12 +204,13 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  color: var(--text-secondary);
-  text-decoration: none;
-  border-radius: var(--radius-lg);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  transition: all var(--transition-fast);
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-lg);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .joli-nav-link:hover {
@@ -240,11 +218,16 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
   color: var(--text-primary);
 }
 
-.joli-nav-item.active .joli-nav-link {
-  background: rgba(16, 185, 129, 0.12);
-  color: var(--brand-primary);
+.joli-nav-link:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
+}
+
+.joli-nav-link.active {
+  background: var(--status-success-bg);
+  color: var(--text-primary);
   font-weight: var(--font-weight-semibold);
-  border-left: 3px solid var(--brand-primary);
+  border-left-color: var(--brand-primary);
 }
 
 .joli-nav-icon {
@@ -254,38 +237,21 @@ La **Sidebar** proporciona la estructura de navegación principal de la aplicaci
 .joli-nav-badge {
   margin-left: auto;
   padding: 2px 8px;
-  font-size: 10px;
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-bold);
-  color: #10b981;
-  background-color: rgba(16, 185, 129, 0.15);
+  color: var(--text-primary);
+  background-color: var(--status-success-bg);
   border-radius: var(--radius-full);
 }
 
-/* PIE DE SIDEBAR */
-.joli-sidebar-footer {
-  padding: 1rem;
-  border-top: 1px solid var(--border-subtle);
-}
+/* El contenido principal se desplaza según el ancho de la barra */
+.app-main-with-sidebar { margin-left: 260px; transition: margin-left var(--transition-base); }
+.app-main-with-sidebar.sidebar-collapsed { margin-left: 76px; }
 
-.joli-system-status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.joli-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-full);
-}
-
-.joli-status-dot.online {
-  background-color: var(--brand-primary);
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
-}
-
-.joli-status-text {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
+@media (max-width: 768px) {
+  .joli-sidebar { transform: translateX(-100%); }
+  .joli-sidebar.mobile-open { transform: translateX(0); }
+  .app-main-with-sidebar,
+  .app-main-with-sidebar.sidebar-collapsed { margin-left: 0; }
 }
 ```

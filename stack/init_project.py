@@ -265,7 +265,9 @@ PYTEST_INI = """[pytest]
 testpaths = pruebas
 pythonpath = backend
 DJANGO_SETTINGS_MODULE = config.settings
-addopts = -ra --strict-markers
+# Por defecto se excluyen las E2E (necesitan la app levantada); `pytest -m e2e` las ejecuta,
+# porque el -m de la línea de comandos reemplaza al de addopts.
+addopts = -ra --strict-markers -m "not e2e"
 markers =
     e2e: pruebas de extremo a extremo (requieren la app levantada)
 """

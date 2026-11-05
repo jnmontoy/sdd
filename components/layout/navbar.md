@@ -1,383 +1,201 @@
-# Especificación UI: Barra de Navegación Superior (Top Navbar)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
+# Especificación UI: Barra de Navegación Superior (`TopNavbar`)
+## Spec-Driven Development (SDD)
 
-La **Top Navbar** es el componente de cabecera persistente en todas las vistas autenticadas de las aplicaciones de Jolifoods.
-
-Provee identidad de marca, selector dinámico del tema **Modo Noche / Modo Día** (sincronizado con [`variables.css`](../variables.css)), badge de alertas y menú desplegable del perfil del colaborador con acción de cierre de sesión seguro.
+La **barra superior** es la cabecera persistente de todas las vistas autenticadas: marca, título de la página, cambio de tema Noche/Día ([`variables.css`](../variables.css)), notificaciones y menú de perfil con cierre de sesión.
 
 ---
 
-> **REGLAS DE ORO DE CABECERA Y ESPACIO VERTICAL (UX/UI)**:
-> 1. **Cero Sidebar por Defecto (Full-Width Layout)**: Las aplicaciones y prototipos no incluyen menú lateral izquierdo (Sidebar) a menos que el usuario lo solicite explícitamente. La Top Navbar ocupa el 100% del ancho de la pantalla de forma nativa.
-> 2. **Título Directo de la Página en Lado Izquierdo (Cero Breadcrumbs de Navegación)**: 
->    - Para no desperdiciar espacio vertical en el cuerpo de la página con encabezados `<h1>` o banners, **el Título de la Página Actual se ubica obligatoriamente en el LADO IZQUIERDO del TopHeader**, contiguo al logotipo oficial de Jolifoods, separado por una barra sutil `/` y con un badge de contexto opcional.
->    - **Queda estrictamente prohibido usar cadenas de navegación tipo breadcrumb / migas de pan (`Jolifoods > Módulo > Pantalla`) a menos que el usuario lo solicite expresamente**.
->    - **Queda estrictamente prohibido usar textos en verde para títulos o rutas de navegación** (mala presentación visual; el verde es de uso exclusivo en badges de estado óptimo).
-> 3. **Lado Derecho para Controles de Sesión**: El lado derecho se reserva exclusivamente para el conmutador de tema (Día/Noche), el centro de multi-notificaciones y el menú de perfil de usuario con confirmación de salida.
+## Reglas de cabecera (convenciones de diseño, nivel DEBERÍA)
+
+1. **Sin barra lateral por defecto.** La barra superior ocupa el 100% del ancho; la [barra lateral](./sidebar.md) se agrega solo cuando se pide o la app tiene muchos módulos. **Por qué:** maximiza el ancho para tablas.
+2. **Título de la página en la barra, a la izquierda.** El título de la vista actual va junto al logo, separado por `/`, con un badge de contexto opcional; no se repite como `<h1>` grande dentro del cuerpo. **Por qué:** ahorra espacio vertical.
+3. **Sin migas de pan (breadcrumbs)** salvo pedido explícito. **Por qué:** en apps de 1–2 niveles no aportan y ocupan espacio. **Excepción:** apps con jerarquías profundas (3+ niveles).
+4. **Títulos en color neutro** (`--text-primary`); el verde de marca se reserva para estados y acentos. **Por qué:** el color debe significar algo.
+5. **Lado derecho solo para controles de sesión:** tema, notificaciones y perfil.
+
+Todas se pueden desviar con pedido explícito del usuario o una decisión registrada (ADR).
 
 ---
 
-## 1. Anatomía Visual y Elementos
+## 1. Anatomía
 
 ```
-+-------------------------------------------------------------------------------------------------------------------------+
-| [Logo Jolifoods]  /  [Título de Página / Módulo] [BADGE]       (Espaciador)          [☀️/🌙]  [🔔 (3)]  [ (JM) Joan M. v ] |
-+-------------------------------------------------------------------------------------------------------------------------+
++------------------------------------------------------------------------------------------------+
+| [Logo]  /  [Título de la página] [BADGE]                 (espacio)      [☀/🌙]  [🔔 3]  [(AP) Ana v] |
++------------------------------------------------------------------------------------------------+
 ```
 
-1. **Lado Izquierdo (`topheader-left`)**:
-   - Logotipo corporativo Jolifoods (Isotipo SVG).
-   - Divisor vertical sutil (`.topheader-brand-divider`).
-   - **Caja de Título de Página (`topheader-title-box`)**:
-     - Nombre del módulo o pantalla activa (`.topheader-page-title`).
-     - Badge compacto de contexto o estado (`.topheader-page-badge`, ej. "ACTIVO", "IDEAM", "PRODUCCIÓN").
-2. **Lado Derecho (`topheader-right`)**:
-   - Conmutador de Tema Noche / Día (`theme-toggle`).
-   - Campana de notificaciones con contador (`notifications-badge`).
-   - Perfil de usuario con avatar y rol (`user-profile-badge`).
+1. **Izquierda (`.topheader-left`):** logo, divisor `/`, título (`.topheader-page-title`, es el `<h1>` de la página) y badge opcional (`.topheader-page-badge`, p. ej. "PRODUCCIÓN").
+2. **Derecha (`.topheader-right`):** botón de tema, campana de notificaciones ([`notification_popover.md`](../notification/notification_popover.md)) y [`UserProfileDropdown`](./user_profile_dropdown.md).
 
 ---
 
-## 2. Código HTML / JSX Canónico
+## 2. Componente React de referencia (`TopNavbar.tsx`)
 
-```html
-<header class="top-header" role="banner">
-  <!-- LADO IZQUIERDO: BRANDING + TÍTULO DE LA PÁGINA (Ahorro de espacio vertical) -->
-  <div class="topheader-left">
-    <div class="topheader-brand">
-      <img src="./assets/Jolifoods.svg" alt="Jolifoods" class="topheader-logo" />
-    </div>
+```tsx
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Moon, Sun } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { UserProfileDropdown } from './UserProfileDropdown';
+import { NotificationBellPopover } from '../notification/NotificationBellPopover';
 
-    <div class="topheader-brand-divider">/</div>
+interface TopNavbarProps {
+  pageTitle: string;
+  pageBadge?: string;
+  logoSrc: string;
+  appName: string;
+}
 
-    <div class="topheader-title-box">
-      <h1 class="topheader-page-title" id="pageMainHeading">Monitoreo Agroclimático Colombia</h1>
-      <span class="topheader-page-badge" id="pageMainBadge">RED IDEAM</span>
-    </div>
-  </div>
+export const TopNavbar: React.FC<TopNavbarProps> = ({ pageTitle, pageBadge, logoSrc, appName }) => {
+  const { user, logout, theme, toggleTheme } = useAuth();
+  const navigate = useNavigate();
+  const nextThemeLabel = theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
 
-  <!-- LADO DERECHO: CONTROLES DE SESIÓN Y TEMA -->
-  <div class="top-header-right">
-    <!-- Conmutador Tema Día / Noche -->
-    <button type="button" class="icon-btn-header" id="themeToggleBtn" aria-label="Cambiar tema">
-      <i data-lucide="moon" id="themeIcon"></i>
-    </button>
-
-    <!-- Notificaciones -->
-    <div class="icon-btn-header" aria-label="Notificaciones">
-      <i data-lucide="bell"></i>
-      <span class="notif-badge">3</span>
-    </div>
-
-    <!-- Perfil de Usuario con Menú Desplegable y Salida Segura (Ver user_profile_dropdown.md) -->
-    <div class="user-profile-menu-container" id="userProfileContainer">
-      <button type="button" class="user-profile-badge" id="userProfileBtn" onclick="toggleUserProfile(event)">
-        <div class="user-avatar-circle">
-          JM
-          <span class="status-indicator-dot online"></span>
-        </div>
-        <span class="d-none d-sm-inline font-sm fw-medium">Joan Montoya</span>
-        <i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i>
-      </button>
-
-      <!-- Dropdown Flotante de Perfil -->
-      <div class="profile-dropdown-menu" id="userProfileDropdown">
-        <div class="profile-dropdown-header">
-          <div class="dropdown-avatar-lg">JM</div>
-          <div class="dropdown-user-info">
-            <span class="dropdown-user-name">Joan Montoya</span>
-            <span class="dropdown-user-email">joan.montoya@jolifoods.com</span>
-            <span class="dropdown-user-role-badge">ADMINISTRADOR</span>
-          </div>
-        </div>
-        <div class="dropdown-divider"></div>
-        <div class="profile-dropdown-items">
-          <button type="button" class="dropdown-item" onclick="alert('Navegar a Mi Perfil')">
-            <i data-lucide="user" style="width: 15px; height: 15px;"></i>
-            <span>Mi Perfil</span>
-          </button>
-        </div>
-        <div class="dropdown-divider"></div>
-        <div class="profile-dropdown-footer">
-          <button type="button" class="dropdown-item logout" onclick="openLogoutModal()">
-            <i data-lucide="log-out" style="width: 15px; height: 15px;"></i>
-            <span>Cerrar Sesión</span>
-          </button>
+  return (
+    <header className="top-header">
+      <div className="topheader-left">
+        <img src={logoSrc} alt={appName} className="topheader-logo" />
+        <span className="topheader-brand-divider" aria-hidden="true">/</span>
+        <div className="topheader-title-box">
+          <h1 className="topheader-page-title">{pageTitle}</h1>
+          {pageBadge && <span className="topheader-page-badge">{pageBadge}</span>}
         </div>
       </div>
-    </div>
-  </div>
-</header>
+
+      <div className="topheader-right">
+        <button
+          type="button"
+          className="icon-btn-header"
+          onClick={toggleTheme}
+          aria-label={nextThemeLabel}
+          title={nextThemeLabel}
+        >
+          {theme === 'dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+        </button>
+
+        <NotificationBellPopover />
+
+        {user && (
+          <UserProfileDropdown
+            user={{ id: user.id, name: user.nombre, email: user.email, role: user.rol.nombre, avatarUrl: user.avatar_url }}
+            onLogout={() => logout()}
+            onProfileClick={() => navigate('/perfil')}
+          />
+        )}
+      </div>
+    </header>
+  );
+};
 ```
+
+En mocks HTML se usa la misma estructura con `<i data-lucide="...">` y un nombre de ejemplo ficticio (p. ej. "Ana Pérez", `usuario@ejemplo.com`).
 
 ---
 
-## 3. Estilos CSS Canónicos (Gobernados por `variables.css`)
+## 3. Estilos CSS
 
 ```css
 .top-header {
   position: sticky;
   top: 0;
-  z-index: 900;
+  z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
   height: var(--topbar-height);
   padding: 0 1.5rem;
   background: var(--glass-bg);
   border-bottom: 1px solid var(--glass-border);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
-.top-header-right {
+.topheader-left,
+.topheader-right {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  min-width: 0;
 }
 
-/* Regla de Oro: Título de Página Integrado en TopHeader */
-.topheader-page-title-box {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  background: var(--bg-hover);
-  padding: 0.35rem 0.75rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-}
+.topheader-left { gap: 0.75rem; }
+.topheader-right { gap: 0.85rem; flex-shrink: 0; }
 
-.topheader-page-title {
-  margin: 0;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-}
-
-.topheader-page-badge {
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 2px 7px;
-  border-radius: var(--radius-full);
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  white-space: nowrap;
-}
-
-.topheader-divider {
-  width: 1px;
-  height: 22px;
-  background: var(--border-color);
-  margin: 0 0.15rem;
-}
-  gap: 1rem;
-}
-
-.joli-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.joli-navbar-logo {
+.topheader-logo {
   height: 30px;
   width: auto;
 }
 
-.joli-brand-divider {
+.topheader-brand-divider {
   color: var(--text-muted);
-  font-weight: 300;
+  font-weight: var(--font-weight-regular);
 }
 
-.joli-project-title {
-  font-size: var(--font-size-base);
+.topheader-title-box {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.35rem 0.75rem;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.topheader-page-title {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--text-primary);
-  letter-spacing: -0.3px;
 }
 
-.joli-nav-icon-btn {
+.topheader-page-badge {
+  padding: 2px 7px;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  color: var(--text-primary);
+  background: var(--status-success-bg);
+  border: 1px solid var(--border-card-accent);
+  border-radius: var(--radius-full);
+}
+
+.icon-btn-header {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
+  color: var(--text-secondary);
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
-  color: var(--text-secondary);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
-.joli-nav-icon-btn:hover {
-  background-color: var(--bg-hover);
-  color: var(--brand-primary);
-}
-
-.joli-badge-counter {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  font-size: 10px;
-  font-weight: var(--font-weight-bold);
-  color: #ffffff;
-  background-color: var(--brand-primary);
-  border-radius: var(--radius-full);
-}
-
-/* THEME TOGGLE */
-.joli-theme-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  font-size: 16px;
-  transition: all var(--transition-fast);
-}
-
-[data-theme='light'] .joli-theme-icon-light { display: none; }
-[data-theme='light'] .joli-theme-icon-dark { display: inline-block; }
-:root:not([data-theme='light']) .joli-theme-icon-dark { display: none; }
-:root:not([data-theme='light']) .joli-theme-icon-light { display: inline-block; }
-
-/* USER MENU */
-.joli-user-menu {
-  position: relative;
-}
-
-.joli-user-trigger {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 4px 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-}
-
-.joli-user-trigger:hover {
-  background-color: var(--bg-hover);
-}
-
-.joli-avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  background: linear-gradient(135deg, var(--brand-primary), #059669);
-  color: #ffffff;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  border-radius: var(--radius-full);
-}
-
-.joli-user-info {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-}
-
-.joli-user-name {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
-  line-height: 1.2;
-}
-
-.joli-user-role {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-}
-
-.joli-dropdown-chevron {
-  color: var(--text-muted);
-}
-
-.joli-dropdown-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 220px;
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-popover);
-  padding: 0.5rem 0;
-  display: none;
-}
-
-.joli-user-menu.open .joli-dropdown-panel {
-  display: block;
-}
-
-.joli-dropdown-header {
-  padding: 0.75rem 1rem;
-}
-
-.joli-dropdown-user {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.joli-dropdown-email {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  margin: 0;
-}
-
-.joli-dropdown-divider {
-  height: 1px;
-  background-color: var(--border-subtle);
-  margin: 0.5rem 0;
-}
-
-.joli-dropdown-item {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 0.5rem 1rem;
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  background: transparent;
-  border: none;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.joli-dropdown-item:hover {
+.icon-btn-header:hover {
   background-color: var(--bg-hover);
   color: var(--text-primary);
 }
 
-.joli-dropdown-item.text-danger {
-  color: var(--status-error);
+.icon-btn-header:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
-.joli-dropdown-item.text-danger:hover {
-  background-color: rgba(239, 68, 68, 0.1);
+@media (max-width: 640px) {
+  .top-header { padding: 0 0.75rem; }
+  .topheader-brand-divider,
+  .topheader-page-badge { display: none; }
 }
 ```

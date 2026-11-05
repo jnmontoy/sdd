@@ -1,11 +1,11 @@
 # Especificación de Componente: Acciones Compactas Agrupadas (`IconActionGroup`)
 ## Guía de implementación SDD
 
-<<<<<<< HEAD
-Este documento define tres piezas de botones:
+Este documento define cuatro piezas de botones:
 1. **Caja de acciones de tabla** (`.compact-action-box`): crear, exportar, refrescar.
 2. **Acciones por fila** (`btn-group btn-group-sm row-actions-group`).
 3. **Botones de formulario** (`.joli-btn-primary`, `.joli-btn-secondary`) usados en el pie del drawer y en estados vacíos.
+4. **Selector de vista con búsqueda** (`.view-switcher`, §6).
 
 ---
 
@@ -29,69 +29,14 @@ Este documento define tres piezas de botones:
 <div class="compact-action-box" role="toolbar" aria-label="Acciones de tabla">
   <button type="button" class="btn-icon-compact btn-icon-add" title="Nuevo registro (abre el panel lateral)" aria-label="Nuevo registro">
     <i data-lucide="plus" aria-hidden="true" style="width: 14px; height: 14px;"></i>
-=======
-> **REGLA DE DISEÑO CORPORATIVO (BOTONERAS DE SOLO ICONOS — CERO TEXTO)**:
-> 1. En los aplicativos oficiales de Jolifoods y Pandora Admin, las botoneras de acciones y selectores de vista en la barra de herramientas **NO se presentan con etiquetas de texto** (queda prohibido incluir textos como `"Tabla"`, `"Cards"`, `"Buscar"`, `"Nuevo Usuario"`, `"Editar"` o `"Desactivar"` dentro de los botones de la botonera).
-> 2. **DEBEN PRESENTARSE EXCLUSIVAMENTE CON EL ICONO** agrupados en botoneras segmentadas (`.view-switcher`, `.compact-action-box` y `.row-actions-group`), con fondo sutil, divisores verticales de `1px` y atributos accesibles (`title` y `aria-label`).
-> 3. **Botonera Agrupada de los Tres: Tabla + Cards + Buscar (`.view-switcher`)**:
->    Agrupa en un único bloque segmentado de **solo iconos**:
->    - **Vista en Tabla** (`Table2`)
->    - **Vista en Cards** (`LayoutGrid`)
->    - **Buscar** (`Search`): Al hacer clic sobre el icono de búsqueda, ejecuta una animación horizontal hacia la derecha (`.switcher-search-expanded`) dentro de la misma botonera para desplegar el `<input class="switcher-search-input">` y enfocarlo automáticamente.
-> 4. **Acciones de Fila y de Card (`.row-actions-group`)**: Tanto en las filas de `.joli-data-table` como en el pie de cada `.user-profile-card`, los botones de acción (`Edit2`, `Power`, etc.) **solo muestran el icono** sin texto acompañante.
-
----
-
-### 1. Estructura Visual Canónica (Botonera de los Tres [Tabla + Cards + Buscar] + Caja Compacta de Acciones — Solo Iconos)
-
-```html
-<!-- Botonera Agrupada de los Tres: Tabla + Cards + Buscar con Expansión a la Derecha (Solo Iconos, Cero Texto) -->
-<div class="view-switcher" role="group" aria-label="Vista y búsqueda rápida">
-  <button type="button" class="switcher-btn is-active" title="Vista en Tabla" aria-label="Vista en Tabla">
-    <i data-lucide="table-2" style="width: 15px; height: 15px;"></i>
-  </button>
-  <button type="button" class="switcher-btn" title="Vista en Cards" aria-label="Vista en Cards">
-    <i data-lucide="layout-grid" style="width: 15px; height: 15px;"></i>
-  </button>
-
-  <span class="switcher-divider"></span>
-
-  <div class="switcher-search-item" id="switcherSearch">
-    <button type="button" class="switcher-btn switcher-search-btn" title="Buscar colaborador" aria-label="Buscar colaborador">
-      <i data-lucide="search" style="width: 15px; height: 15px;"></i>
-    </button>
-    <div class="switcher-search-expanded">
-      <input type="text" class="switcher-search-input" placeholder="Buscar por cédula, nombre, cargo o correo..." />
-      <button type="button" class="filter-expanded-close" title="Contraer buscador">
-        <i data-lucide="x" style="width: 14px; height: 14px;"></i>
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Botonera Compacta de Acciones (Solo Iconos, Cero Texto) -->
-<div class="compact-action-box" role="toolbar" aria-label="Acciones de tabla">
-  <!-- 1. Acción Crear / Agregar (Icono UserPlus / Plus) -->
-  <button type="button" class="btn-icon-compact btn-icon-add" title="Nuevo registro" aria-label="Nuevo registro">
-    <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i>
->>>>>>> dfa6d576ff1a43eacc452032a5ce4df42852bd45
   </button>
   <span class="compact-divider" aria-hidden="true"></span>
   <button type="button" class="btn-icon-compact btn-icon-excel" title="Descargar en Excel (.xlsx)" aria-label="Descargar en Excel" data-testid="btn-export-excel">
     <i data-lucide="file-spreadsheet" aria-hidden="true" style="width: 14px; height: 14px;"></i>
   </button>
-<<<<<<< HEAD
   <span class="compact-divider" aria-hidden="true"></span>
   <button type="button" class="btn-icon-compact btn-icon-refresh" title="Actualizar datos" aria-label="Actualizar datos">
     <i data-lucide="refresh-cw" aria-hidden="true" style="width: 13px; height: 13px;"></i>
-=======
-
-  <span class="compact-divider"></span>
-
-  <!-- 3. Acción Recargar / Refrescar (Icono RotateCcw / RefreshCw) -->
-  <button type="button" class="btn-icon-compact btn-icon-refresh" title="Actualizar datos de la tabla" aria-label="Actualizar datos">
-    <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i>
->>>>>>> dfa6d576ff1a43eacc452032a5ce4df42852bd45
   </button>
 </div>
 ```
@@ -382,3 +327,94 @@ Usados en el pie del [`drawer`](../drawer/drawer.md), estados vacíos y barras d
 ```
 
 Variante compacta para barras de herramientas: añadir `height: 28px; font-size: var(--font-size-xs);`.
+
+---
+
+### 6. Variante: selector de vista con búsqueda (`.view-switcher`)
+
+Para módulos que ofrecen la misma información como tabla o como tarjetas (p. ej. gestión de usuarios), los botones **Tabla** (`Table2`), **Tarjetas** (`LayoutGrid`) y **Buscar** (`Search`) DEBERÍAN agruparse en un bloque segmentado de solo íconos. Al pulsar Buscar, el campo de búsqueda se despliega horizontalmente dentro del mismo bloque y recibe el foco; `Escape` lo contrae.
+
+- **Por qué:** la búsqueda queda junto al cambio de vista y no se mezcla con los filtros de selección ([`expandable_filter_group.md`](../dropdown/expandable_filter_group.md)).
+- Los botones de vista usan `aria-pressed`; el campo de búsqueda lleva `aria-label`.
+
+```html
+<div class="view-switcher" role="group" aria-label="Vista y búsqueda">
+  <button type="button" class="switcher-btn is-active" aria-pressed="true" title="Vista en tabla" aria-label="Vista en tabla">
+    <i data-lucide="table-2" aria-hidden="true"></i>
+  </button>
+  <button type="button" class="switcher-btn" aria-pressed="false" title="Vista en tarjetas" aria-label="Vista en tarjetas">
+    <i data-lucide="layout-grid" aria-hidden="true"></i>
+  </button>
+  <span class="switcher-divider" aria-hidden="true"></span>
+  <div class="switcher-search-item" id="switcherSearch">
+    <button type="button" class="switcher-btn" aria-expanded="false" aria-controls="switcherSearchBox"
+            title="Buscar" aria-label="Buscar">
+      <i data-lucide="search" aria-hidden="true"></i>
+    </button>
+    <div class="switcher-search-expanded" id="switcherSearchBox">
+      <input type="search" class="switcher-search-input" aria-label="Buscar registros"
+             placeholder="Buscar por documento, nombre o correo..." />
+    </div>
+  </div>
+</div>
+```
+
+```css
+.view-switcher {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.switcher-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.switcher-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.switcher-btn.is-active { background: var(--status-success-bg); color: var(--text-primary); }
+.switcher-btn:focus-visible { outline: 2px solid var(--border-focus); outline-offset: -2px; }
+
+.switcher-divider { width: 1px; height: 16px; background: var(--border-subtle); }
+
+.switcher-search-item { display: inline-flex; align-items: center; }
+
+.switcher-search-expanded {
+  max-width: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: max-width var(--transition-base), visibility 0s linear 0.25s;
+}
+
+.switcher-search-item.is-open .switcher-search-expanded {
+  max-width: 320px;
+  visibility: visible;
+  transition: max-width var(--transition-base), visibility 0s;
+}
+
+.switcher-search-input {
+  width: 280px;
+  height: 24px;
+  margin-right: 4px;
+  padding: 0 8px;
+  font-size: var(--font-size-xs);
+  color: var(--input-text);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+}
+
+.switcher-search-input:focus { outline: none; border-color: var(--input-focus-border); box-shadow: var(--shadow-input-focus); }
+```

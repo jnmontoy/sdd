@@ -1,191 +1,172 @@
 # Especificación Funcional y Técnica: Matriz de Roles y Permisos (RBAC)
-## Ecosistema Jolifoods — Control de Acceso Granular por Módulo
+## Joli Foods — Control de Acceso por Módulo
 
-Esta especificación detalla la interfaz gráfica y los contratos de backend para la administración centralizada de perfiles y la asignación matricial de permisos sobre las entidades del sistema.
-
----
-
-### 1. Requisitos de Negocio
-1. **Listado de Roles**: Visualización de los roles existentes (`ADMINISTRADOR`, `OPERADOR`, `AUDITOR`, `CONSULTOR`, etc.) con conteo de usuarios vinculados.
-2. **Matriz Matricial de Permisos**:
-   - Por cada módulo (`usuarios`, `auditoria`, `dashboard`, `reportes`, `configuracion`), se configuran permisos atómicos:
-     - `ver` (lectura).
-     - `crear` (inserción).
-     - `editar` (actualización).
-     - `eliminar` (baja física o lógica).
-     - `exportar` (descarga a Excel o PDF).
-3. **Protección de Rol Superadministrador**: Los permisos del rol `ADMINISTRADOR` o `SUPERADMIN` están bloqueados para edición con el fin de evitar bloqueos accidentales del sistema.
-4. **Auditoría Inmutable**: Cualquier cambio en la matriz de permisos genera un registro obligatorio en la bitácora (`accion: 'ACTUALIZAR_ROL'`).
+Interfaz y contratos para administrar roles y asignar permisos por módulo. Modelo: [`../../../model/roles/spec_model_roles_permisos.md`](../../../model/roles/spec_model_roles_permisos.md) (BP-19).
 
 ---
 
-### 2. Contrato de API (FastAPI / Django)
+## 1. Requisitos
 
-- **GET `/api/roles/`**: Lista de roles con conteo de usuarios y estado.
-- **GET `/api/roles/{id}/permisos/`**: Retorna la estructura de permisos agrupada por módulos.
-- **PUT `/api/roles/{id}/permisos/`**: Actualización en lote de la matriz de permisos.
-
-#### Payload de Actualización:
-```json
-{
-  "rol_id": 2,
-  "permisos": [
-    { "modulo": "usuarios", "acciones": ["ver", "crear", "editar"] },
-    { "modulo": "auditoria", "acciones": ["ver", "exportar"] },
-    { "modulo": "dashboard", "acciones": ["ver"] }
-  ]
-}
-```
+1. **Listado de roles** (tabla `Rol`) con número de usuarios vinculados. Los roles son datos, no código: se crean y editan sin desplegar.
+2. **Matriz de permisos:** por cada módulo del catálogo (`backend/config/permisos.py`) se marcan las acciones `ver`, `crear`, `editar`, `eliminar`, `exportar`. Cada casilla corresponde a una clave `modulo.accion` guardada en `Rol.permisos`.
+3. **Coherencia:** marcar `crear`, `editar`, `eliminar` o `exportar` activa `ver` automáticamente (no tiene sentido editar lo que no se puede ver).
+4. **Roles de sistema** (`es_sistema = true`) no se editan desde la interfaz. **Por qué:** evita quitarle por error los permisos al único rol administrador y bloquear el sistema.
+5. **Permisos de la pantalla:** `roles.ver` para consultar, `roles.editar` para guardar.
+6. **Bitácora:** cada guardado registra `ROLE_PERMISSIONS_UPDATED` con permisos antes y después.
+7. **Efecto inmediato:** los usuarios afectados reciben los permisos nuevos en su siguiente consulta a `GET /api/v1/mis-permisos/`, sin cerrar sesión.
 
 ---
 
-### 3. Código JSX / React 19 Canónico (`RolesPage.tsx`)
+## 2. Contrato de API
+
+| Método y ruta | Descripción |
+| :--- | :--- |
+| `GET /api/v1/roles/` (`ENDPOINTS.ROLES.LISTA`) | `[{ "id": 2, "codigo": "OPERADOR", "nombre": "Operador", "es_sistema": false, "usuarios_count": 14 }]` (conteo con `annotate(Count("usuarios"))`, sin N+1). |
+| `GET /api/v1/roles/matriz-permisos/` (`ENDPOINTS.ROLES.MATRIZ_RBAC`) | Catálogo de módulos y acciones: `[{ "modulo": "usuarios", "nombre": "Gestión de usuarios", "acciones": ["ver","crear","editar","eliminar","exportar"] }]`. |
+| `GET /api/v1/roles/{id}/` | Rol con `permisos: ["usuarios.ver", "usuarios.editar", ...]`. |
+| `PATCH /api/v1/roles/{id}/` | `{ "permisos": ["usuarios.ver", "auditoria.ver", "auditoria.exportar"] }`. 400 si hay claves fuera del catálogo; 403 si el rol es de sistema. |
+
+---
+
+## 3. Vista (`RolesPage.tsx`)
 
 ```tsx
-import React, { useState, useEffect } from 'react';
-import { Shield, Plus, Check, Save, RotateCcw, AlertTriangle } from 'lucide-react';
-import { api } from '../../services/api';
-import { showToast } from '../../components/ui/ToastNotification';
-import { ConfirmModal } from '../../components/ui/ConfirmModal';
+import { useEffect, useMemo, useState } from 'react';
+import { Shield, Save, AlertTriangle } from 'lucide-react';
+import { apiClient } from '../services/apiClient';
+import { ENDPOINTS } from '../services/endpoints';
+import { useAuth } from '../context/AuthContext';
+import { showToast } from '../components/ToastNotification';
+import { ConfirmModal } from '../components/modal/ConfirmModal';
 
-interface PermisoModulo {
-  modulo: string;
-  nombre_modulo: string;
-  ver: boolean;
-  crear: boolean;
-  editar: boolean;
-  eliminar: boolean;
-  exportar: boolean;
-}
+const ACCIONES = ['ver', 'crear', 'editar', 'eliminar', 'exportar'] as const;
+type Accion = (typeof ACCIONES)[number];
 
-interface RolItem {
-  id: number;
-  codigo: string;
-  nombre: string;
-  es_sistema: boolean;
-  usuarios_count: number;
-}
+interface RolItem { id: number; codigo: string; nombre: string; es_sistema: boolean; usuarios_count: number }
+interface ModuloCatalogo { modulo: string; nombre: string; acciones: Accion[] }
+interface RolDetalle extends RolItem { permisos: string[] }
 
-export const RolesPage: React.FC = () => {
+export function RolesPage() {
+  const { hasPermission } = useAuth();
+  const puedeEditar = hasPermission('roles.editar');
   const [roles, setRoles] = useState<RolItem[]>([]);
-  const [selectedRol, setSelectedRol] = useState<RolItem | null>(null);
-  const [permisos, setPermisos] = useState<PermisoModulo[]>([]);
+  const [catalogo, setCatalogo] = useState<ModuloCatalogo[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [rol, setRol] = useState<RolDetalle | null>(null);
+  const [permisos, setPermisos] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
+  // Roles y catálogo
   useEffect(() => {
-    // Carga de roles
-    setRoles([
-      { id: 1, codigo: 'ADMIN', nombre: 'Administrador General', es_sistema: true, usuarios_count: 3 },
-      { id: 2, codigo: 'OPERADOR', nombre: 'Operador de Planta', es_sistema: false, usuarios_count: 14 },
-      { id: 3, codigo: 'AUDITOR', nombre: 'Auditor de Seguridad', es_sistema: false, usuarios_count: 2 },
-    ]);
-    setSelectedRol({ id: 2, codigo: 'OPERADOR', nombre: 'Operador de Planta', es_sistema: false, usuarios_count: 14 });
-    
-    // Matriz de permisos de ejemplo
-    setPermisos([
-      { modulo: 'usuarios', nombre_modulo: 'Gestión de Usuarios', ver: true, crear: true, editar: true, eliminar: false, exportar: true },
-      { modulo: 'auditoria', nombre_modulo: 'Bitácora de Auditoría', ver: true, crear: false, editar: false, eliminar: false, exportar: true },
-      { modulo: 'dashboard', nombre_modulo: 'Tablero de Control', ver: true, crear: false, editar: false, eliminar: false, exportar: true },
-      { modulo: 'configuracion', nombre_modulo: 'Parámetros del Sistema', ver: false, crear: false, editar: false, eliminar: false, exportar: false },
-    ]);
+    const controller = new AbortController();
+    const { signal } = controller;
+    Promise.all([
+      apiClient.get<RolItem[]>(ENDPOINTS.ROLES.LISTA, { signal }),
+      apiClient.get<ModuloCatalogo[]>(ENDPOINTS.ROLES.MATRIZ_RBAC, { signal }),
+    ])
+      .then(([r, c]) => {
+        setRoles(r.data);
+        setCatalogo(c.data);
+        setSelectedId((prev) => prev ?? r.data[0]?.id ?? null);
+      })
+      .catch(() => { if (!signal.aborted) showToast.error('No fue posible cargar los roles.'); });
+    return () => controller.abort();
   }, []);
 
-  const handleTogglePermiso = (modulo: string, accion: 'ver' | 'crear' | 'editar' | 'eliminar' | 'exportar') => {
-    if (selectedRol?.es_sistema) return;
+  // Detalle del rol seleccionado
+  useEffect(() => {
+    if (selectedId === null) return;
+    const controller = new AbortController();
+    apiClient
+      .get<RolDetalle>(`${ENDPOINTS.ROLES.LISTA}${selectedId}/`, { signal: controller.signal })
+      .then(({ data }) => { setRol(data); setPermisos(new Set(data.permisos)); })
+      .catch(() => { if (!controller.signal.aborted) showToast.error('No fue posible cargar el rol.'); });
+    return () => controller.abort();
+  }, [selectedId]);
 
-    setPermisos((prev) =>
-      prev.map((p) => {
-        if (p.modulo === modulo) {
-          const newVal = !p[accion];
-          // Si activa crear o editar, automáticamente debe activar ver
-          const updated = { ...p, [accion]: newVal };
-          if (newVal && (accion === 'crear' || accion === 'editar' || accion === 'eliminar')) {
-            updated.ver = true;
-          }
-          return updated;
-        }
-        return p;
-      })
-    );
+  const bloqueado = !puedeEditar || Boolean(rol?.es_sistema);
+  const cambios = useMemo(
+    () => rol !== null && (rol.permisos.length !== permisos.size || rol.permisos.some((p) => !permisos.has(p))),
+    [rol, permisos]
+  );
+
+  const alternar = (modulo: string, accion: Accion) => {
+    if (bloqueado) return;
+    setPermisos((prev) => {
+      const next = new Set(prev);
+      const clave = `${modulo}.${accion}`;
+      if (next.has(clave)) {
+        next.delete(clave);
+        if (accion === 'ver') ACCIONES.forEach((a) => next.delete(`${modulo}.${a}`)); // sin "ver" no hay otras
+      } else {
+        next.add(clave);
+        if (accion !== 'ver') next.add(`${modulo}.ver`);
+      }
+      return next;
+    });
   };
 
-  const handleSavePermisos = async () => {
+  const guardar = async () => {
+    if (!rol) return;
     setIsSaving(true);
     try {
-      // Simulación de guardado en API
-      await new Promise((r) => setTimeout(r, 600));
-      showToast.success('Permisos actualizados con éxito', {
-        description: `Los cambios para el rol ${selectedRol?.nombre} han sido aplicados.`
-      });
-      setIsConfirmOpen(false);
-    } catch (err) {
-      showToast.error('Fallo al guardar permisos');
+      const { data } = await apiClient.patch<RolDetalle>(`${ENDPOINTS.ROLES.LISTA}${rol.id}/`, { permisos: [...permisos].sort() });
+      setRol(data);
+      setPermisos(new Set(data.permisos));
+      showToast.success('Permisos actualizados', { description: `Rol ${data.nombre}.` });
+    } catch {
+      showToast.error('No fue posible guardar los permisos.');
     } finally {
       setIsSaving(false);
+      setIsConfirmOpen(false);
     }
   };
 
   return (
-    <div className="joli-page-container">
-      <div className="joli-page-header">
-        <div>
-          <h2 className="joli-page-title">Roles y Permisos (RBAC)</h2>
-          <p className="joli-page-subtitle">Configure los perfiles de usuario y asigne permisos específicos por módulo.</p>
-        </div>
+    <div className="joli-page-container w-100">
+      <div className="mb-4">
+        <h1 className="joli-page-title">Roles y permisos</h1>
+        <p className="text-muted small mb-0">Define qué puede hacer cada rol en cada módulo.</p>
       </div>
 
       <div className="row g-4">
-        {/* Selector de Roles */}
-        <div className="col-12 col-md-4">
-          <div className="joli-card p-3">
-            <h6 className="fw-bold mb-3 d-flex align-items-center gap-2">
-              <Shield size={18} className="text-primary" />
-              <span>Roles Registrados</span>
-            </h6>
+        <div className="col-12 col-lg-3">
+          <section className="joli-panel-card p-3" aria-labelledby="roles-lista">
+            <h2 id="roles-lista" className="h6 fw-bold mb-3 d-flex align-items-center gap-2">
+              <Shield size={18} aria-hidden="true" /><span>Roles</span>
+            </h2>
             <div className="list-group">
               {roles.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${
-                    selectedRol?.id === r.id ? 'active' : ''
-                  }`}
-                  onClick={() => setSelectedRol(r)}
-                >
-                  <div>
-                    <div className="fw-semibold">{r.nombre}</div>
-                    <small className="text-muted">{r.codigo}</small>
-                  </div>
-                  <span className="badge bg-secondary rounded-pill">{r.usuarios_count} usuarios</span>
+                <button key={r.id} type="button" aria-current={selectedId === r.id ? 'true' : undefined}
+                        className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${selectedId === r.id ? 'active' : ''}`}
+                        onClick={() => setSelectedId(r.id)}>
+                  <span>
+                    <span className="d-block fw-semibold">{r.nombre}</span>
+                    <small className="font-monospace">{r.codigo}</small>
+                  </span>
+                  <span className="badge text-bg-secondary rounded-pill">{r.usuarios_count}</span>
                 </button>
               ))}
             </div>
-          </div>
+          </section>
         </div>
 
-        {/* Matriz de Permisos */}
-        <div className="col-12 col-md-8">
-          <div className="joli-card p-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
+        <div className="col-12 col-lg-9">
+          <section className="joli-panel-card p-4" aria-labelledby="roles-matriz">
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
               <div>
-                <h5 className="fw-bold mb-0">Permisos para: {selectedRol?.nombre}</h5>
-                {selectedRol?.es_sistema && (
-                  <small className="text-warning d-flex align-items-center gap-1 mt-1">
-                    <AlertTriangle size={13} />
-                    <span>Este rol es del sistema y sus permisos son inmutables.</span>
+                <h2 id="roles-matriz" className="h5 fw-bold mb-0">Permisos: {rol?.nombre ?? '—'}</h2>
+                {rol?.es_sistema && (
+                  <small className="d-flex align-items-center gap-1 mt-1">
+                    <AlertTriangle size={13} aria-hidden="true" /><span>Rol de sistema: sus permisos no se editan desde aquí.</span>
                   </small>
                 )}
               </div>
-              {!selectedRol?.es_sistema && (
-                <button
-                  type="button"
-                  className="joli-btn-primary"
-                  onClick={() => setIsConfirmOpen(true)}
-                  disabled={isSaving}
-                >
-                  <Save size={16} className="me-1" />
-                  <span>Guardar Matriz</span>
+              {!bloqueado && (
+                <button type="button" className="btn btn-primary d-inline-flex align-items-center gap-2"
+                        onClick={() => setIsConfirmOpen(true)} disabled={isSaving || !cambios}>
+                  <Save size={16} aria-hidden="true" /><span>Guardar matriz</span>
                 </button>
               )}
             </div>
@@ -194,27 +175,21 @@ export const RolesPage: React.FC = () => {
               <table className="table joli-table">
                 <thead>
                   <tr>
-                    <th>Módulo</th>
-                    <th className="text-center">Ver</th>
-                    <th className="text-center">Crear</th>
-                    <th className="text-center">Editar</th>
-                    <th className="text-center">Eliminar</th>
-                    <th className="text-center">Exportar</th>
+                    <th scope="col">Módulo</th>
+                    {ACCIONES.map((a) => <th key={a} scope="col" className="text-center text-capitalize">{a}</th>)}
                   </tr>
                 </thead>
                 <tbody>
-                  {permisos.map((p) => (
-                    <tr key={p.modulo}>
-                      <td className="fw-semibold">{p.nombre_modulo}</td>
-                      {(['ver', 'crear', 'editar', 'eliminar', 'exportar'] as const).map((acc) => (
-                        <td key={acc} className="text-center">
-                          <input
-                            type="checkbox"
-                            className="form-check-input"
-                            checked={p[acc]}
-                            disabled={selectedRol?.es_sistema}
-                            onChange={() => handleTogglePermiso(p.modulo, acc)}
-                          />
+                  {catalogo.map((m) => (
+                    <tr key={m.modulo}>
+                      <th scope="row" className="fw-semibold">{m.nombre}</th>
+                      {ACCIONES.map((a) => (
+                        <td key={a} className="text-center">
+                          {m.acciones.includes(a) ? (
+                            <input type="checkbox" className="form-check-input"
+                                   checked={permisos.has(`${m.modulo}.${a}`)} disabled={bloqueado}
+                                   aria-label={`${m.nombre}: ${a}`} onChange={() => alternar(m.modulo, a)} />
+                          ) : <span aria-hidden="true">—</span>}
                         </td>
                       ))}
                     </tr>
@@ -222,22 +197,21 @@ export const RolesPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          </div>
+          </section>
         </div>
       </div>
 
-      {/* ConfirmModal para aplicar cambios de permisos */}
       <ConfirmModal
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
-        onConfirm={handleSavePermisos}
-        title="¿Confirmar actualización de permisos?"
-        description={`Los usuarios con el rol ${selectedRol?.nombre} recibirán inmediatamente los nuevos privilegios en su siguiente acción.`}
-        confirmText="Aplicar Permisos"
-        variant="warning"
+        onConfirm={guardar}
+        type="warning"
         isLoading={isSaving}
+        title="¿Confirmar actualización de permisos?"
+        message={`Los usuarios con el rol ${rol?.nombre ?? ''} recibirán los nuevos permisos en su siguiente acción.`}
+        confirmText="Aplicar permisos"
       />
     </div>
   );
-};
+}
 ```

@@ -12,4 +12,6 @@ factory-boy>=3.3,<4.0
 pytest-playwright>=0.5,<1.0          # E2E en pruebas/e2e (luego: python -m playwright install chromium)
 
 ruff>=0.6                            # Lint y formato
+pre-commit>=3.8                      # Ganchos de git (protocolo 06)
+detect-secrets>=1.5                  # Evita versionar secretos (protocolo 06)
 pip-audit>=2.7                       # Vulnerabilidades en dependencias (Quality Gate)

@@ -3,17 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard de Ventas (Mockup SDD) | Jolifoods</title>
+  <title>Dashboard de Ventas (Mockup SDD) | Joli Foods</title>
   
   <!-- Bootstrap 5 CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   
   <!-- Iconos Lucide CDN -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
   
   <style>
+    /* Mock autocontenido: replica los tokens de .sdd/components/variables.css en este único bloque de tokens.
+       Fuera de :root y [data-theme="light"] solo se usan var(--...). */
     :root {
       --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --color-border-hover: #64748B;
+      --color-on-primary: #FFFFFF;
+      --color-export: #107C41;
+      --color-export-hover: #0E6835;
+      --status-success: #10B981;
+      --status-info: #3B82F6;
+      --status-warning: #F59E0B;
+      --status-error: #F43F5E;
+      --status-success-bg: rgba(16, 185, 129, 0.15);
+      --status-info-bg: rgba(59, 130, 246, 0.15);
+      --status-warning-bg: rgba(245, 158, 11, 0.15);
+      --status-error-bg: rgba(244, 63, 94, 0.15);
       --color-primary: #10b981;
       --color-primary-hover: #059669;
       --color-bg-body: #0B1120;
@@ -94,6 +108,10 @@
     }
 
     .joli-kpi-card {
+      width: 100%;
+      text-align: left;
+      color: inherit;
+      font: inherit;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -108,7 +126,7 @@
 
     .joli-kpi-card:hover {
       transform: translateY(-2px);
-      border-color: #64748B;
+      border-color: var(--color-border-hover);
     }
 
     .joli-kpi-card.active-filter {
@@ -123,7 +141,7 @@
       font-size: 9.5px;
       font-weight: 800;
       background: var(--color-primary);
-      color: #FFFFFF;
+      color: var(--color-on-primary);
       padding: 2px 7px;
       border-radius: 999px;
       box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
@@ -153,10 +171,10 @@
       justify-content: center;
     }
 
-    .icon-emerald { background: rgba(16, 185, 129, 0.15); color: #10B981; }
-    .icon-blue { background: rgba(59, 130, 246, 0.15); color: #3B82F6; }
-    .icon-amber { background: rgba(245, 158, 11, 0.15); color: #F59E0B; }
-    .icon-pink { background: rgba(244, 63, 94, 0.15); color: #F43F5E; }
+    .icon-emerald { background: var(--status-success-bg); color: var(--status-success); }
+    .icon-blue { background: var(--status-info-bg); color: var(--status-info); }
+    .icon-amber { background: var(--status-warning-bg); color: var(--status-warning); }
+    .icon-pink { background: var(--status-error-bg); color: var(--status-error); }
 
     .kpi-value {
       font-size: 24px;
@@ -216,14 +234,14 @@
       padding: 6px 12px;
       font-size: 12.5px;
       font-weight: 600;
-      background: #107C41;
-      color: #FFFFFF;
+      background: var(--color-export);
+      color: var(--color-on-primary);
       border: none;
       border-radius: var(--radius-md);
       cursor: pointer;
     }
     .btn-export-excel:hover {
-      background: #0E6835;
+      background: var(--color-export-hover);
     }
 
     .joli-table {
@@ -284,17 +302,16 @@
       font-size: 11.5px;
       font-weight: 600;
     }
-    .badge-success { background: rgba(16, 185, 129, 0.15); color: #10B981; }
-    .badge-warning { background: rgba(245, 158, 11, 0.15); color: #F59E0B; }
-    .badge-danger { background: rgba(244, 63, 94, 0.15); color: #F43F5E; }
+    .badge-success { background: var(--status-success-bg); color: var(--status-success); }
+    .badge-warning { background: var(--status-warning-bg); color: var(--status-warning); }
+    .badge-danger { background: var(--status-error-bg); color: var(--status-error); }
 
     /* PAGINACIÓN */
     .pagination-bar {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 10px 18px;
-      border-top: 1px solid var(--color-border);
+      gap: 12px;
+      margin-left: auto;
       font-size: 12.5px;
       color: var(--color-text-secondary);
     }
@@ -320,7 +337,7 @@
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
       <h3 class="fw-bold mb-1">Dashboard de Ventas y Facturación</h3>
-      <p class="text-muted small mb-0">Consolidado operativo en tiempo real • Jolifoods Comercial</p>
+      <p class="text-muted small mb-0">Consolidado operativo • Datos de ejemplo ficticios</p>
     </div>
     <div class="d-flex align-items-center gap-2">
       <button class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2 fw-semibold" style="font-size: 13px; border-radius: 8px;">
@@ -337,7 +354,7 @@
   <!-- 1. CARDS KPI (ESTÁNDAR SDD) -->
   <div class="joli-kpi-row">
     <!-- Card 1: Ventas Hoy (Filtro Activo) -->
-    <div class="joli-kpi-card active-filter" onclick="alert('En React, este clic activa el filtro cruzado en la tabla')">
+    <button type="button" class="joli-kpi-card active-filter" aria-pressed="true">
       <span class="kpi-filter-badge">FILTRO ACTIVO</span>
       <div class="kpi-top-line">
         <span class="kpi-label">Ventas Hoy</span>
@@ -347,10 +364,10 @@
       </div>
       <div class="kpi-value">$ 48,250,000</div>
       <div class="kpi-subtext">32 pedidos despachados</div>
-    </div>
+    </button>
 
     <!-- Card 2: Meta Cumplida -->
-    <div class="joli-kpi-card" onclick="alert('En React, este clic activa el filtro cruzado en la tabla')">
+    <button type="button" class="joli-kpi-card" aria-pressed="false">
       <div class="kpi-top-line">
         <span class="kpi-label">Meta del Mes</span>
         <div class="kpi-icon-box icon-blue">
@@ -359,10 +376,10 @@
       </div>
       <div class="kpi-value">92.4%</div>
       <div class="kpi-subtext">$ 420M de $ 455M meta</div>
-    </div>
+    </button>
 
     <!-- Card 3: Facturas Pendientes -->
-    <div class="joli-kpi-card" onclick="alert('En React, este clic activa el filtro cruzado en la tabla')">
+    <button type="button" class="joli-kpi-card" aria-pressed="false">
       <div class="kpi-top-line">
         <span class="kpi-label">Por Cobrar</span>
         <div class="kpi-icon-box icon-amber">
@@ -371,10 +388,10 @@
       </div>
       <div class="kpi-value">$ 14,800,000</div>
       <div class="kpi-subtext">8 facturas en plazo</div>
-    </div>
+    </button>
 
     <!-- Card 4: En Mora / Riesgo -->
-    <div class="joli-kpi-card" onclick="alert('En React, este clic activa el filtro cruzado en la tabla')">
+    <button type="button" class="joli-kpi-card" aria-pressed="false">
       <div class="kpi-top-line">
         <span class="kpi-label">Cartera Vencida</span>
         <div class="kpi-icon-box icon-pink">
@@ -383,7 +400,7 @@
       </div>
       <div class="kpi-value">$ 2,150,000</div>
       <div class="kpi-subtext">2 clientes bloqueados</div>
-    </div>
+    </button>
   </div>
 
   <!-- 2. DATA TABLE CON FILTROS TIPO EXCEL -->
@@ -392,7 +409,7 @@
     <div class="joli-datatable-toolbar">
       <div class="joli-search-box">
         <i data-lucide="search" style="width: 16px; height: 16px; color: var(--color-text-muted);"></i>
-        <input type="text" class="joli-search-input" placeholder="Buscar por cliente o factura...">
+        <input type="text" class="joli-search-input" placeholder="Buscar por cliente o factura..." aria-label="Buscar por cliente o factura">
       </div>
 
       <div class="d-flex align-items-center gap-2">
@@ -405,6 +422,17 @@
           <span>Exportar Excel (32)</span>
         </button>
       </div>
+
+      <!-- Paginador integrado en la barra superior (arriba de la tabla) -->
+      <div class="pagination-bar">
+        <span>Mostrando <strong>1</strong> a <strong>4</strong> de <strong>32</strong> facturas</span>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Paginación">
+          <button type="button" class="btn btn-outline-secondary" disabled aria-label="Página anterior">&laquo;</button>
+          <button type="button" class="btn btn-success" aria-current="page">1</button>
+          <button type="button" class="btn btn-outline-secondary">2</button>
+          <button type="button" class="btn btn-outline-secondary" aria-label="Página siguiente">&raquo;</button>
+        </div>
+      </div>
     </div>
 
     <!-- Tabla -->
@@ -415,26 +443,26 @@
             <th>
               <div class="th-with-filter">
                 <span>N° Factura</span>
-                <button class="filter-btn-excel" title="Filtro tipo Excel"><i data-lucide="filter" style="width: 12px; height: 12px;"></i></button>
+                <button class="filter-btn-excel" title="Filtro tipo Excel" aria-label="Filtrar columna"><i data-lucide="filter" aria-hidden="true" style="width: 12px; height: 12px;"></i></button>
               </div>
             </th>
             <th>
               <div class="th-with-filter">
                 <span>Cliente</span>
-                <button class="filter-btn-excel" title="Filtro tipo Excel"><i data-lucide="filter" style="width: 12px; height: 12px;"></i></button>
+                <button class="filter-btn-excel" title="Filtro tipo Excel" aria-label="Filtrar columna"><i data-lucide="filter" aria-hidden="true" style="width: 12px; height: 12px;"></i></button>
               </div>
             </th>
             <th>
               <div class="th-with-filter">
                 <span>Ciudad</span>
-                <button class="filter-btn-excel" title="Filtro tipo Excel"><i data-lucide="filter" style="width: 12px; height: 12px;"></i></button>
+                <button class="filter-btn-excel" title="Filtro tipo Excel" aria-label="Filtrar columna"><i data-lucide="filter" aria-hidden="true" style="width: 12px; height: 12px;"></i></button>
               </div>
             </th>
             <th class="text-end">Valor Total</th>
             <th class="text-center">
               <div class="th-with-filter justify-content-center">
                 <span>Estado</span>
-                <button class="filter-btn-excel" title="Filtro tipo Excel"><i data-lucide="filter" style="width: 12px; height: 12px;"></i></button>
+                <button class="filter-btn-excel" title="Filtro tipo Excel" aria-label="Filtrar columna"><i data-lucide="filter" aria-hidden="true" style="width: 12px; height: 12px;"></i></button>
               </div>
             </th>
             <th class="text-end">Acciones</th>
@@ -442,49 +470,49 @@
         </thead>
         <tbody>
           <tr>
-            <td class="fw-bold text-success">FAC-2026-0891</td>
-            <td>Supermercados Éxito S.A.</td>
+            <td class="font-monospace">FAC-2026-0891</td>
+            <td>Cliente Ejemplo Uno S.A.S.</td>
             <td>Medellín</td>
             <td class="text-end fw-semibold">$ 18,450,000</td>
             <td class="text-center"><span class="badge-status badge-success">Pagada</span></td>
             <td class="text-end">
-              <button class="btn btn-outline-secondary btn-sm py-1 px-2" title="Ver detalle en Drawer">
+              <button class="btn btn-outline-secondary btn-sm py-1 px-2" title="Ver detalle" aria-label="Ver detalle de la factura">
                 <i data-lucide="eye" style="width: 13px; height: 13px;"></i>
               </button>
             </td>
           </tr>
           <tr>
-            <td class="fw-bold text-success">FAC-2026-0892</td>
-            <td>Distribuidora La Granja</td>
+            <td class="font-monospace">FAC-2026-0892</td>
+            <td>Cliente Ejemplo Dos S.A.S.</td>
             <td>Bogotá D.C.</td>
             <td class="text-end fw-semibold">$ 12,200,000</td>
             <td class="text-center"><span class="badge-status badge-warning">Pendiente</span></td>
             <td class="text-end">
-              <button class="btn btn-outline-secondary btn-sm py-1 px-2" title="Ver detalle en Drawer">
+              <button class="btn btn-outline-secondary btn-sm py-1 px-2" title="Ver detalle" aria-label="Ver detalle de la factura">
                 <i data-lucide="eye" style="width: 13px; height: 13px;"></i>
               </button>
             </td>
           </tr>
           <tr>
-            <td class="fw-bold text-success">FAC-2026-0893</td>
-            <td>Restaurantes Frisby S.A.</td>
+            <td class="font-monospace">FAC-2026-0893</td>
+            <td>Cliente Ejemplo Tres S.A.S.</td>
             <td>Pereira</td>
             <td class="text-end fw-semibold">$ 9,750,000</td>
             <td class="text-center"><span class="badge-status badge-success">Pagada</span></td>
             <td class="text-end">
-              <button class="btn btn-outline-secondary btn-sm py-1 px-2" title="Ver detalle en Drawer">
+              <button class="btn btn-outline-secondary btn-sm py-1 px-2" title="Ver detalle" aria-label="Ver detalle de la factura">
                 <i data-lucide="eye" style="width: 13px; height: 13px;"></i>
               </button>
             </td>
           </tr>
           <tr>
-            <td class="fw-bold text-success">FAC-2026-0894</td>
-            <td>Comercializadora El Triunfo</td>
+            <td class="font-monospace">FAC-2026-0894</td>
+            <td>Cliente Ejemplo Cuatro S.A.S.</td>
             <td>Cali</td>
             <td class="text-end fw-semibold">$ 2,150,000</td>
             <td class="text-center"><span class="badge-status badge-danger">Vencida (34d)</span></td>
             <td class="text-end">
-              <button class="btn btn-outline-secondary btn-sm py-1 px-2" title="Ver detalle en Drawer">
+              <button class="btn btn-outline-secondary btn-sm py-1 px-2" title="Ver detalle" aria-label="Ver detalle de la factura">
                 <i data-lucide="eye" style="width: 13px; height: 13px;"></i>
               </button>
             </td>
@@ -493,20 +521,19 @@
       </table>
     </div>
 
-    <!-- Paginación -->
-    <div class="pagination-bar">
-      <span>Mostrando <strong>1</strong> a <strong>4</strong> de <strong>32</strong> facturas</span>
-      <div class="d-flex gap-1">
-        <button class="btn btn-outline-secondary btn-sm px-2 py-1" disabled>&laquo;</button>
-        <button class="btn btn-success btn-sm px-2 py-1">1</button>
-        <button class="btn btn-outline-secondary btn-sm px-2 py-1">2</button>
-        <button class="btn btn-outline-secondary btn-sm px-2 py-1">&raquo;</button>
-      </div>
-    </div>
   </div>
 
   <script>
     lucide.createIcons();
+
+    // KPI clicables: alternan el filtro (en React, filtran la tabla asociada)
+    document.querySelectorAll('.joli-kpi-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        var activo = card.getAttribute('aria-pressed') === 'true';
+        card.setAttribute('aria-pressed', String(!activo));
+        card.classList.toggle('active-filter', !activo);
+      });
+    });
 
     function toggleTheme() {
       const html = document.documentElement;
