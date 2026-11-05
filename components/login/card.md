@@ -13,14 +13,14 @@ Contenedor flotante centralizado en la pantalla con efecto `backdrop-filter: blu
 
 ### 1.1. Estructura HTML / JSX
 ```html
-<main class="login-viewport">
+<main class="joli-login-viewport">
   <!-- Halos de luz de fondo generados con gradientes radiales -->
-  <div class="login-orb login-orb-top" aria-hidden="true"></div>
-  <div class="login-orb login-orb-bottom" aria-hidden="true"></div>
+  <div class="joli-login-orb joli-login-orb-top" aria-hidden="true"></div>
+  <div class="joli-login-orb joli-login-orb-bottom" aria-hidden="true"></div>
 
   <!-- Tarjeta Glassmorphic Centrada -->
-  <section class="login-card" aria-label="Formulario de inicio de sesión">
-    <div class="login-card-inner">
+  <section class="joli-login-card" aria-label="Formulario de inicio de sesión">
+    <div class="joli-login-card-inner">
       <!-- Slot de contenido (Logo, Formulario, Botones) -->
     </div>
   </section>
@@ -33,7 +33,7 @@ Contenedor flotante centralizado en la pantalla con efecto `backdrop-filter: blu
    ESTRUCTURA: CENTERED GLASS CARD (CSS PURO)
    ========================================================================== */
 
-.login-viewport {
+.joli-login-viewport {
   position: relative;
   min-height: 100vh;
   width: 100%;
@@ -47,14 +47,14 @@ Contenedor flotante centralizado en la pantalla con efecto `backdrop-filter: blu
 }
 
 /* Halos decorativos en segundo plano */
-.login-orb {
+.joli-login-orb {
   position: absolute;
   border-radius: var(--radius-full);
   filter: blur(100px);
   pointer-events: none;
 }
 
-.login-orb-top {
+.joli-login-orb-top {
   width: 420px;
   height: 420px;
   background: radial-gradient(circle, var(--orb-color-primary) 0%, transparent 70%);
@@ -62,7 +62,7 @@ Contenedor flotante centralizado en la pantalla con efecto `backdrop-filter: blu
   right: -5%;
 }
 
-.login-orb-bottom {
+.joli-login-orb-bottom {
   width: 380px;
   height: 380px;
   background: radial-gradient(circle, var(--orb-color-secondary) 0%, transparent 70%);
@@ -71,7 +71,7 @@ Contenedor flotante centralizado en la pantalla con efecto `backdrop-filter: blu
 }
 
 /* Contenedor Glassmorphic */
-.login-card {
+.joli-login-card {
   position: relative;
   z-index: var(--z-card);
   width: 100%;
@@ -88,11 +88,11 @@ Contenedor flotante centralizado en la pantalla con efecto `backdrop-filter: blu
   box-sizing: border-box;
 }
 
-.login-card:hover {
+.joli-login-card:hover {
   border-top-color: var(--brand-primary-light);
 }
 
-.login-card-inner {
+.joli-login-card-inner {
   padding: 2.5rem 2rem;
   display: flex;
   flex-direction: column;
@@ -101,11 +101,11 @@ Contenedor flotante centralizado en la pantalla con efecto `backdrop-filter: blu
 
 /* Adaptabilidad para pantallas móviles pequeñas */
 @media (max-width: 480px) {
-  .login-viewport {
+  .joli-login-viewport {
     padding: 1rem;
   }
   
-  .login-card-inner {
+  .joli-login-card-inner {
     padding: 2rem 1.25rem;
   }
 }
@@ -119,20 +119,20 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
 
 ### 2.1. Estructura HTML / JSX
 ```html
-<main class="login-split-root">
+<main class="joli-login-split-root">
   <!-- Panel de Marca (Solo visible en pantallas de más de 1024px) -->
-  <aside class="login-split-hero" aria-label="Presentación de la plataforma">
-    <div class="login-split-hero-overlay" aria-hidden="true"></div>
-    <div class="login-split-hero-content">
-      <span class="login-split-tag">Ecosistema Digital</span>
-      <h2 class="login-split-title">Innovación y Seguridad Corporativa</h2>
-      <p class="login-split-desc">Plataforma centralizada de autenticación y servicios institucionales.</p>
+  <aside class="joli-login-split-hero" aria-label="Presentación de la plataforma">
+    <div class="joli-login-split-hero-overlay" aria-hidden="true"></div>
+    <div class="joli-login-split-hero-content">
+      <span class="joli-login-split-tag">Ecosistema Digital</span>
+      <h2 class="joli-login-split-title">Innovación y Seguridad Corporativa</h2>
+      <p class="joli-login-split-desc">Plataforma centralizada de autenticación y servicios institucionales.</p>
     </div>
   </aside>
 
   <!-- Panel de Formulario -->
-  <section class="login-split-form-panel">
-    <div class="login-split-form-container">
+  <section class="joli-login-split-form-panel">
+    <div class="joli-login-split-form-container">
       <!-- Slot de formulario -->
     </div>
   </section>
@@ -145,7 +145,7 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
    ESTRUCTURA: SPLIT-SCREEN HERO (CSS PURO)
    ========================================================================== */
 
-.login-split-root {
+.joli-login-split-root {
   display: flex;
   min-height: 100vh;
   width: 100%;
@@ -153,7 +153,7 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
   box-sizing: border-box;
 }
 
-.login-split-hero {
+.joli-login-split-hero {
   display: none;
   flex: 1;
   position: relative;
@@ -166,25 +166,25 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
 }
 
 @media (min-width: 1024px) {
-  .login-split-hero {
+  .joli-login-split-hero {
     display: flex;
   }
 }
 
-.login-split-hero-overlay {
+.joli-login-split-hero-overlay {
   position: absolute;
   inset: 0;
   background: radial-gradient(circle at 30% 30%, var(--orb-color-primary), transparent 60%);
   pointer-events: none;
 }
 
-.login-split-hero-content {
+.joli-login-split-hero-content {
   position: relative;
   z-index: 2;
   max-width: 480px;
 }
 
-.login-split-tag {
+.joli-login-split-tag {
   display: inline-block;
   padding: 0.35rem 0.85rem;
   background-color: var(--status-success-bg);
@@ -198,7 +198,7 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
   margin-bottom: 1.25rem;
 }
 
-.login-split-title {
+.joli-login-split-title {
   color: var(--text-primary);
   font-size: var(--font-size-4xl);
   font-weight: 800;
@@ -206,14 +206,14 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
   margin: 0 0 1rem 0;
 }
 
-.login-split-desc {
+.joli-login-split-desc {
   color: var(--text-secondary);
   font-size: var(--font-size-base);
   line-height: 1.6;
   margin: 0;
 }
 
-.login-split-form-panel {
+.joli-login-split-form-panel {
   flex: 1;
   display: flex;
   align-items: center;
@@ -222,7 +222,7 @@ Utilizada en pantallas panorámicas dividiendo la interfaz en un panel artístic
   box-sizing: border-box;
 }
 
-.login-split-form-container {
+.joli-login-split-form-container {
   width: 100%;
   max-width: 420px;
 }

@@ -41,12 +41,19 @@ export const ENDPOINTS = {
   },
 
   // 2. Autenticación y perfil
+  // Contrato completo en greenfield/pages/login/03_contrato_api_y_modelos_datos.md
   AUTH: {
-    LOGIN: '/api/v1/auth/login/',       // responde { access, user } + cookie HttpOnly refresh_token
-    REFRESH: '/api/v1/auth/refresh/',   // lee la cookie refresh_token; exige X-CSRFToken; responde { access }
-    LOGOUT: '/api/v1/auth/logout/',     // borra e invalida la cookie refresh_token
+    LOGIN: '/api/v1/auth/login/',                 // responde { access, user } + cookie HttpOnly refresh_token
+    CHECK_USER: '/api/v1/auth/check-user/',       // pre-chequeo de método (PASSWORD / SSO), sin enumeración
+    REFRESH: '/api/v1/auth/refresh/',             // lee la cookie refresh_token; exige X-CSRFToken; responde { access }
+    LOGOUT: '/api/v1/auth/logout/',               // borra e invalida la cookie refresh_token
     ME: '/api/v1/auth/me/',
-    RECOVERY: '/api/v1/auth/recovery/',
+    MIS_PERMISOS: '/api/v1/mis-permisos/',        // permisos compilados del usuario (BP-19)
+    MICROSOFT_LOGIN: '/api/v1/auth/microsoft/login/',       // navegación completa (302 a Microsoft), no XHR
+    MICROSOFT_CALLBACK: '/api/v1/auth/microsoft/callback/', // lo invoca Microsoft, no el frontend
+    PASSWORD_RESET_REQUEST: '/api/v1/auth/password-reset/request/',
+    PASSWORD_RESET_VALIDATE: '/api/v1/auth/password-reset/validate/',
+    PASSWORD_RESET_CONFIRM: '/api/v1/auth/password-reset/confirm/',
     CHANGE_PASSWORD: '/api/v1/auth/change-password/',
   },
 
@@ -86,7 +93,7 @@ export type EndpointsType = typeof ENDPOINTS;
 
 ## 3. Registro para pruebas automáticas (`backend/config/endpoints_registry.json`)
 
-El validador `pruebas/validate_endpoints.py` (fuente en `.sdd/stack/validate_endpoints.py`) lee este manifiesto declarativo en lugar de inspeccionar vistas. La plantilla completa está en `.sdd/stack/endpoints_registry_template.json`; extracto:
+El validador `pruebas/validate_endpoints.py` (fuente en `.sdd/stack/validate_endpoints.py`) lee este manifiesto declarativo en lugar de inspeccionar vistas. La plantilla completa (incluye refresh con `mutates: true`) está en `.sdd/stack/endpoints_registry_template.json`; extracto:
 
 ```json
 {
@@ -124,6 +131,28 @@ El validador `pruebas/validate_endpoints.py` (fuente en `.sdd/stack/validate_end
       "max_latency_ms": 200
     },
     {
+      "name": "Login rechaza cuerpo vacío",
+      "path": "/api/v1/auth/login/",
+      "method": "POST",
+      "payload": {},
+      "expected_status": 400,
+      "auth_required": false
+    },
+    {
+      "name": "Perfil de la sesión",
+      "path": "/api/v1/auth/me/",
+      "method": "GET",
+      "expected_status": 200,
+      "auth_required": true
+    },
+    {
+      "name": "Permisos de la sesión",
+      "path": "/api/v1/mis-permisos/",
+      "method": "GET",
+      "expected_status": 200,
+      "auth_required": true
+    },
+    {
       "name": "Listado de usuarios",
       "path": "/api/v1/usuarios/",
       "method": "GET",
@@ -149,3 +178,5 @@ Los valores de `max_latency_ms` son metas de partida; cada proyecto DEBERÍA aju
 2. **Refactorización segura:** si un endpoint cambia de versión (`/api/v1/` a `/api/v2/`), se actualiza `endpoints.ts` y el registro JSON; las vistas no cambian.
 3. **Exportación de cURL:** `--export-curls curls.sh` genera los comandos cURL de todos los endpoints registrados, sin secretos (usan `$SDD_TOKEN` y `$SDD_LOGIN_PASSWORD`).
 4. **Cobertura:** el validador solo prueba lo que está en el registro; mantenerlo al día es parte de la definición de terminado de cada endpoint nuevo.
+
+> **Coherencia:** el grupo `AUTH` de este archivo es la referencia completa. El `ENDPOINTS` que genera `stack/init_project.py` incluye hoy solo `LOGIN`, `REFRESH`, `LOGOUT`, `ME` y `MIS_PERMISOS`; al implementar el login se agregan las demás rutas de este grupo.

@@ -44,22 +44,22 @@ Los archivos vectoriales y rasterizados oficiales de Joli Foods se encuentran ce
 ## 3. Estructura HTML / JSX del Logo en el Login
 
 ```html
-<header class="login-logo-wrapper">
+<header class="joli-login-logo-wrapper">
   <!-- Contenedor del Logo con Halo Luminoso -->
-  <div class="login-logo-badge">
+  <div class="joli-login-logo-badge">
     <img 
       src="./assets/Jolifoods.svg" 
       alt="Joli Foods" 
-      class="login-logo-img"
+      class="joli-login-logo-img"
       onerror="this.onerror=null; this.src='./assets/logoJoli.png';"
     />
   </div>
 
   <!-- Grupo Tipográfico Parametrizable -->
-  <div class="login-logo-text-group">
+  <div class="joli-login-logo-text-group">
     <!-- El nombre del proyecto se inyecta aquí -->
-    <h1 class="login-logo-title">[Nombre del Proyecto]</h1>
-    <p class="login-logo-subtitle">Joli Foods • Acceso seguro</p>
+    <h1 class="joli-login-logo-title">[Nombre del Proyecto]</h1>
+    <p class="joli-login-logo-subtitle">Joli Foods • Acceso seguro</p>
   </div>
 </header>
 ```
@@ -73,7 +73,7 @@ Los archivos vectoriales y rasterizados oficiales de Joli Foods se encuentran ce
    COMPONENTE: LOGO JOLI FOODS (CSS PURO)
    ========================================================================== */
 
-.login-logo-wrapper {
+.joli-login-logo-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -84,7 +84,7 @@ Los archivos vectoriales y rasterizados oficiales de Joli Foods se encuentran ce
 }
 
 /* Insignia esmeralda translúcida con halo de luz */
-.login-logo-badge {
+.joli-login-logo-badge {
   width: 64px;
   height: 64px;
   display: flex;
@@ -99,12 +99,12 @@ Los archivos vectoriales y rasterizados oficiales de Joli Foods se encuentran ce
   overflow: hidden;
 }
 
-.login-logo-badge:hover {
+.joli-login-logo-badge:hover {
   transform: translateY(-2px) scale(1.05);
   box-shadow: 0 0 35px var(--brand-glow);
 }
 
-.login-logo-img {
+.joli-login-logo-img {
   width: 44px;
   height: 44px;
   object-fit: contain;
@@ -112,13 +112,13 @@ Los archivos vectoriales y rasterizados oficiales de Joli Foods se encuentran ce
 }
 
 /* Grupo de texto */
-.login-logo-text-group {
+.joli-login-logo-text-group {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.login-logo-title {
+.joli-login-logo-title {
   margin: 0;
   font-family: var(--font-family);
   font-size: var(--font-size-2xl);
@@ -128,7 +128,7 @@ Los archivos vectoriales y rasterizados oficiales de Joli Foods se encuentran ce
   line-height: var(--line-height-tight);
 }
 
-.login-logo-subtitle {
+.joli-login-logo-subtitle {
   margin: 0.375rem 0 0 0;
   font-family: var(--font-family);
   font-size: var(--font-size-xs);

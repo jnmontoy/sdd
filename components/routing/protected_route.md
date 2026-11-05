@@ -12,7 +12,8 @@ El componente `ProtectedRoute` intercepta la navegación para que solo usuarios 
 1. **Sin parpadeos:** mientras `AuthContext` recupera la sesión (`isLoading`), se muestra un loader a pantalla completa (es un estado de carga, no una vista de trabajo).
 2. **Redirección a login:** sin sesión, redirige a `/login` guardando la ruta solicitada en `state.from`, para volver a ella tras autenticarse.
 3. **Control RBAC:** propiedades opcionales `allowedRoles`, `permissionKey` y `adminOnly`. Si el usuario está autenticado pero no autorizado, redirige a `/403`.
-4. **Rutas anidadas:** admite hijos directos (`children`) o `<Outlet />`.
+4. **Cambio de clave obligatorio:** si `user.debe_cambiar_clave` es verdadero, toda ruta protegida redirige a `/primer-ingreso` (excepto esa misma ruta).
+5. **Rutas anidadas:** admite hijos directos (`children`) o `<Outlet />`.
 
 ---
 
@@ -40,7 +41,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   permissionKey,
   adminOnly = false,
 }) => {
-  const { isAuthenticated, isLoading, hasRole, hasPermission, isAdmin } = useAuth();
+  const { user, isAuthenticated, isLoading, hasRole, hasPermission, isAdmin } = useAuth();
   const location = useLocation();
 
   // 1. Recuperando sesión: evita redirecciones falsas a /login
@@ -56,6 +57,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // 2. Sin sesión
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // 2b. Clave temporal o primer ingreso: forzar el cambio antes de usar la app
+  if (user?.debe_cambiar_clave && location.pathname !== '/primer-ingreso') {
+    return <Navigate to="/primer-ingreso" replace />;
   }
 
   // 3. Autorización: todas las condiciones declaradas deben cumplirse
@@ -87,7 +93,7 @@ Ejemplo de uso:
 </Route>
 ```
 
-En `LoginPage`, tras un `login()` exitoso: `navigate(location.state?.from?.pathname ?? '/home', { replace: true })`.
+En `LoginPage`, tras un `login()` exitoso: `navigate(user.debe_cambiar_clave ? '/primer-ingreso' : location.state?.from?.pathname ?? '/home', { replace: true })`.
 
 ---
 

@@ -9,22 +9,22 @@ Este documento especifica los componentes visuales de alerta en línea y los avi
 
 ### 1.1. Estructura HTML / JSX
 ```html
-<div class="login-alert login-alert-error" role="alert">
-  <svg class="login-alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+<div class="joli-login-alert joli-login-alert-error" role="alert">
+  <svg class="joli-login-alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <circle cx="12" cy="12" r="10" stroke-width="2" />
     <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round" />
     <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" stroke-linecap="round" />
   </svg>
-  <div class="login-alert-body">
-    <strong class="login-alert-title">Fallo de Autenticación</strong>
-    <p class="login-alert-desc">El número de documento o la contraseña ingresada son incorrectos.</p>
+  <div class="joli-login-alert-body">
+    <strong class="joli-login-alert-title">Fallo de Autenticación</strong>
+    <p class="joli-login-alert-desc">El número de documento o la contraseña ingresada son incorrectos.</p>
   </div>
 </div>
 ```
 
 ### 1.2. Hoja de Estilos en CSS Puro
 ```css
-.login-alert {
+.joli-login-alert {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
@@ -38,47 +38,47 @@ Este documento especifica los componentes visuales de alerta en línea y los avi
   box-sizing: border-box;
 }
 
-.login-alert-icon {
+.joli-login-alert-icon {
   width: 1.25rem;
   height: 1.25rem;
   flex-shrink: 0;
   margin-top: 0.125rem;
 }
 
-.login-alert-body {
+.joli-login-alert-body {
   display: flex;
   flex-direction: column;
 }
 
-.login-alert-title {
+.joli-login-alert-title {
   font-weight: var(--font-weight-semibold);
   margin-bottom: 0.125rem;
 }
 
-.login-alert-desc {
+.joli-login-alert-desc {
   margin: 0;
   opacity: 0.95;
 }
 
 /* Variante Error */
-.login-alert-error {
+.joli-login-alert-error {
   background-color: var(--alert-error-bg);
   border-color: var(--alert-error-border);
   color: var(--alert-error-text);
 }
 
-.login-alert-error .login-alert-icon {
+.joli-login-alert-error .joli-login-alert-icon {
   color: var(--status-error);
 }
 
 /* Variante Advertencia (Rate Limit) */
-.login-alert-warning {
+.joli-login-alert-warning {
   background-color: var(--status-warning-bg);
   border-color: var(--status-warning);
   color: var(--text-primary);
 }
 
-.login-alert-warning .login-alert-icon {
+.joli-login-alert-warning .joli-login-alert-icon {
   color: var(--status-warning);
 }
 ```
@@ -102,7 +102,7 @@ Si la página de login se renderiza fuera del layout autenticado, monta allí `<
 import { CorporateToaster } from '../ui/ToastNotification';
 
 export const LoginPage: React.FC = () => (
-  <main className="login-viewport">
+  <main className="joli-login-viewport">
     <CorporateToaster />
     <LoginForm />
   </main>

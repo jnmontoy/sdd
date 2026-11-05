@@ -1,92 +1,103 @@
-# Especificación de Componente: Cargadores y Skeletons (`PageLoader` / `TableSkeleton`)
-## Ecosistema Jolifoods — Metodología Spec-Driven Development (SDD)
+# Especificación de Componente: Cargadores y Skeletons (`PageLoader` / `TableSkeleton` / `CardSkeleton`)
+## Spec-Driven Development (SDD)
 
-Este documento especifica la familia de cargadores y estados de espera visuales (*Skeleton Loaders* y *PageLoader*) que mantienen la ergonomía y reducen la percepción de latencia durante las transiciones asíncronas de datos.
+> **Origen:** patrón tomado de contenedores (`PageLoader`), app_tic (`AppLoader`), tiendita (`UserTableSkeleton`), vibra (`UserSkeletons`) y JoliVerso (cortinilla de transición entre apps). Aquí se describe de forma genérica.
 
-> **Origen y validación en producción**: Extraído y unificado a partir de `contenedores` (`PageLoader`), `app_tic` (`AppLoader`), `tiendita` (`UserTableSkeleton`) y `vibra` (`UserSkeletons`).
-
----
-
-### 1. Variantes Disponibles
-
-1. **`JoliCurtain` (Cortinilla Canónica de Hand-Off y Transición JoliVerso)**:
-   - Pantalla completa sobria y limpia (slate/navy profundo en dark, fondo claro perlado en light), sin sombras toscas ni cajas pesadas.
-   - Centro orbital con halo sutil de energía, **tres anillos concéntricos giratorios** (púrpura suave, violeta y cian fino) e isotipo oficial de Jolifoods (`logoJoli.png`).
-   - Título y subtítulo elegantes y configurables para cualquier proyecto (`Accediendo desde JoliVerso`, `Actualizando...`, etc.).
-2. **`PageLoader` (Carga de Página Completa / Transición de Rutas)**:
-   - Carga estándar adaptada con la misma estética limpia o variante compacta.
-3. **`TableSkeleton` (Placeholder Esquelético para Tablas de Datos)**:
-   - Fila de cabecera y N filas con barras pulsantes de ancho variable que simulan columnas de texto, badges numéricos y botones de acción.
-3. **`CardSkeleton` (Placeholder Esquelético para Tarjetas / Grid)**:
-   - Simula avatar o icono superior, líneas de texto y pie de tarjeta.
+Familia de indicadores de espera: cargador de página y *skeletons* (siluetas grises que imitan el contenido mientras llega), para que el usuario sepa que algo está cargando y la página no "salte" al aparecer los datos.
 
 ---
 
-### 2. Implementación TypeScript / React
+### 1. Variantes y cuándo usarlas
+
+| Variante | Uso |
+| :--- | :--- |
+| `PageLoader variant="inline"` | Carga de una sección o de una ruta dentro del layout. |
+| `PageLoader variant="overlay"` | Operación que bloquea la vista actual (p. ej. procesar un archivo). |
+| `PageLoader variant="curtain"` | Cortinilla de pantalla completa al entrar a la app o al pasar de una app a otra (logo + anillo + título configurable, p. ej. "Accediendo a [Nombre del Proyecto]"). |
+| `TableSkeleton` | Primera carga de una tabla (cabecera + N filas). En recargas posteriores se mantiene la tabla y se muestra el spinner de [`DataTable`](../data_table/data_table.md). |
+| `CardSkeleton` | Primera carga de una rejilla de tarjetas. |
+
+- **Regla:** los skeletons DEBERÍAN usarse solo en la **primera** carga; DEBERÍAN respetar `prefers-reduced-motion` (sin brillo animado).
+- **Accesibilidad:** el cargador usa `role="status"` con texto legible; los skeletons son decorativos (`aria-hidden="true"`) y el contenedor que los aloja indica `aria-busy="true"`.
+
+---
+
+### 2. Implementación TypeScript / React (`src/components/ui/PageLoader.tsx`)
 
 ```tsx
-// src/components/ui/PageLoader.tsx
 import React from 'react';
 import './PageLoader.css';
 
 export interface PageLoaderProps {
   message?: string;
   subMessage?: string;
-  isOverlay?: boolean;
+  variant?: 'inline' | 'overlay' | 'curtain';
+  logoSrc?: string;
 }
 
 export const PageLoader: React.FC<PageLoaderProps> = ({
-  message = 'Cargando información corporativa...',
+  message = 'Cargando información...',
   subMessage = 'Por favor espera un momento',
-  isOverlay = false,
-}) => {
-  return (
-    <div className={`joli-loader-container ${isOverlay ? 'joli-loader-overlay' : ''}`} role="status">
-      <div className="joli-loader-box">
-        {/* Isotipo Jolifoods con animación de pulso */}
-        <div className="joli-loader-logo-ring">
-          <svg className="joli-loader-svg" viewBox="0 0 48 48" fill="none">
-            <circle cx="24" cy="24" r="20" stroke="#10B981" strokeWidth="2.5" strokeDasharray="30 10" />
-            <path d="M24 12C17 12 14 18 14 24C14 30 19 36 24 36C29 36 34 30 34 24C34 16 27 12 24 12Z" fill="#10B981" />
-            <path d="M24 18V30M18 24H30" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </div>
-        <p className="joli-loader-title">{message}</p>
-        {subMessage && <p className="joli-loader-subtitle">{subMessage}</p>}
+  variant = 'inline',
+  logoSrc = '/assets/logoJoli.png',
+}) => (
+  <div className={`joli-loader-container joli-loader-${variant}`} role="status" aria-live="polite">
+    <div className="joli-loader-box">
+      <div className="joli-loader-logo-ring" aria-hidden="true">
+        <span className="joli-loader-ring" />
+        <img src={logoSrc} alt="" className="joli-loader-logo" />
       </div>
+      <p className="joli-loader-title">{message}</p>
+      {subMessage && <p className="joli-loader-subtitle">{subMessage}</p>}
     </div>
-  );
-};
+  </div>
+);
 
 export interface TableSkeletonProps {
   rows?: number;
   columns?: number;
 }
 
-export const TableSkeleton: React.FC<TableSkeletonProps> = ({ rows = 5, columns = 6 }) => {
-  return (
-    <div className="joli-table-skeleton" aria-hidden="true">
-      <div className="joli-skeleton-header-row">
-        {Array.from({ length: columns }).map((_, c) => (
-          <div key={c} className="joli-skeleton-bone skeleton-th" />
-        ))}
-      </div>
-      <div className="joli-skeleton-body">
-        {Array.from({ length: rows }).map((_, r) => (
-          <div key={r} className="joli-skeleton-tr">
-            {Array.from({ length: columns }).map((_, c) => (
-              <div
-                key={c}
-                className="joli-skeleton-bone skeleton-td"
-                style={{ width: `${60 + ((c * 17) % 35)}%` }}
-              />
-            ))}
+export const TableSkeleton: React.FC<TableSkeletonProps> = ({ rows = 5, columns = 6 }) => (
+  <div className="joli-table-skeleton" aria-hidden="true">
+    <div className="joli-skeleton-header-row">
+      {Array.from({ length: columns }, (_, c) => (
+        <div key={c} className="joli-skeleton-bone skeleton-th" />
+      ))}
+    </div>
+    {Array.from({ length: rows }, (_, r) => (
+      <div key={r} className="joli-skeleton-tr">
+        {Array.from({ length: columns }, (_, c) => (
+          <div key={c} className="joli-skeleton-cell">
+            {/* Anchos variables y deterministas para imitar texto real */}
+            <div className="joli-skeleton-bone" style={{ width: `${60 + ((c * 17 + r * 7) % 35)}%` }} />
           </div>
         ))}
       </div>
-    </div>
-  );
-};
+    ))}
+  </div>
+);
+
+export const CardSkeleton: React.FC<{ count?: number }> = ({ count = 6 }) => (
+  <div className="joli-card-skeleton-grid" aria-hidden="true">
+    {Array.from({ length: count }, (_, i) => (
+      <div key={i} className="joli-card-skeleton">
+        <div className="joli-skeleton-bone skeleton-avatar" />
+        <div className="joli-skeleton-bone" style={{ width: '70%' }} />
+        <div className="joli-skeleton-bone" style={{ width: '45%' }} />
+        <div className="joli-skeleton-bone skeleton-footer" />
+      </div>
+    ))}
+  </div>
+);
+```
+
+Uso con estado de carga:
+
+```tsx
+<section aria-busy={isFirstLoad}>
+  {isFirstLoad ? <TableSkeleton rows={8} columns={columns.length} /> : <DataTable {...props} />}
+</section>
 ```
 
 ---
@@ -98,93 +109,93 @@ export const TableSkeleton: React.FC<TableSkeletonProps> = ({ rows = 5, columns 
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 360px;
   width: 100%;
+}
+
+.joli-loader-inline {
+  min-height: 360px;
 }
 
 .joli-loader-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  z-index: var(--z-modal);
+  background: color-mix(in srgb, var(--bg-viewport) 60%, transparent);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  z-index: 1050;
-  min-height: 100vh;
+}
+
+.joli-loader-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: var(--bg-viewport);
 }
 
 .joli-loader-box {
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
   padding: 2rem;
+  text-align: center;
 }
 
 .joli-loader-logo-ring {
-  width: 56px;
-  height: 56px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
   margin-bottom: 1rem;
 }
 
-.joli-loader-svg {
-  width: 100%;
-  height: 100%;
-  animation: joliSpin 2.2s linear infinite;
+.joli-loader-ring {
+  position: absolute;
+  inset: 0;
+  border: 2.5px solid var(--border-subtle);
+  border-top-color: var(--brand-primary);
+  border-radius: var(--radius-full);
+  animation: joliSpin 1.2s linear infinite;
 }
 
-@keyframes joliSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.joli-loader-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .joli-loader-title {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-primary);
   margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 .joli-loader-subtitle {
-  font-size: 0.8rem;
+  margin: 4px 0 0;
+  font-size: var(--font-size-xs);
   color: var(--text-muted);
-  margin: 4px 0 0 0;
 }
 
-/* Skeletons */
-.joli-table-skeleton {
-  width: 100%;
-  background: var(--bg-card);
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
-  overflow: hidden;
-}
-
-.joli-skeleton-header-row {
-  display: flex;
-  gap: 1rem;
-  padding: 0.875rem 1.25rem;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
+/* Skeletons: colores derivados de tokens, válidos en ambos temas */
 .joli-skeleton-bone {
-  height: 16px;
-  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  height: 14px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-active) 50%, var(--bg-elevated) 75%);
   background-size: 200% 100%;
-  border-radius: 4px;
   animation: joliShimmer 1.5s infinite;
 }
 
-@keyframes joliShimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+.joli-table-skeleton {
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
 }
 
-.skeleton-th {
-  flex: 1;
-  height: 14px;
-}
-
+.joli-skeleton-header-row,
 .joli-skeleton-tr {
   display: flex;
   gap: 1rem;
@@ -192,8 +203,54 @@ export const TableSkeleton: React.FC<TableSkeletonProps> = ({ rows = 5, columns 
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.skeleton-td {
-  height: 14px;
+.joli-skeleton-header-row {
+  background: var(--bg-elevated);
+}
+
+.skeleton-th,
+.joli-skeleton-cell {
   flex: 1;
+}
+
+.joli-card-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.joli-card-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+}
+
+.skeleton-footer {
+  height: 26px;
+  margin-top: 0.5rem;
+}
+
+@keyframes joliSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes joliShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .joli-skeleton-bone { animation: none; }
+  .joli-loader-ring { animation-duration: 3s; }
 }
 ```

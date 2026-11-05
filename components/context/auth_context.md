@@ -103,21 +103,21 @@ import { STORAGE_KEYS, safeStorage } from '../config/storageKeys';
 import { SessionExpirationModal } from '../components/modal/SessionExpirationModal';
 import { showToast } from '../components/ui/ToastNotification';
 
-export interface UserRole {
-  id: number;
-  codigo: string; // 'ADMINISTRADOR', 'OPERADOR', 'CONSULTOR', etc.
-  nombre: string;
-}
-
+/** Alineado con model/login/spec_model_usuario.md y el contrato de greenfield/pages/login/03. */
 export interface AuthUser {
-  id: number | string;
-  cedula: string;
+  id: number;
+  numero_documento: string;
   nombre: string;
+  apellidos: string;
   email: string;
-  rol: UserRole;
-  permisos: string[]; // claves de permiso, p. ej. 'usuarios.ver'
-  avatar_url?: string;
-  ultimo_acceso?: string;
+  roles: string[];      // códigos de rol: 'ADMINISTRADOR', 'OPERADOR', ...
+  permisos: string[];   // claves de permiso: 'usuarios.ver', 'dashboard.ver', ... (GET /api/v1/mis-permisos/)
+  cargo?: string | null;
+  sede?: string | null;
+  is_active: boolean;
+  debe_cambiar_clave: boolean;
+  avatar_url: string | null;
+  last_login?: string | null;
 }
 
 export interface LoginCredentials {
@@ -127,6 +127,8 @@ export interface LoginCredentials {
 
 interface LoginResponse {
   access: string;
+  token_type: 'Bearer';
+  expires_in: number;
   user: AuthUser;
 }
 
@@ -272,9 +274,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 7. Utilidades RBAC
   const hasRole = useCallback(
     (allowedRoles: string[]): boolean => {
-      const codigo = user?.rol?.codigo?.toUpperCase();
-      if (!codigo) return false;
-      return allowedRoles.some((rol) => rol.toUpperCase() === codigo);
+      const userRoles = new Set((user?.roles ?? []).map((r) => r.toUpperCase()));
+      return allowedRoles.some((rol) => userRoles.has(rol.toUpperCase()));
     },
     [user],
   );

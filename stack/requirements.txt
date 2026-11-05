@@ -40,6 +40,7 @@ httpx>=0.27,<1.0                     # Cliente HTTP (sincrónico y asíncrono)
 python-dotenv>=1.0,<2.0
 tzdata>=2024.1
 Pillow>=10.4                         # Imágenes y avatares
+filetype>=1.2,<2.0                   # Tipo real de archivos subidos por firma binaria (model/archivos)
 openpyxl>=3.1,<4.0                   # Excel
 fpdf2>=2.8,<3.0                      # PDF generados por código
 # weasyprint>=62,<63                 # PDF desde HTML. Requiere librerías del sistema (ver Dockerfile.backend)

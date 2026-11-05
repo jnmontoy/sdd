@@ -38,6 +38,10 @@ class DocumentationConsistency(unittest.TestCase):
     def assertNoHits(self, hits, why):
         self.assertEqual(hits, [], f"{why}\n" + "\n".join(hits[:40]))
 
+    def test_sin_marcadores_de_conflicto_de_merge(self):
+        self.assertNoHits(offending_lines(r"^(<{7}|>{7})( |$)|^={7}$"),
+                          "Hay conflictos de merge sin resolver")
+
     def test_enlaces_relativos_existen(self):
         link = re.compile(r"\]\(([^)\s]+)\)")
         broken = []

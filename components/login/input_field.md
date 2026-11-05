@@ -9,14 +9,14 @@ Este documento especifica los campos de entrada de datos para la página de logi
 
 ### 1.1. Estructura HTML / JSX
 ```html
-<div class="login-input-group">
-  <label for="login-doc" class="login-input-label">
+<div class="joli-login-input-group">
+  <label for="joli-login-doc" class="joli-login-input-label">
     Número de Documento
   </label>
-  <div class="login-input-box">
+  <div class="joli-login-input-box">
     <!-- Ícono Prefijo Vectorial (Cédula / IdCard) -->
-    <span class="login-input-prefix-icon" aria-hidden="true">
-      <svg class="login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <span class="joli-login-input-prefix-icon" aria-hidden="true">
+      <svg class="joli-login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <rect x="3" y="4" width="18" height="16" rx="2" stroke-width="2" />
         <circle cx="9" cy="10" r="2" stroke-width="2" />
         <path d="M15 8h2M15 12h2M7 16h10" stroke-width="2" stroke-linecap="round" />
@@ -24,20 +24,20 @@ Este documento especifica los campos de entrada de datos para la página de logi
     </span>
 
     <input
-      id="login-doc"
+      id="joli-login-doc"
       name="numero_documento"
       type="text"
       inputmode="numeric"
       placeholder="Ej. 1000000001"
-      class="login-input-control"
+      class="joli-login-input-control"
       autocomplete="username"
-      aria-describedby="login-doc-error"
+      aria-describedby="joli-login-doc-error"
       data-testid="input-username"
       required
     />
   </div>
   <!-- Mensaje de error condicional -->
-  <p id="login-doc-error" class="login-input-error" role="alert" hidden>El documento debe contener solo números</p>
+  <p id="joli-login-doc-error" class="joli-login-input-error" role="alert" hidden>El documento debe contener solo números</p>
 </div>
 ```
 
@@ -47,27 +47,27 @@ Este documento especifica los campos de entrada de datos para la página de logi
 
 ### 2.1. Estructura HTML / JSX
 ```html
-<div class="login-input-group">
-  <label for="login-pass" class="login-input-label">
+<div class="joli-login-input-group">
+  <label for="joli-login-pass" class="joli-login-input-label">
     Contraseña
   </label>
-  <div class="login-input-box">
+  <div class="joli-login-input-box">
     <!-- Ícono Prefijo Vectorial (Candado / Lock) -->
-    <span class="login-input-prefix-icon" aria-hidden="true">
-      <svg class="login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <span class="joli-login-input-prefix-icon" aria-hidden="true">
+      <svg class="joli-login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <rect x="5" y="11" width="14" height="10" rx="2" stroke-width="2" />
         <path d="M8 11V7a4 4 0 118 0v4" stroke-width="2" stroke-linecap="round" />
       </svg>
     </span>
 
     <input
-      id="login-pass"
+      id="joli-login-pass"
       name="password"
       type="password"
       placeholder="••••••••••••"
-      class="login-input-control login-has-suffix"
+      class="joli-login-input-control joli-login-has-suffix"
       autocomplete="current-password"
-      aria-describedby="login-pass-error"
+      aria-describedby="joli-login-pass-error"
       data-testid="input-password"
       required
     />
@@ -75,20 +75,20 @@ Este documento especifica los campos de entrada de datos para la página de logi
     <!-- Botón Toggle Sufijo -->
     <button
       type="button"
-      class="login-input-toggle-btn"
+      class="joli-login-input-toggle-btn"
       aria-label="Mostrar contraseña"
-      aria-controls="login-pass"
+      aria-controls="joli-login-pass"
       aria-pressed="false"
     >
       <!-- Ícono Ojo Cerrado / Abierto en SVG -->
-      <svg class="login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <svg class="joli-login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2"/>
         <circle cx="12" cy="12" r="3" stroke-width="2"/>
       </svg>
     </button>
   </div>
   <!-- Mensaje de error condicional -->
-  <p id="login-pass-error" class="login-input-error" role="alert" hidden>La contraseña es requerida</p>
+  <p id="joli-login-pass-error" class="joli-login-input-error" role="alert" hidden>La contraseña es requerida</p>
 </div>
 ```
 
@@ -106,7 +106,7 @@ Al pulsar el botón se alterna `type="password"` / `type="text"`, se actualiza `
    COMPONENTE: INPUTS DE LOGIN (CSS PURO)
    ========================================================================== */
 
-.login-input-group {
+.joli-login-input-group {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
@@ -115,7 +115,7 @@ Al pulsar el botón se alterna `type="password"` / `type="text"`, se actualiza `
   box-sizing: border-box;
 }
 
-.login-input-label {
+.joli-login-input-label {
   font-family: var(--font-family);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
@@ -124,7 +124,7 @@ Al pulsar el botón se alterna `type="password"` / `type="text"`, se actualiza `
   color: var(--label-color);
 }
 
-.login-input-box {
+.joli-login-input-box {
   position: relative;
   display: flex;
   align-items: center;
@@ -132,7 +132,7 @@ Al pulsar el botón se alterna `type="password"` / `type="text"`, se actualiza `
   box-sizing: border-box;
 }
 
-.login-input-prefix-icon {
+.joli-login-input-prefix-icon {
   position: absolute;
   left: 0.875rem;
   display: flex;
@@ -144,13 +144,13 @@ Al pulsar el botón se alterna `type="password"` / `type="text"`, se actualiza `
   z-index: 2;
 }
 
-.login-input-svg {
+.joli-login-input-svg {
   width: 1.25rem;
   height: 1.25rem;
   display: block;
 }
 
-.login-input-control {
+.joli-login-input-control {
   width: 100%;
   padding: 0.85rem 1rem 0.85rem 2.75rem;
   background-color: var(--input-bg);
@@ -164,30 +164,30 @@ Al pulsar el botón se alterna `type="password"` / `type="text"`, se actualiza `
   box-sizing: border-box;
 }
 
-.login-input-control.login-has-suffix {
+.joli-login-input-control.joli-login-has-suffix {
   padding-right: 2.75rem;
 }
 
-.login-input-control::placeholder {
+.joli-login-input-control::placeholder {
   color: var(--input-placeholder);
 }
 
-.login-input-control:hover {
+.joli-login-input-control:hover {
   border-color: var(--input-border-hover);
 }
 
-.login-input-control:focus {
+.joli-login-input-control:focus {
   border-color: var(--input-focus-border);
   background-color: var(--bg-input-focus);
   box-shadow: var(--shadow-input-focus);
 }
 
-.login-input-box:focus-within .login-input-prefix-icon {
+.joli-login-input-box:focus-within .joli-login-input-prefix-icon {
   color: var(--brand-primary);
 }
 
 /* Botón interactivo para ver/ocultar contraseña */
-.login-input-toggle-btn {
+.joli-login-input-toggle-btn {
   position: absolute;
   right: 0.875rem;
   background: none;
@@ -203,28 +203,28 @@ Al pulsar el botón se alterna `type="password"` / `type="text"`, se actualiza `
   z-index: 2;
 }
 
-.login-input-toggle-btn:focus-visible {
+.joli-login-input-toggle-btn:focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 1px;
 }
 
-.login-input-toggle-btn:hover {
+.joli-login-input-toggle-btn:hover {
   color: var(--text-primary);
   transform: scale(1.1);
 }
 
 /* Estado de Error */
-.login-input-group.has-error .login-input-control {
+.joli-login-input-group.has-error .joli-login-input-control {
   border-color: var(--border-error);
   box-shadow: var(--shadow-error-focus);
   animation: loginShake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
-.login-input-group.has-error .login-input-prefix-icon {
+.joli-login-input-group.has-error .joli-login-input-prefix-icon {
   color: var(--status-error);
 }
 
-.login-input-error {
+.joli-login-input-error {
   font-family: inherit;
   font-size: var(--font-size-xs);
   color: var(--status-error);
@@ -239,6 +239,6 @@ Al pulsar el botón se alterna `type="password"` / `type="text"`, se actualiza `
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-input-group.has-error .login-input-control { animation: none; }
+  .joli-login-input-group.has-error .joli-login-input-control { animation: none; }
 }
 ```

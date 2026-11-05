@@ -7,7 +7,6 @@
 
 ---
 
-<<<<<<< HEAD
 ## Índice
 * [BUG-001: Conexiones a PostgreSQL agotadas en rutas FastAPI](#bug-001)
 * [BUG-002: Consultas N+1 en serializadores o bucles](#bug-002)
@@ -15,16 +14,7 @@
 * [BUG-004: `.save()` dentro de bucles masivos](#bug-004)
 * [BUG-005: Rutas absolutas del sistema operativo en el código](#bug-005)
 * [BUG-006: ORM de Django llamado desde `async def`](#bug-006)
-=======
-## 🗂️ Índice de Lecciones Aprendidas
-
-* [BUG-001: Pérdida de Conexiones DB en Endpoints Híbridos FastAPI](#bug-001)
-* [BUG-002: Error N+1 en Consultas con Serializadores o Loops](#bug-002)
-* [BUG-003: Rotura de Layout por Contenedores Centrados o max-w](#bug-003)
-* [BUG-004: Invocación de `.save()` en Bucles Masivos](#bug-004)
-* [BUG-005: Rutas Absolutas de Sistema Operativo Quemadas en Código](#bug-005)
-* [BUG-006: Uso Indebido de Modales Centrados en lugar de Sidebar Derecho (Right Drawer) para Formularios CRUD](#bug-006)
->>>>>>> dfa6d576ff1a43eacc452032a5ce4df42852bd45
+* [BUG-007: Formularios CRUD en modal centrado en lugar del drawer](#bug-007)
 
 ---
 
@@ -60,7 +50,6 @@
 
 ---
 
-<<<<<<< HEAD
 ### <a id="bug-005"></a> BUG-005: Rutas absolutas del sistema operativo en el código
 * **Síntoma**: funciona en el equipo de quien lo escribió (`C:\Users\...`) y falla en Docker (`/app/...`) o en CI con `FileNotFoundError`.
 * **Causa raíz**: rutas absolutas escritas a mano.
@@ -77,20 +66,13 @@
 
 ---
 
-## Lecciones del proyecto
-> Agregar aquí las entradas propias (BUG-007 en adelante), sin datos personales ni secretos.
-=======
-### <a id="bug-005"></a> BUG-005: Rutas Absolutas de Sistema Operativo Quemadas en Código
-* **Síntoma**: El código funciona en la máquina del desarrollador (`C:\Users\juan\...`) pero explota en el contenedor Docker (`/app/...`) o en CI/CD con `FileNotFoundError`.
-* **Causa Raíz**: Concatenación de strings con rutas absolutas locales fijas.
-* **Solución Aplicada**: Resolver siempre con `Path(__file__).resolve().parent.parent` (`BASE_DIR`).
-* **Regla Inflexible para la IA (BP-07)**: Prohibido quemar rutas absolutas; toda ruta debe ser 100% relativa a la raíz.
+### <a id="bug-007"></a> BUG-007: Formularios CRUD en modal centrado en lugar del drawer
+* **Síntoma**: en un módulo administrativo, "Agregar" o "Editar" abre un modal flotante en el centro que tapa la tabla; el usuario pierde de vista el registro y la lista de la que partió.
+* **Causa raíz**: se creó un modal genérico sin consultar el componente de drawer del catálogo.
+* **Solución**: usar el panel lateral derecho ([`components/drawer/drawer.md`](../../components/drawer/drawer.md), `.joli-drawer-container`), que mantiene la vista principal visible y tiene cabecera, cuerpo con scroll y pie de acciones fijos.
+* **Regla**: convención de diseño (DEBERÍA, normativa 00 §6.4). Los modales quedan para confirmaciones, firmas, escáneres y sesión vencida.
 
 ---
 
-### <a id="bug-006"></a> BUG-006: Uso Indebido de Modales Centrados en lugar de Sidebar Derecho (Right Drawer) para Formularios CRUD
-* **Síntoma**: En módulos administrativos (como Administración de Usuarios), las acciones de "Agregar" o "Editar" abren una ventana modal flotante en el centro de la pantalla (`.modal-card-dialog`), tapando la tabla/cards y rompiendo el estándar UX de Jolifoods.
-* **Causa Raíz**: Creación de un modal genérico centrado en lugar de consultar la especificación canónica [`sdd/components/drawer/drawer.md`](../../components/drawer/drawer.md).
-* **Solución Aplicada**: Reemplazar todo modal de creación/edición CRUD por el componente canónico **`RightDrawer` (`.joli-drawer-container`)**, que se desliza desde el borde derecho (`translateX(100%) -> translateX(0)`), conserva el contexto visual de la vista principal, muestra Mini-KPIs contextuales (`.drawer-kpi-grid`) al editar y utiliza controles estilizados con iconos (`.drawer-input-control.has-icon`).
-* **Regla Inflexible para la IA**: **NUNCA** volver a crear modales centrados para formularios de agregar o editar registros. Todo formulario CRUD debe abrirse siempre en un Sidebar lateral derecho (`RightDrawer`).
->>>>>>> dfa6d576ff1a43eacc452032a5ce4df42852bd45
+## Lecciones del proyecto
+> Agregar aquí las entradas propias (BUG-008 en adelante), sin datos personales ni secretos.

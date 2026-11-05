@@ -1,5 +1,5 @@
 ﻿# Especificación de Componente: Estado Vacío (Empty State)
-## Ecosistema Jolifoods — Guía de Implementación SDD
+## Guía de implementación SDD
 
 El componente `EmptyState` ofrece una experiencia visual clara, profesional y constructiva cuando una vista, tabla, bandeja o búsqueda no contiene datos, guiando al usuario hacia la siguiente acción a realizar.
 
@@ -12,7 +12,9 @@ El componente `EmptyState` ofrece una experiencia visual clara, profesional y co
    - `search`: Cuando los filtros o el buscador no arrojan coincidencias.
    - `inbox`: Cuando la bandeja o listado está vacío por naturaleza.
    - `error`: Cuando ocurrió un fallo recuperable al cargar la información.
-4. **Modo Noche / Día**: Se adapta automáticamente a los tokens corporativos.
+4. **Modo Noche / Día**: solo usa tokens de `variables.css`.
+5. **Accesibilidad**: `role="status"` (o `role="alert"` en la variante `error`) para que el cambio se anuncie; el ícono es decorativo.
+6. **Botones**: `.joli-btn-primary` / `.joli-btn-secondary` de [`icon_action_group.md`](../button/icon_action_group.md) §5. Dentro de una tabla se usa el estado vacío integrado de [`DataTable`](../data_table/data_table.md).
 
 ---
 
@@ -20,9 +22,19 @@ El componente `EmptyState` ofrece una experiencia visual clara, profesional y co
 
 ```tsx
 import React from 'react';
-import { LucideIcon, Inbox, SearchX, AlertCircle, Plus, RotateCcw } from 'lucide-react';
+import { AlertCircle, Inbox, SearchX, type LucideIcon } from 'lucide-react';
+
+export type EmptyStateVariant = 'inbox' | 'search' | 'error';
+
+const VARIANT_ICONS: Record<EmptyStateVariant, LucideIcon> = {
+  inbox: Inbox,
+  search: SearchX,
+  error: AlertCircle,
+};
 
 export interface EmptyStateProps {
+  variant?: EmptyStateVariant;
+  /** Sobrescribe el ícono de la variante. */
   icon?: LucideIcon;
   title: string;
   description: string;
@@ -35,7 +47,8 @@ export interface EmptyStateProps {
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
-  icon: Icon = Inbox,
+  variant = 'inbox',
+  icon,
   title,
   description,
   primaryActionLabel,
@@ -45,12 +58,16 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   onSecondaryAction,
   className = ''
 }) => {
+  const Icon = icon ?? VARIANT_ICONS[variant];
   return (
-    <div className={`joli-empty-state-card ${className}`}>
-      <div className="empty-state-icon-wrapper">
-        <Icon size={44} className="empty-state-icon" />
+    <div
+      className={`joli-empty-state-card is-${variant} ${className}`}
+      role={variant === 'error' ? 'alert' : 'status'}
+    >
+      <div className="empty-state-icon-wrapper" aria-hidden="true">
+        <Icon size={44} />
       </div>
-      <h5 className="empty-state-title">{title}</h5>
+      <p className="empty-state-title">{title}</p>
       <p className="empty-state-description">{description}</p>
 
       {(primaryActionLabel || secondaryActionLabel) && (
@@ -61,7 +78,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
               className="joli-btn-primary"
               onClick={onPrimaryAction}
             >
-              {ActionIcon && <ActionIcon size={16} className="me-1" />}
+              {ActionIcon && <ActionIcon size={16} aria-hidden="true" />}
               <span>{primaryActionLabel}</span>
             </button>
           )}
@@ -69,7 +86,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           {secondaryActionLabel && onSecondaryAction && (
             <button
               type="button"
-              className="joli-btn-outline"
+              className="joli-btn-secondary"
               onClick={onSecondaryAction}
             >
               <span>{secondaryActionLabel}</span>
@@ -100,49 +117,36 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   margin: 16px 0;
 }
 
-[data-theme="dark"] .joli-empty-state-card {
-  background-color: var(--bg-card);
-  border-color: var(--border-subtle);
-}
-
 .empty-state-icon-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 72px;
   height: 72px;
-  border-radius: 50%;
-  background: var(--bg-input);
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
   color: var(--text-muted);
   margin-bottom: 16px;
 }
 
-[data-theme="dark"] .empty-state-icon-wrapper {
-  background: #0F172A;
-  color: #64748B;
+.joli-empty-state-card.is-error .empty-state-icon-wrapper {
+  background: var(--status-error-bg);
+  color: var(--status-error);
 }
 
 .empty-state-title {
-  font-size: 16px;
-  font-weight: 700;
+  margin: 0 0 6px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  margin-bottom: 6px;
-}
-
-[data-theme="dark"] .empty-state-title {
-  color: #F8FAFC;
 }
 
 .empty-state-description {
-  font-size: 13.5px;
-  color: var(--text-secondary);
   max-width: 440px;
-  margin-bottom: 20px;
-  line-height: 1.5;
-}
-
-[data-theme="dark"] .empty-state-description {
-  color: #94A3B8;
+  margin: 0 0 20px;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--text-secondary);
 }
 
 .empty-state-actions {

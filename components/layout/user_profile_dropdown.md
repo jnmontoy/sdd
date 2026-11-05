@@ -203,7 +203,7 @@ const { user, logout, theme, toggleTheme } = useAuth();
 
 {user && (
   <UserProfileDropdown
-    user={{ id: user.id, name: user.nombre, email: user.email, role: user.rol.nombre, avatarUrl: user.avatar_url }}
+    user={{ id: user.id, name: `${user.nombre} ${user.apellidos}`, email: user.email, role: user.roles[0] ?? '', avatarUrl: user.avatar_url ?? undefined }}
     onLogout={() => logout()}
     onProfileClick={() => navigate('/perfil')}
     onThemeToggle={toggleTheme}

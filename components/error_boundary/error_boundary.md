@@ -1,100 +1,114 @@
-# Especificación de Componente: Límite Global de Errores (Global Error Boundary)
-## Ecosistema Jolifoods — Recuperación de Fallos y Detección de Nuevas Versiones
+# Especificación de Componente: Límite Global de Errores (`GlobalErrorBoundary`)
+## Recuperación de fallos y detección de nuevas versiones
 
-El componente `GlobalErrorBoundary` previene que un fallo JavaScript inesperado en cualquier vista muestre una "pantalla blanca". Detecta automáticamente errores `ChunkLoadError` provocados por el despliegue de nuevas versiones de la aplicación y ofrece recarga automática inteligente y navegación de rescate.
+`GlobalErrorBoundary` evita que un error inesperado de JavaScript en una vista deje la "pantalla en blanco". Detecta los errores de carga de módulos que aparecen tras desplegar una versión nueva y recarga una sola vez de forma controlada.
 
----
-
-### 1. Requisitos de Negocio y Robustez
-1. **Detección Automática de Nuevas Versiones (`ChunkLoadError`)**:
-   - Tras un nuevo build en producción, los nombres de archivos chunk con hash anterior ya no existen en el servidor.
-   - El Error Boundary intercepta `Failed to fetch dynamically imported module`, almacena un timestamp de recarga en `sessionStorage` y recarga automáticamente la página de forma transparente (con cooldown de 60 segundos para evitar bucles infinitos).
-2. **UI de Rescate Amigable**:
-   - Icono de alerta, título claro ("¡Oops! Algo salió mal" o "Actualización Disponible"), descripción contextual y botón primario "Recargar Página" o "Ir al Inicio".
-3. **Detalles Técnicos para Entornos de Desarrollo**:
-   - En modo desarrollo (`import.meta.env.DEV`), muestra el stack trace y detalles del error dentro de un acordeón colapsable.
+Se registra como `errorElement` de las rutas de React Router. Para errores fuera del enrutador (p. ej. en proveedores globales), se envuelve la app con un *error boundary* de clase que renderiza la misma tarjeta.
 
 ---
 
-### 2. Implementación TypeScript Canónica (`GlobalErrorBoundary.tsx`)
+### 1. Requisitos
+
+1. **Nueva versión desplegada (*ChunkLoadError*):** tras un build nuevo, los archivos con el hash anterior ya no existen. Se reconocen los mensajes de Chrome/Edge (`Failed to fetch dynamically imported module`), Firefox (`error loading dynamically imported module`) y Safari (`Importing a module script failed`). Se recarga automáticamente **una vez cada 60 s como máximo** (marca de tiempo en `sessionStorage`, con prefijo de app) para evitar bucles.
+2. **Tarjeta de rescate:** ícono, título claro ("Algo salió mal" o "Actualización disponible"), descripción y botones "Recargar página" e "Ir al inicio".
+3. **Detalles técnicos solo en desarrollo:** la traza se muestra únicamente si `import.meta.env.DEV`. En producción NO DEBE mostrarse (puede revelar rutas internas o datos); el error se envía al registro de errores del proyecto.
+4. **Accesibilidad:** el título recibe el foco al montarse para que el lector de pantalla anuncie el error.
+
+---
+
+### 2. Implementación TypeScript de referencia (`GlobalErrorBoundary.tsx`)
 
 ```tsx
-import React, { useEffect } from 'react';
-import { useRouteError, isRouteErrorResponse } from 'react-router-dom';
-import { AlertCircle, RefreshCw, Home, ChevronDown } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { isRouteErrorResponse, useRouteError } from 'react-router-dom';
+import { AlertCircle, Home, RefreshCw } from 'lucide-react';
+
+const APP = import.meta.env.VITE_APP_SLUG ?? 'app';
+const RELOAD_KEY = `${APP}:chunk_reload_at`;
+const RELOAD_COOLDOWN_MS = 60_000;
+const CHUNK_ERROR_PATTERNS = [
+  'Failed to fetch dynamically imported module',
+  'error loading dynamically imported module',
+  'Importing a module script failed',
+];
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  return '';
+}
+
+function isChunkLoadError(error: unknown): boolean {
+  const message = getErrorMessage(error);
+  return CHUNK_ERROR_PATTERNS.some((pattern) => message.includes(pattern));
+}
+
+function describeError(error: unknown): string {
+  if (isRouteErrorResponse(error)) return `${error.status} ${error.statusText}`;
+  if (error instanceof Error) return error.stack ?? error.message;
+  try {
+    return JSON.stringify(error, null, 2);
+  } catch {
+    return String(error);
+  }
+}
 
 export const GlobalErrorBoundary: React.FC = () => {
-  const error = useRouteError() as any;
+  const error: unknown = useRouteError();
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const chunkError = isChunkLoadError(error);
 
-  // 1. Detectar si el error es por nueva versión desplegada (ChunkLoadError de Vite/Rollup)
-  const isChunkLoadError = 
-    (error instanceof Error && error.message.includes('Failed to fetch dynamically imported module')) ||
-    (typeof error === 'string' && error.includes('Failed to fetch dynamically imported module'));
-
-  // 2. Auto-recarga controlada
   useEffect(() => {
-    if (isChunkLoadError) {
-      const lastReload = sessionStorage.getItem('chunkLoadReloadedAt');
-      const now = Date.now();
-      // Recargar automáticamente si pasaron más de 60 segundos de la última recarga
-      if (!lastReload || now - parseInt(lastReload, 10) > 60000) {
-        sessionStorage.setItem('chunkLoadReloadedAt', now.toString());
+    titleRef.current?.focus();
+    if (!chunkError) {
+      // Punto de integración con el registro de errores del proyecto (Sentry u otro)
+      console.error('Error no controlado en la vista:', error);
+      return;
+    }
+    try {
+      const last = Number(sessionStorage.getItem(RELOAD_KEY) ?? 0);
+      if (Date.now() - last > RELOAD_COOLDOWN_MS) {
+        sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
         window.location.reload();
       }
+    } catch {
+      /* storage bloqueado: el usuario recarga con el botón */
     }
-  }, [isChunkLoadError]);
-
-  const handleReload = () => {
-    window.location.reload();
-  };
-
-  const handleGoHome = () => {
-    window.location.href = '/';
-  };
+  }, [chunkError, error]);
 
   return (
     <div className="joli-error-boundary-overlay">
-      <div className="joli-error-boundary-card">
-        <div className="error-icon-box">
-          <AlertCircle size={44} className="text-danger" />
+      <div className="joli-error-boundary-card" role="alert">
+        <div className="error-icon-box" aria-hidden="true">
+          <AlertCircle size={44} />
         </div>
 
-        <h3 className="error-card-title">
-          {isChunkLoadError ? 'Actualización Disponible' : '¡Oops! Algo salió mal'}
-        </h3>
+        <h1 ref={titleRef} tabIndex={-1} className="error-card-title">
+          {chunkError ? 'Actualización disponible' : 'Algo salió mal'}
+        </h1>
 
         <p className="error-card-desc">
-          {isChunkLoadError
-            ? 'Se ha desplegado una versión actualizada del sistema. Es necesario recargar para sincronizar los componentes.'
-            : 'Ocurrió un error inesperado al renderizar este módulo. Sus datos permanecen a salvo.'}
+          {chunkError
+            ? 'Se publicó una versión nueva del sistema. Recarga para continuar con la versión actualizada.'
+            : 'Ocurrió un error inesperado al mostrar este módulo. Puedes recargar la página o volver al inicio.'}
         </p>
 
         <div className="error-card-actions">
-          <button type="button" className="joli-btn-primary" onClick={handleReload}>
-            <RefreshCw size={16} className="me-1" />
-            <span>{isChunkLoadError ? 'Actualizar ahora' : 'Recargar página'}</span>
+          <button type="button" className="joli-btn-primary" onClick={() => window.location.reload()}>
+            <RefreshCw size={16} aria-hidden="true" />
+            <span>{chunkError ? 'Actualizar ahora' : 'Recargar página'}</span>
           </button>
-
-          <button type="button" className="joli-btn-outline" onClick={handleGoHome}>
-            <Home size={16} className="me-1" />
-            <span>Ir al Inicio</span>
-          </button>
+          {/* Navegación completa a propósito: reinicia el estado de una app que falló */}
+          <a className="joli-btn-secondary" href={import.meta.env.BASE_URL}>
+            <Home size={16} aria-hidden="true" />
+            <span>Ir al inicio</span>
+          </a>
         </div>
 
-        {/* Detalle técnico del error (solo visible en depuración) */}
-        {error && !isChunkLoadError && (
+        {import.meta.env.DEV && !chunkError && (
           <details className="error-technical-details">
-            <summary>
-              <span>Ver detalles técnicos</span>
-              <ChevronDown size={14} />
-            </summary>
-            <pre className="error-trace">
-              {isRouteErrorResponse(error)
-                ? `${error.status} ${error.statusText}`
-                : error instanceof Error
-                ? error.stack || error.message
-                : JSON.stringify(error, null, 2)}
-            </pre>
+            <summary>Ver detalles técnicos (solo desarrollo)</summary>
+            <pre className="error-trace">{describeError(error)}</pre>
           </details>
         )}
       </div>
@@ -102,6 +116,8 @@ export const GlobalErrorBoundary: React.FC = () => {
   );
 };
 ```
+
+Los botones `.joli-btn-primary` / `.joli-btn-secondary` se definen en [`icon_action_group.md`](../button/icon_action_group.md) §5.
 
 ---
 
@@ -122,14 +138,14 @@ export const GlobalErrorBoundary: React.FC = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  max-width: 480px;
   width: 100%;
+  max-width: 480px;
   padding: 36px 28px;
+  text-align: center;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-modal);
 }
 
 .error-icon-box {
@@ -138,61 +154,67 @@ export const GlobalErrorBoundary: React.FC = () => {
   justify-content: center;
   width: 72px;
   height: 72px;
-  border-radius: 50%;
-  background: rgba(220, 38, 38, 0.12);
   margin-bottom: 20px;
+  border-radius: var(--radius-full);
+  background: var(--status-error-bg);
+  color: var(--status-error);
 }
 
 .error-card-title {
-  font-size: 19px;
-  font-weight: 700;
-  margin-bottom: 8px;
+  margin: 0 0 8px;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.error-card-title:focus {
+  outline: none;
 }
 
 .error-card-desc {
-  font-size: 13.5px;
+  margin: 0 0 24px;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
   color: var(--text-secondary);
-  line-height: 1.5;
-  margin-bottom: 24px;
 }
 
 .error-card-actions {
   display: flex;
-  align-items: center;
-  gap: 12px;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.error-card-actions a {
+  text-decoration: none;
 }
 
 .error-technical-details {
   width: 100%;
   margin-top: 16px;
+  padding-top: 14px;
   text-align: left;
   border-top: 1px solid var(--border-subtle);
-  padding-top: 14px;
 }
 
 .error-technical-details summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--text-muted);
   cursor: pointer;
-  user-select: none;
 }
 
 .error-trace {
-  font-size: 11px;
-  font-family: monospace;
-  background: #0B1120;
-  padding: 12px;
-  border-radius: 6px;
   margin-top: 10px;
+  padding: 12px;
   overflow-x: auto;
-  color: #EF4444;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-2xs);
   white-space: pre-wrap;
   word-break: break-all;
+  color: var(--alert-error-text);
+  background: var(--bg-viewport);
+  border: 1px solid var(--alert-error-border);
+  border-radius: var(--radius-sm);
 }
 ```

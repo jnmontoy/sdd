@@ -18,10 +18,10 @@ Este documento especifica el botón de inicio de sesión único (SSO, *Single Si
   type="button"
   onClick={handleMicrosoftLogin}
   disabled={isLoading}
-  className="login-btn-microsoft"
+  className="joli-login-btn-microsoft"
 >
   <svg 
-    className="login-btn-microsoft-icon" 
+    className="joli-login-btn-microsoft-icon" 
     viewBox="0 0 21 21" 
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
@@ -40,7 +40,7 @@ Este documento especifica el botón de inicio de sesión único (SSO, *Single Si
 ## 2. CSS Canónico
 
 ```css
-.login-btn-microsoft {
+.joli-login-btn-microsoft {
   width: 100%;
   display: flex;
   align-items: center;
@@ -60,28 +60,28 @@ Este documento especifica el botón de inicio de sesión único (SSO, *Single Si
   user-select: none;
 }
 
-.login-btn-microsoft-icon {
+.joli-login-btn-microsoft-icon {
   width: 1.25rem;
   height: 1.25rem;
   flex-shrink: 0;
 }
 
-.login-btn-microsoft:hover:not(:disabled) {
+.joli-login-btn-microsoft:hover:not(:disabled) {
   background-color: var(--bg-btn-secondary-hover);
   border-color: var(--border-strong);
   transform: translateY(-1px);
 }
 
-.login-btn-microsoft:active:not(:disabled) {
+.joli-login-btn-microsoft:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.login-btn-microsoft:focus-visible {
+.joli-login-btn-microsoft:focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
 
-.login-btn-microsoft:disabled {
+.joli-login-btn-microsoft:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
