@@ -55,6 +55,8 @@ export const ENDPOINTS = {
     PASSWORD_RESET_VALIDATE: '/api/v1/auth/password-reset/validate/',
     PASSWORD_RESET_CONFIRM: '/api/v1/auth/password-reset/confirm/',
     CHANGE_PASSWORD: '/api/v1/auth/change-password/',
+    SESIONES: '/api/v1/auth/sesiones/',                      // sesiones activas del usuario (perfil)
+    SESION: (id: string | number) => `/api/v1/auth/sesiones/${id}/`,
   },
 
   // 3. Administración y seguridad
@@ -65,11 +67,29 @@ export const ENDPOINTS = {
   },
   ROLES: {
     LISTA: '/api/v1/roles/',
+    DETALLE: (id: string | number) => `/api/v1/roles/${id}/`,
     MATRIZ_RBAC: '/api/v1/roles/matriz-permisos/',
   },
   AUDITORIA: {
     LOGS: '/api/v1/auditoria/',
+    ACCESOS: '/api/v1/auditoria/accesos/',
     EXPORTAR_EXCEL: '/api/v1/auditoria/exportar-excel/',
+  },
+  CONFIGURACION: {
+    GENERAL: '/api/v1/configuracion/',
+    CORREO_PRUEBA: '/api/v1/configuracion/correo-prueba/',
+  },
+  ADJUNTOS: {
+    SUBIR: '/api/v1/adjuntos/',
+  },
+
+  // Tareas en segundo plano (ver components/realtime/js_polling_architecture.md)
+  REPORTES: {
+    GENERAR_MASIVO: '/api/v1/reportes/generar-masivo/',
+    DESCARGAR: (taskId: string) => `/api/v1/reportes/${taskId}/descargar/`,
+  },
+  TAREAS: {
+    ESTADO: (taskId: string) => `/api/v1/tareas/${taskId}/estado/`,
   },
 
   // 4. Capa FastAPI (/fast)

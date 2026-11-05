@@ -1,9 +1,11 @@
 # Especificación UI: Interruptor Conmutador (Toggle Switch)
-## Ecosistema Jolifoods — Spec-Driven Development (SDD)
+## Spec-Driven Development (SDD)
 
-El **Toggle Switch** (conmutador/interruptor) es el control oficial de Jolifoods para activar o desactivar estados binarios en tiempo real (por ejemplo, habilitar/deshabilitar colaboradores en el módulo de usuarios, activar notificaciones o alternar configuraciones del sistema).
+El **Toggle Switch** (interruptor) es el control para activar o desactivar estados binarios en tiempo real (por ejemplo, habilitar/deshabilitar colaboradores en el módulo de usuarios, activar notificaciones o alternar configuraciones del sistema).
 
-Sustituye a los checkboxes convencionales cuando la acción tiene un efecto operacional inmediato.
+Sustituye a la casilla de verificación cuando la acción tiene efecto inmediato (se guarda al cambiar). En formularios que se guardan con un botón, DEBERÍA usarse una casilla normal.
+
+Accesibilidad: `role="switch"` con `aria-checked`; el **nombre accesible describe qué se activa** (p. ej. "Acceso de Ana Pérez"), no el estado; el estado lo anuncia `aria-checked`. Mientras guarda, el control sigue enfocable con `aria-disabled` y `aria-busy` (un `disabled` real haría perder el foco).
 
 ---
 
@@ -14,11 +16,11 @@ Sustituye a los checkboxes convencionales cuando la acción tiene un efecto oper
 (===========)                   (===========)                   (===========)
 (        (O))  Activo           ((O)        )  Inactivo         ((*)        )  Guardando...
 (===========)                   (===========)                   (===========)
-  Esmeralda (#059669)             Gris Pizarra (#64748b)          Halo con spinner
+  --brand-primary                 --border-strong                 Spinner en la perilla
 ```
 
 1. **Pista (`toggle-track`)**: Cápsula redondeada (`border-radius: 9999px`) con transición suave de color (`transition: background-color 0.2s ease`).
-2. **Perilla (`toggle-thumb`)**: Círculo deslizante blanco con sombra tenue (`box-shadow: 0 1px 3px rgba(0,0,0,0.2)`).
+2. **Perilla (`toggle-thumb`)**: Círculo deslizante claro (`--text-on-brand`) con sombra `--shadow-card`.
 3. **Etiqueta Contextual (`toggle-label`)**: Texto descriptivo opcional ("Activo" / "Inactivo") ubicado a la derecha con badge cromático.
 
 ---
@@ -30,6 +32,8 @@ import React from 'react';
 import './toggle_switch.css';
 
 export interface ToggleSwitchProps {
+  /** Nombre accesible: qué controla el interruptor. */
+  label: string;
   id?: string;
   checked: boolean;
   onChange: (nextState: boolean) => void;
@@ -43,6 +47,7 @@ export interface ToggleSwitchProps {
 }
 
 export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
+  label,
   id,
   checked,
   onChange,
@@ -54,18 +59,11 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
   showLabel = true,
   name
 }) => {
+  // Un <button> ya activa onClick con Enter y Espacio: no se agrega onKeyDown (evita doble cambio)
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // no dispara el clic de la fila de la tabla
     if (disabled || loading) return;
     onChange(!checked);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault();
-      if (disabled || loading) return;
-      onChange(!checked);
-    }
   };
 
   return (
@@ -76,19 +74,20 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
         name={name}
         role="switch"
         aria-checked={checked}
-        aria-label={checked ? labelActive : labelInactive}
-        disabled={disabled || loading}
+        aria-label={label}
+        aria-disabled={loading || undefined}
+        aria-busy={loading || undefined}
+        disabled={disabled}
         className={`joli-toggle-track ${checked ? 'is-checked' : 'is-unchecked'} ${loading ? 'is-loading' : ''}`}
         onClick={handleClick}
-        onKeyDown={handleKeyDown}
       >
-        <span className="joli-toggle-thumb">
+        <span className="joli-toggle-thumb" aria-hidden="true">
           {loading && <span className="joli-toggle-spinner" />}
         </span>
       </button>
 
       {showLabel && (
-        <span className={`joli-toggle-text ${checked ? 'text-success' : 'text-muted'}`}>
+        <span className={`joli-toggle-text ${checked ? 'is-on' : 'is-off'}`} aria-hidden="true">
           {checked ? labelActive : labelInactive}
         </span>
       )}
@@ -100,11 +99,11 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
 ---
 
 ## 3. Hoja de Estilos CSS Canónica (`toggle_switch.css`)
-Consumiendo estrictamente [`../variables.css`](../variables.css):
+Solo tokens de [`../variables.css`](../variables.css):
 
 ```css
 /* ==========================================================================
-   INTERRUPTOR CONMUTADOR (TOGGLE SWITCH) — JOLIFOODS SDD
+   INTERRUPTOR (TOGGLE SWITCH)
    ========================================================================== */
 
 .joli-toggle-wrapper {
@@ -121,27 +120,28 @@ Consumiendo estrictamente [`../variables.css`](../variables.css):
   align-items: center;
   padding: 2px;
   border: 1px solid transparent;
-  border-radius: 9999px;
-  background-color: var(--border-color);
+  border-radius: var(--radius-full);
+  background-color: var(--border-strong);
   cursor: pointer;
   transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
               border-color 0.2s ease,
               box-shadow 0.2s ease;
-  outline: none;
 }
 
 .joli-toggle-track:focus-visible {
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.35);
-  border-color: var(--brand-primary);
+  outline: none;
+  box-shadow: var(--shadow-input-focus);
+  border-color: var(--border-focus);
 }
 
-/* Estado Activo (Esmeralda Jolifoods) */
+/* Estado activo */
 .joli-toggle-track.is-checked {
   background-color: var(--brand-primary);
 }
 
 /* Estado Deshabilitado */
-.joli-toggle-track:disabled {
+.joli-toggle-track:disabled,
+.joli-toggle-track[aria-disabled='true'] {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -151,9 +151,9 @@ Consumiendo estrictamente [`../variables.css`](../variables.css):
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background-color: #ffffff;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-full);
+  background-color: var(--text-on-brand);
+  box-shadow: var(--shadow-card);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
@@ -200,38 +200,43 @@ Consumiendo estrictamente [`../variables.css`](../variables.css):
 
 /* Etiqueta de Texto */
 .joli-toggle-text {
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   transition: color 0.2s ease;
 }
 
-.joli-toggle-text.text-success {
-  color: var(--brand-primary) !important;
+.joli-toggle-text.is-on {
+  color: var(--text-primary);
 }
 
-.joli-toggle-text.text-muted {
-  color: var(--text-secondary) !important;
+.joli-toggle-text.is-off {
+  color: var(--text-muted);
 }
 
 /* Spinner miniatura de carga */
 .joli-toggle-spinner {
   width: 10px;
   height: 10px;
-  border: 2px solid rgba(5, 150, 105, 0.2);
+  border: 2px solid var(--status-success-bg);
   border-top-color: var(--brand-primary);
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   animation: joli-spin 0.6s linear infinite;
 }
 
-@keyframes joli-spin {
+@keyframes@keyframes joli-spin {
   to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .joli-toggle-track,
+  .joli-toggle-thumb { transition: none; }
 }
 ```
 
 ---
 
-## 4. Patrón de Confirmación Obligatoria en Desactivación
-Cuando el toggle se utiliza para **desactivar una cuenta de usuario**, se debe disparar el [`confirm_modal.md`](../modal/confirm_modal.md) con justificación obligatoria:
+## 4. Confirmación al desactivar
+Cuando el interruptor **desactiva una cuenta de usuario** (u otra acción con impacto), DEBE abrirse [`ConfirmModal`](../modal/confirm_modal.md) con `requiresJustification`; reactivar PUEDE ser inmediato. Ejemplo de uso en una fila: `<ToggleSwitch size="sm" label={`Acceso de ${user.nombre_completo}`} checked={user.is_active} loading={savingId === user.id} onChange={() => handleToggleUser(user)} />`.
 
 ```tsx
 const handleToggleUser = (user: UsuarioRow) => {
@@ -241,7 +246,7 @@ const handleToggleUser = (user: UsuarioRow) => {
       isOpen: true,
       user,
       action: 'deactivate',
-      title: `Suspender Acceso a ${user.nombre_completo}`,
+      title: `Suspender acceso de ${user.nombre_completo}`,
       message: '¿Está seguro de suspender este usuario? Perderá acceso inmediato a todos los módulos.'
     });
   } else {

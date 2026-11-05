@@ -141,6 +141,8 @@ export interface AuthContextType {
   theme: Theme;
   login: (credentials: LoginCredentials) => Promise<AuthUser>;
   logout: (reason?: string) => Promise<void>;
+  /** Vuelve a consultar /auth/me/ y /mis-permisos/ para reflejar cambios de rol o permisos sin recargar (BP-19). */
+  refreshUser: () => Promise<void>;
   hasRole: (allowedRoles: string[]) => boolean;
   hasPermission: (permissionKey: string) => boolean;
   isAdmin: () => boolean;
@@ -271,7 +273,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // No se usa window.location: ProtectedRoute redirige a /login al quedar user = null.
   }, []);
 
-  // 7. Utilidades RBAC
+  // 7. Rehidratar usuario y permisos (p. ej. tras editar roles en la administración)
+  const refreshUser = useCallback(async (): Promise<void> => {
+    const [{ data: me }, { data: acceso }] = await Promise.all([
+      api.get<AuthUser>(ENDPOINTS.AUTH.ME),
+      api.get<{ roles: string[]; permisos: string[] }>(ENDPOINTS.AUTH.MIS_PERMISOS),
+    ]);
+    setUser({ ...me, roles: acceso.roles, permisos: acceso.permisos });
+  }, []);
+
+  // 8. Utilidades RBAC
   const hasRole = useCallback(
     (allowedRoles: string[]): boolean => {
       const userRoles = new Set((user?.roles ?? []).map((r) => r.toUpperCase()));
@@ -295,12 +306,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       theme,
       login,
       logout,
+      refreshUser,
       hasRole,
       hasPermission,
       isAdmin,
       toggleTheme,
     }),
-    [user, isLoading, theme, login, logout, hasRole, hasPermission, isAdmin, toggleTheme],
+    [user, isLoading, theme, login, logout, refreshUser, hasRole, hasPermission, isAdmin, toggleTheme],
   );
 
   return (

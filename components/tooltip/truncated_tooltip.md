@@ -1,82 +1,95 @@
-# Especificación de Componente: Tooltip Truncado Inteligente (`TruncatedTooltip`)
-## Ecosistema Jolifoods — Metodología Spec-Driven Development (SDD)
+# Especificación de Componente: Tooltip de Texto Truncado (`TruncatedTooltip`)
+## Spec-Driven Development (SDD)
 
-El componente `TruncatedTooltip` resuelve el problema común en tablas y listados donde los textos largos (nombres de colaboradores, descripciones, motivos de novedades) se recortan con elipsis (`text-overflow: ellipsis`). Detecta la interacción del usuario y muestra el texto completo de forma flotante y no invasiva, con soporte completo para navegación accesible por teclado (`Enter`, `Space`, `Escape`) y dispositivos táctiles (clic para fijar/desplegar).
+> **Origen:** patrón tomado de tiendita (`TruncatedTooltip`) y app_tic (`HoverInfoTooltip`). Aquí se describe de forma genérica.
 
-> **Origen y validación en producción**: Extraído y unificado a partir de `tiendita` (`TruncatedTooltip`) y `app_tic` (`HoverInfoTooltip`).
-
----
-
-### 1. Requisitos Técnicos y de Negocio
-
-1. **Cero Tooltips Huérfanos**: Despliegue anclado al elemento sin descuadrar el layout de la tabla (`position: relative`).
-2. **Soporte Táctil y Teclado**: Clic/tap para expandir y cierre automático al hacer clic afuera (`mousedown` listener).
-3. **Alto Rendimiento en Tablas**: No sobrecarga el DOM con portales pesados en tablas con cientos de filas.
+`TruncatedTooltip` muestra el texto completo de celdas o etiquetas recortadas con elipsis (`text-overflow: ellipsis`): nombres largos, descripciones, motivos. Funciona con ratón, teclado (`Enter`, `Space`, `Escape`) y pantallas táctiles (tocar para abrir).
 
 ---
 
-### 2. Implementación TypeScript / React
+### 1. Requisitos
+
+1. **Solo cuando hace falta:** el componente mide si el texto está recortado (`scrollWidth > clientWidth`, recalculado con `ResizeObserver`). Si no lo está, se comporta como texto normal: sin tabulación ni rol de botón (evita cientos de paradas de tabulación inútiles en una tabla).
+2. **Flotante:** el texto completo aparece en una burbuja posicionada sobre la celda, sin cambiar la altura de la fila.
+3. **Accesibilidad:** cuando está recortado, el disparador es enfocable (`role="button"`, `aria-expanded`, `aria-describedby` a la burbuja); `Escape` cierra; clic fuera cierra.
+4. **Rendimiento:** sin portales ni librerías; un `ResizeObserver` por instancia con limpieza al desmontar.
+
+---
+
+### 2. Implementación TypeScript / React (`src/components/ui/TruncatedTooltip.tsx`)
 
 ```tsx
-// src/components/ui/TruncatedTooltip.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import './TruncatedTooltip.css';
 
 export interface TruncatedTooltipProps {
   text: string;
   className?: string;
-  forceExpanded?: boolean;
 }
 
-export const TruncatedTooltip: React.FC<TruncatedTooltipProps> = ({
-  text,
-  className = '',
-  forceExpanded = false,
-}) => {
-  const [pressed, setPressed] = useState(false);
+export const TruncatedTooltip: React.FC<TruncatedTooltipProps> = ({ text, className = '' }) => {
+  const [isTruncated, setIsTruncated] = useState(false);
+  const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLSpanElement>(null);
-  const expanded = forceExpanded || pressed;
+  const textRef = useRef<HTMLSpanElement>(null);
+  const bubbleId = useId();
+
+  // Detectar recorte y volver a medir cuando cambia el ancho de la columna
+  useEffect(() => {
+    const el = textRef.current;
+    if (!el) return;
+    const measure = () => setIsTruncated(el.scrollWidth > el.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text]);
 
   useEffect(() => {
-    if (!pressed) return;
-
-    const handleOutside = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setPressed(false);
-      }
+    if (!open) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
     };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [open]);
 
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
-  }, [pressed]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      setPressed((prev) => !prev);
-    }
-    if (e.key === 'Escape') {
-      setPressed(false);
-    }
-  };
+  if (!isTruncated) {
+    return (
+      <span className={`tt-wrapper ${className}`}>
+        <span ref={textRef} className="tt-text">{text}</span>
+      </span>
+    );
+  }
 
   return (
     <span
       ref={wrapperRef}
-      className={`tt-wrapper ${className}`}
+      className={`tt-wrapper is-interactive ${className}`}
       role="button"
       tabIndex={0}
-      aria-expanded={expanded}
-      title={expanded ? undefined : text}
+      aria-expanded={open}
+      aria-describedby={open ? bubbleId : undefined}
       onClick={(e) => {
-        e.stopPropagation();
-        setPressed((prev) => !prev);
+        e.stopPropagation(); // no dispara el clic de la fila
+        setOpen((prev) => !prev);
       }}
-      onKeyDown={handleKeyDown}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen((prev) => !prev);
+        } else if (e.key === 'Escape') {
+          setOpen(false);
+        }
+      }}
     >
-      <span className={`tt-text ${expanded ? 'tt-text-expanded' : ''}`}>
-        {text}
-      </span>
+      <span ref={textRef} className="tt-text">{text}</span>
+      {open && (
+        <span id={bubbleId} role="tooltip" className="tt-bubble">{text}</span>
+      )}
     </span>
   );
 };
@@ -88,37 +101,47 @@ export const TruncatedTooltip: React.FC<TruncatedTooltipProps> = ({
 
 ```css
 .tt-wrapper {
+  position: relative;
   display: inline-block;
   max-width: 100%;
-  cursor: pointer;
-  outline: none;
-  border-radius: 4px;
   vertical-align: middle;
 }
 
-.tt-wrapper:focus-visible {
-  box-shadow: 0 0 0 2px var(--brand-primary);
+.tt-wrapper.is-interactive {
+  cursor: help;
+  border-radius: var(--radius-sm);
+}
+
+.tt-wrapper.is-interactive:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
 }
 
 .tt-text {
   display: block;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: inherit;
-  color: inherit;
-  transition: all 0.15s ease;
+  text-overflow: ellipsis;
 }
 
-.tt-text-expanded {
+.tt-bubble {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: var(--z-popover);
+  width: max-content;
+  max-width: min(360px, 80vw);
+  padding: 6px 10px;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
   white-space: normal;
   word-break: break-word;
-  background: var(--bg-card);
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  position: relative;
-  z-index: 15;
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-popover);
 }
 ```
+
+En tablas con `overflow: hidden` en celdas, la burbuja puede recortarse; en ese caso la celda DEBERÍA usar `overflow: visible` o la tabla mostrar el texto completo en el drawer de detalle.

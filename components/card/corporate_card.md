@@ -1,11 +1,11 @@
 # Tarjeta Corporativa con Header, Body y Footer (`CorporateCard`)
-## Componente UI Canónico — Spec-Driven Development (SDD)
+## Spec-Driven Development (SDD)
 
 Este componente define el estándar visual para tarjetas de contenido corporativo, paneles de configuración y resúmenes de módulos. Proporciona una estructura de 3 secciones desacopladas (**Header, Body y Footer**) con soporte total para tema claro/oscuro y bordes sutiles con halo cromático.
 
 > [!IMPORTANT]
-> **REGLA DE INTERACCIÓN: NINGUNA TARJETA SE MUEVE AL PASAR EL MOUSE.**
-> Está prohibido el hover que "levanta" la tarjeta (`transform: translateY(...)`, `scale(...)` o cualquier desplazamiento)
+> **Regla de interacción: las tarjetas NO DEBEN moverse al pasar el mouse.**
+> No se usa hover que "levanta" la tarjeta (`transform: translateY(...)`, `scale(...)` o cualquier desplazamiento)
 > en `CorporateCard`, tarjetas KPI y cualquier otra tarjeta del ecosistema. El hover solo puede cambiar el color del borde
 > o la sombra. Motivo: el movimiento distrae en pantallas de trabajo con muchas tarjetas y desplaza el contenido bajo el cursor
 > (p. ej. selectores o botones dentro de la tarjeta).
@@ -44,12 +44,14 @@ export interface CorporateCardAction {
 
 export interface CorporateCardProps {
   id?: string;
+  /** Nivel del título según la jerarquía de la página (por defecto h2). */
+  headingLevel?: 'h2' | 'h3' | 'h4';
   title: string;
   subtitle?: string;
   icon?: React.ReactNode;
   badge?: {
     text: string;
-    variant: 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+    variant: BadgeVariant; // ver ../badge/badge_status.md
   };
   headerActions?: React.ReactNode;
   children: React.ReactNode;
@@ -68,28 +70,28 @@ export interface CorporateCardProps {
 
 ```css
 /* Contenedor Principal de la Tarjeta */
-.corp-card {
+.joli-card {
   display: flex;
   flex-direction: column;
   background-color: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
 }
 
 /* Solo el borde cambia: sin transform (ver la regla de interacción al inicio) */
-.corp-card:hover {
+.joli-card:hover {
   border-color: var(--border-strong);
 }
 
-.corp-card--glow {
-  box-shadow: 0 4px 20px -2px rgba(16, 185, 129, 0.08);
+.joli-card--glow {
+  box-shadow: var(--shadow-card), 0 0 0 1px var(--border-card-accent);
 }
 
 /* Header de la Tarjeta */
-.corp-card__header {
+.joli-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -98,60 +100,78 @@ export interface CorporateCardProps {
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.corp-card__title-group {
+.joli-card__title-group {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.corp-card__icon-box {
+.joli-card__icon-box {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  background: rgba(16, 185, 129, 0.12);
+  border-radius: var(--radius-md);
+  background: var(--status-success-bg);
   color: var(--brand-primary);
 }
 
-.corp-card__title {
+.joli-card__title {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
 }
 
-.corp-card__subtitle {
+.joli-card__subtitle {
   margin: 2px 0 0 0;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: var(--text-muted);
 }
 
 /* Body de la Tarjeta */
-.corp-card__body {
+.joli-card__body {
   padding: 20px;
   color: var(--text-primary);
   flex: 1 1 auto;
 }
 
 /* Footer de la Tarjeta */
-.corp-card__footer {
+.joli-card__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background-color: var(--bg-viewport);
+  background-color: var(--bg-elevated);
   border-top: 1px solid var(--border-subtle);
-  font-size: 0.82rem;
+  font-size: var(--font-size-xs);
   color: var(--text-muted);
 }
 
-.corp-card__footer-actions {
+.joli-card__footer-actions,
+.joli-card__header-actions,
+.joli-card__title-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
+.joli-card__collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.joli-card__collapse-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.joli-card__collapse-btn:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
 ```
 
 ---
@@ -159,9 +179,13 @@ export interface CorporateCardProps {
 ## 4. Implementación de Referencia en React / JSX
 
 ```tsx
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
+import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Badge, type BadgeVariant } from '../badge/Badge';
 
 export const CorporateCard: React.FC<CorporateCardProps> = ({
+  id,
+  headingLevel: Heading = 'h2',
   title,
   subtitle,
   icon,
@@ -176,56 +200,61 @@ export const CorporateCard: React.FC<CorporateCardProps> = ({
   className = '',
 }) => {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const titleId = useId();
+  const contentId = useId();
 
   return (
-    <div className={`corp-card corp-card--${elevation} ${className}`}>
+    <section id={id} className={`joli-card joli-card--${elevation} ${className}`} aria-labelledby={titleId}>
       {/* HEADER */}
-      <div className="corp-card__header">
-        <div className="corp-card__title-group">
-          {icon && <div className="corp-card__icon-box">{icon}</div>}
+      <div className="joli-card__header">
+        <div className="joli-card__title-group">
+          {icon && <div className="joli-card__icon-box" aria-hidden="true">{icon}</div>}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h3 className="corp-card__title">{title}</h3>
-              {badge && (
-                <span className={`badge badge--${badge.variant}`}>{badge.text}</span>
-              )}
+            <div className="joli-card__title-row">
+              <Heading id={titleId} className="joli-card__title">{title}</Heading>
+              {badge && <Badge variant={badge.variant} size="sm">{badge.text}</Badge>}
             </div>
-            {subtitle && <p className="corp-card__subtitle">{subtitle}</p>}
+            {subtitle && <p className="joli-card__subtitle">{subtitle}</p>}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="joli-card__header-actions">
           {headerActions}
           {isCollapsible && (
             <button
               type="button"
-              className="btn-icon"
-              onClick={() => setCollapsed(!collapsed)}
+              className="joli-card__collapse-btn"
+              onClick={() => setCollapsed((prev) => !prev)}
+              aria-expanded={!collapsed}
+              aria-controls={contentId}
+              aria-label={collapsed ? `Expandir ${title}` : `Colapsar ${title}`}
               title={collapsed ? 'Expandir' : 'Colapsar'}
             >
-              {collapsed ? '▼' : '▲'}
+              {collapsed ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronUp size={16} aria-hidden="true" />}
             </button>
           )}
         </div>
       </div>
 
       {/* BODY */}
-      {!collapsed && <div className="corp-card__body">{children}</div>}
+      <div id={contentId} hidden={collapsed}>
+      <div className="joli-card__body">{children}</div>
 
       {/* FOOTER */}
-      {!collapsed && (footerMetadata || footerActions) && (
-        <div className="corp-card__footer">
-          <div className="corp-card__footer-meta">{footerMetadata}</div>
+      {(footerMetadata || footerActions) && (
+        <div className="joli-card__footer">
+          <div className="joli-card__footer-meta">{footerMetadata}</div>
           {footerActions && (
-            <div className="corp-card__footer-actions">
-              {footerActions.map((action, idx) => (
+            <div className="joli-card__footer-actions">
+              {footerActions.map((action) => (
                 <button
-                  key={idx}
+                  key={action.label}
                   type="button"
-                  className={`btn btn--${action.variant || 'secondary'} btn--sm`}
+                  className={action.variant === 'primary' ? 'joli-btn-primary' : 'joli-btn-secondary'}
                   onClick={action.onClick}
                   disabled={action.disabled || action.loading}
+                  aria-busy={action.loading || undefined}
                 >
-                  {action.icon}
+                  {action.loading ? <Loader2 size={14} className="joli-spin" aria-hidden="true" /> : action.icon}
                   {action.label}
                 </button>
               ))}
@@ -233,7 +262,10 @@ export const CorporateCard: React.FC<CorporateCardProps> = ({
           )}
         </div>
       )}
-    </div>
+      </div>
+    </section>
   );
 };
 ```
+
+Los botones `.joli-btn-primary` / `.joli-btn-secondary` y `.joli-spin` se definen en [`icon_action_group.md`](../button/icon_action_group.md). La variante `danger` DEBERÍA confirmar con [`ConfirmModal`](../modal/confirm_modal.md) antes de ejecutar.

@@ -57,8 +57,8 @@ Comprende dos pantallas:
 
       <!-- Enlace para Volver al Login -->
       <div class="joli-login-recovery-back-bar">
-        <a href="#login" class="joli-login-recovery-back-link">
-          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <a href="/login" class="joli-login-recovery-back-link">
+          <svg width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <line x1="19" y1="12" x2="5" y2="12" stroke-width="2" stroke-linecap="round" />
             <polyline points="12 19 5 12 12 5" stroke-width="2" stroke-linecap="round" />
           </svg>
@@ -82,7 +82,7 @@ Comprende dos pantallas:
     
     <header class="joli-login-logo-wrapper">
       <div class="joli-login-recovery-icon-badge success">
-        <svg class="joli-login-recovery-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="joli-login-recovery-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-width="2" />
           <path d="M9 12l2 2 4-4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
@@ -100,7 +100,9 @@ Comprende dos pantallas:
             id="new-pass" 
             name="new_password" 
             type="password" 
-            placeholder="Mínimo 8 caracteres" 
+            placeholder="Mínimo 8 caracteres"
+            autocomplete="new-password"
+            aria-describedby="password-rules" 
             class="joli-login-input-control" 
             required 
           />
@@ -115,7 +117,8 @@ Comprende dos pantallas:
             id="confirm-pass" 
             name="confirm_password" 
             type="password" 
-            placeholder="Repite la contraseña" 
+            placeholder="Repite la contraseña"
+            autocomplete="new-password" 
             class="joli-login-input-control" 
             required 
           />
@@ -123,7 +126,7 @@ Comprende dos pantallas:
       </div>
 
       <!-- Requisitos de Seguridad Visuales -->
-      <ul class="joli-login-password-rules">
+      <ul id="password-rules" class="joli-login-password-rules">
         <li class="rule-item">Mínimo 8 caracteres</li>
         <li class="rule-item">Al menos un número y una mayúscula</li>
       </ul>
@@ -154,8 +157,8 @@ Comprende dos pantallas:
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  background-color: var(--status-success-bg);
+  border: 1px solid var(--border-card-accent);
   border-radius: var(--radius-xl);
   color: var(--brand-primary);
   margin-bottom: 1rem;
@@ -163,9 +166,9 @@ Comprende dos pantallas:
 }
 
 .joli-login-recovery-icon-badge.success {
-  color: #34d399;
-  background-color: rgba(52, 211, 153, 0.15);
-  border-color: rgba(52, 211, 153, 0.35);
+  color: var(--status-success);
+  background-color: var(--status-success-bg);
+  border-color: var(--status-success);
 }
 
 .joli-login-recovery-icon {
