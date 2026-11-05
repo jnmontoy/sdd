@@ -528,7 +528,7 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
         y pie con timestamps de auditoría y botones agrupados de acción.
      -> Código y CSS listos en: .sdd/components/card/corporate_card.md (Variante Flat / Raised)
 
- [2] Tarjeta Colapsable con Halo Esmeralda (.corp-card--glow)
+ [2] Tarjeta Colapsable con Halo Esmeralda (.joli-card--glow)
      -> Estructura: Botón toggle de colapso en cabecera, borde interactivo con halo cromático
         al hover y preservación de scroll interno en el cuerpo.
      -> Código y CSS listos en: .sdd/components/card/corporate_card.md (Variante Glow)

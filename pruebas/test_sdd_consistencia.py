@@ -11,7 +11,8 @@ from pathlib import Path
 SDD = Path(__file__).resolve().parent.parent
 EXCLUDED_DIRS = {".git", ".venv", "node_modules", "__pycache__", "pruebas"}
 TEXT_SUFFIXES = {".md", ".html", ".css", ".py", ".json", ".ts", ".tsx", ".js", ".yml", ".sh", ".ps1", ".example"}
-PROJECTS = r"tiendita|vibra|app_tic|contenedores|porter[ií]as|joliverso|proyectovideo"
+# "contenedores" y "porterías" también son palabras comunes: solo cuentan como proyecto entre backticks.
+PROJECTS = r"tiendita|vibra|app_tic|joliverso|proyectovideo|`contenedores`|`porter[ií]as`"
 # Documento cuyo propósito es justamente registrar la procedencia por proyecto.
 PROVENANCE_DOC = SDD / "greenfield" / "13_catalogo_innovaciones_y_mejores_practicas_proyectos.md"
 
@@ -86,10 +87,16 @@ class DocumentationConsistency(unittest.TestCase):
         self.assertNoHits(offending_lines(pattern, re.I), "Un proyecto no es un estándar: usar nombre funcional + nota de Origen")
 
     def test_nombres_de_proyecto_solo_como_procedencia(self):
-        def allowed(path, line):
-            return path == PROVENANCE_DOC or re.search(r"origen|procedencia|fuente|extra[ií]do de|tomado de", line, re.I)
+        catalog = SDD / "components" / "README.md"  # su última columna de la tabla es "Origen"
 
-        hits = offending_lines(rf"\b({PROJECTS})\b", re.I, skip=allowed)
+        def allowed(path, line):
+            if path == PROVENANCE_DOC:
+                return True
+            if path == catalog and line.startswith("|"):
+                return True
+            return bool(re.search(r"origen|procedencia|fuente|extra[ií]do de|tomado de", line, re.I))
+
+        hits = offending_lines(rf"(?<![\w-])({PROJECTS})(?![\w-])", re.I, skip=allowed)
         self.assertNoHits(hits, "Nombres de proyecto fuera de una nota de Origen")
 
 
