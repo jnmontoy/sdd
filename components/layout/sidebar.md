@@ -19,6 +19,8 @@ La barra lateral ofrece navegación entre módulos con filtrado por rol/permiso 
 - **Preferencia:** el estado colapsado PUEDE recordarse en `localStorage` con una clave de `STORAGE_KEYS` (prefijo de app).
 - **RBAC:** cada ítem declara `permissionKey` o `roles`; los ítems sin permiso no se renderizan. Las rutas siguen protegidas por [`ProtectedRoute`](../routing/protected_route.md) y por el backend.
 - **Íconos:** catálogo de Lucide React.
+- **Ítems sin enlace (`sinEnlace: true`):** opciones planeadas cuyo módulo aún no existe. Se muestran atenuadas (`.no-link`, `aria-disabled`), no navegan ni abren el menú flotante, y se habilitan quitando la marca. Los subítems sin `to` (o sin acción) siguen la misma regla.
+- **Sangría:** los ítems quedan más a la derecha que el título de su categoría (título 1.25rem, ítem 1.75rem) y los subítems de acordeón se desplazan lo mismo, para que su línea guía siga bajo el ícono.
 
 ---
 
@@ -37,6 +39,7 @@ export interface SidebarItem {
   permissionKey?: string;
   roles?: string[];
   badge?: string;
+  sinEnlace?: boolean; // Visible pero sin navegar (módulo aún no construido)
 }
 
 interface SidebarProps {

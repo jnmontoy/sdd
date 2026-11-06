@@ -223,7 +223,7 @@ Solo tokens de [`../variables.css`](../variables.css):
   animation: joli-spin 0.6s linear infinite;
 }
 
-@keyframes@keyframes joli-spin {
+@keyframes joli-spin {
   to { transform: rotate(360deg); }
 }
 

@@ -94,6 +94,8 @@ export const CorporateToaster: React.FC = () => {
   return (
     <Toaster
       position={isNarrow ? 'top-center' : 'bottom-right'}
+      // Mismo ancho que la tarjeta (.joli-toast); sonner trae 356 px por defecto (BUG-012)
+      style={{ '--width': '440px' } as React.CSSProperties}
       toastOptions={{ unstyled: true, className: 'joli-toaster-item' }}
     />
   );
@@ -111,7 +113,7 @@ export const CorporateToaster: React.FC = () => {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  width: min(440px, calc(100vw - 32px));
+  width: 100%; /* El ancho lo fija el Toaster con --width */
   padding: 12px 16px;
   font-family: inherit;
   background: var(--bg-card);
@@ -120,6 +122,19 @@ export const CorporateToaster: React.FC = () => {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-popover);
   animation: toastSlideIn 0.25s ease-out;
+}
+
+/* Apilados: con unstyled, sonner da al aviso de atrás la altura del de adelante pero no oculta su contenido.
+   Se recorta para que todos se vean del mismo tamaño; al pasar el mouse se despliegan completos (BUG-012). */
+.joli-toaster-item[data-expanded='false'][data-front='false'] {
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+.joli-toaster-item[data-expanded='false'][data-front='false'] > .joli-toast {
+  height: 100%;
+}
+.joli-toaster-item[data-expanded='false'][data-front='false'] > .joli-toast > * {
+  opacity: 0;
 }
 
 .toast-success { --toast-accent: var(--status-success); --toast-accent-bg: var(--status-success-bg); }

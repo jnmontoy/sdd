@@ -167,8 +167,13 @@ Se derivan de los tokens de [`variables.css`](../variables.css), así que funcio
 }
 
 .trigger-badge {
-  display: inline-flex;
-  align-items: center;
+  /* inline-block, no flex: con flex el texto se corta sin los «...» (memory/learnings/bug_lessons.md BUG-010).
+     El valor completo va en title="" */
+  display: inline-block;
+  max-width: 110px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding: 0.15rem 0.65rem;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);

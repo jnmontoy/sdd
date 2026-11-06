@@ -70,6 +70,10 @@ export interface ColumnVisibilityProps {
   visibleColumns: string[];
   onChange: (visibleKeys: string[]) => void;
   onResetDefault: () => void;
+  // Reutilizable para elegir qué se ve en otras vistas (p. ej. servicios de un tablero)
+  label?: string; // Por defecto «Columnas»
+  title?: string;
+  icon?: React.ReactNode; // Por defecto <Columns3 />
 }
 
 export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
@@ -77,6 +81,9 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
   visibleColumns,
   onChange,
   onResetDefault,
+  label = 'Columnas',
+  title,
+  icon,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -121,10 +128,10 @@ export const ColumnVisibilityDropdown: React.FC<ColumnVisibilityProps> = ({
         onClick={() => setIsOpen((prev) => !prev)}
         aria-expanded={isOpen}
         aria-controls={menuId}
-        title="Configurar columnas visibles"
+        title={title ?? `Configurar ${label.toLowerCase()} visibles`}
       >
-        <Columns3 size={14} aria-hidden="true" />
-        <span>Columnas</span>
+        {icon ?? <Columns3 size={14} aria-hidden="true" />}
+        <span>{label}</span>
         <span className="col-btn-badge" aria-label={`${visibleColumns.length} de ${columns.length} visibles`}>
           {visibleColumns.length}/{columns.length}
         </span>

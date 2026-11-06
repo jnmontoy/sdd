@@ -18,6 +18,7 @@ Familia de indicadores de espera: cargador de página y *skeletons* (siluetas gr
 | `CardSkeleton` | Primera carga de una rejilla de tarjetas. |
 
 - **Regla:** los skeletons DEBERÍAN usarse solo en la **primera** carga; DEBERÍAN respetar `prefers-reduced-motion` (sin brillo animado).
+- **Regla:** toda pantalla con datos remotos DEBERÍA tener indicador de primera carga; un texto «Cargando…» dentro del estado vacío o un spinner suelto no reemplaza al esqueleto. Listas y paneles laterales (chats, contactos, permisos) arman su esqueleto con las mismas clases de la fila real y `.joli-skeleton-bone`, para que no salte al llegar los datos.
 - **Accesibilidad:** el cargador usa `role="status"` con texto legible; los skeletons son decorativos (`aria-hidden="true"`) y el contenedor que los aloja indica `aria-busy="true"`.
 
 ---

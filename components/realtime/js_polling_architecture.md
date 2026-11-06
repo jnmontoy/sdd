@@ -23,8 +23,13 @@ Este documento define cómo actualizar datos "en vivo" en las aplicaciones web m
 | :--- | :--- | :--- |
 | Seguimiento de una tarea Celery (`task_id`) | 2 – 3 s | Sigue hasta terminar (éxito o error). `pauseOnHidden: false`. |
 | Campana de notificaciones | 30 – 60 s | Se espacia a 120 s (`hiddenIntervalMs: 120000`). |
-| Tablas operativas en vivo | 5 – 10 s | Se pausa (`pauseOnHidden: true`). |
-| Telemetría e infraestructura | 2 – 5 min | Se pausa. |
+| Validar sesión y permisos (`/auth/me`) | 60 s (web y móvil) | Se pausa; al volver al foco consulta de inmediato. Un 401 en cualquier petición cierra la sesión al momento. |
+| Tablas que otros cambian mientras se miran | 30 s | Se pausa (`pauseOnHidden: true`). |
+| Indicadores (KPI) e historiales | 60 s | Se pausa. |
+| Pantalla de monitoreo abierta | 30 s, igual a la caché del backend | Se pausa. |
+| Telemetría e infraestructura en segundo plano | 2 – 5 min | Se pausa. |
+
+> **Lección (Pandora, 2026-11):** con 5 – 10 s, `/auth/me` llegó a ser el endpoint más consultado (≈ 720 por hora por pestaña y 360 por celular). Volver al foco ya refresca, así que intervalos cortos solo suman carga. Si algo debe verse en segundos, va por WebSocket/SSE, no acortando el sondeo. Centralizar los intervalos en una constante (`INTERVALOS`) para ajustarlos en un solo lugar.
 
 ---
 

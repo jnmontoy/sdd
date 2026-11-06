@@ -71,6 +71,7 @@ Con **SDD** (*Spec-Driven Development*: desarrollo guiado por especificaciones) 
 | **Línea de tiempo** | [`timeline/activity_timeline.md`](./timeline/activity_timeline.md) | Trazabilidad | Nodos por estado, cambios antes/después | — |
 | **Asistente por etapas** | [`stepper/stepper_wizard.md`](./stepper/stepper_wizard.md) | Flujos por pasos | Indicador accesible, salto controlado entre pasos | — |
 | **Dashboard de uso** | [`dashboard/platform_usage_dashboard.md`](./dashboard/platform_usage_dashboard.md) | Adopción y mejora continua | Usuarios activos, ranking de módulos, widget de opinión | — |
+| **Estado del servidor** | [`dashboard/server_status_dashboard.md`](./dashboard/server_status_dashboard.md) | Operación y soporte | Punto de estado, servicios en tacómetros, peticiones por plataforma, recursos, logs enmascarados | — |
 | **Tutorial dividido** | [`tutorial/split_tutorial_walkthrough.md`](./tutorial/split_tutorial_walkthrough.md) | Guías paso a paso | Parámetros a la izquierda, pasos con capturas a la derecha | bi (DataHub) |
 | **Catálogo de endpoints** | [`services/endpoints_registry.md`](./services/endpoints_registry.md) | Rutas de servicio centralizadas | `endpoints.ts` en frontend y `endpoints_registry.json` en backend | — |
 
