@@ -152,3 +152,8 @@
 * **Solución**: calcular el nuevo estado, ponerlo con `setState(next)` y llamar a la API fuera; en pantallas de configuración, editar en local y guardar con un botón (con aviso de «cambios sin guardar»), sin sondeo que pise lo editado.
 * **Regla preventiva**: las funciones de actualización de `setState` NO DEBEN tener efectos (peticiones, eventos, toasts). Un sondeo NO DEBE sobrescribir un estado con cambios locales sin guardar.
 
+### <a id="bug-017"></a> BUG-017: Botón de recargar como ícono suelto y que gira al revés
+* **Síntoma**: el botón de recargar de una tabla se ve como un ícono flotando (no parece botón) y, al cargar, la flecha gira en sentido contrario al que apunta.
+* **Causa raíz**: se usó `btn-icon-compact` sin su contenedor `compact-action-box` (que le da fondo, borde y sombra), y el ícono `RotateCcw` (flecha antihoraria) usaba la clase `spin`, que gira en sentido horario.
+* **Solución**: poner los botones de ícono de la barra dentro de `<div className="compact-action-box" role="toolbar">`; con `RotateCcw` usar `spin-antihorario` (la misma animación en `reverse`); con `RefreshCw` (flecha horaria), `spin`.
+* **Regla preventiva**: un botón solo-ícono de barra DEBE ir dentro de su grupo visual (ver [`icon_action_group.md`](../../components/button/icon_action_group.md)); la animación de giro DEBE seguir el sentido de la flecha del ícono.

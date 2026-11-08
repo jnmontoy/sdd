@@ -19,6 +19,7 @@
 6. **Cambios sin guardar:** si `isDirty` es verdadero, cerrar (fondo, Escape o X) DEBERÍA pedir confirmación con `ConfirmModal` antes de descartar.
 7. **Controles de formulario:** usar las clases `.drawer-form-field`, `.drawer-field-label`, `.drawer-input-control` y `.drawer-field-input` definidas en [`variables.css`](../variables.css) §4; no se redefinen aquí.
 8. **Opcional:** mini-KPIs del registro (`.drawer-kpi-grid`) al inicio del cuerpo.
+9. **Detalle de solo lectura (ficha):** cuando el panel muestra un registro sin editarlo, NO DEBERÍA usar inputs `readOnly` uno tras otro (se ve como un formulario deshabilitado y desordenado). Se agrupa en **secciones** con título e ícono (`FichaSeccion`: cabecera con ícono en color de marca, título y dato a la derecha, cuerpo en tarjeta) y los datos en **lista etiqueta → valor de dos columnas** (`<dl>`, `FichaDatos`; en pantallas angostas, una debajo de la otra). Orden: mini-KPIs → secciones de lo más usado a lo menos usado → datos técnicos (códigos internos, fecha de actualización) en letra pequeña al final. Los valores vacíos se muestran como «—». Referencia: ficha de cliente del panel de Pandora (`ClienteDrawer.tsx`).
 
 ---
 
