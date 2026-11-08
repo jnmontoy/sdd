@@ -17,7 +17,7 @@ Cada componente está especificado con:
 | :--- | :--- | :--- |
 | **[`logo.md`](./logo.md)** | **Logo Corporativo** | Isotipo vectorial en SVG, halo luminoso y tipografía institucional en CSS puro. |
 | **[`card.md`](./card.md)** | **Cards & Contenedores** | Estructuras de contenedor con efecto Frosted Glass (`backdrop-filter`) y CSS puro. |
-| **[`input_field.md`](./input_field.md)** | **Inputs & Password Toggle** | Campo de documento con icono y campo de contraseña con botón para ver/ocultar clave. |
+| **[`input_field.md`](./input_field.md)** | **Inputs & Password Toggle** | Campo «outlined» con etiqueta flotante animada (placeholder que sube al borde), campo de documento con icono y contraseña con ver/ocultar y aviso de Bloq Mayús. |
 | **[`button_primary.md`](./button_primary.md)** | **Botón Submit & Loader** | Botón de acción principal con spinner rotativo y gradiente esmeralda en CSS puro. |
 | **[`button_microsoft.md`](./button_microsoft.md)** | **Botón Microsoft SSO** | Botón institucional con los 4 colores oficiales y estados interactivos en CSS puro. |
 | **[`feedback_alerts.md`](./feedback_alerts.md)** | **Alertas & Feedback** | Banners de error con animación shake y estilos del aviso de sesión expirada (el componente React vive en `modal/session_expiration_modal.md`). |

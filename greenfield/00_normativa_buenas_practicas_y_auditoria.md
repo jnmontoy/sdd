@@ -1,4 +1,4 @@
-# Normativa de buenas prácticas de ingeniería (BP-01 a BP-22)
+# Normativa de buenas prácticas de ingeniería (BP-01 a BP-23)
 
 Esta es la **fuente única** de las buenas prácticas del SDD. Los demás documentos citan el código (por ejemplo, "BP-12") en lugar de copiar la regla.
 
@@ -42,6 +42,7 @@ Cada regla trae su **por qué**. Si el por qué no aplica a su caso, documente l
 | BP-20 | Vencimiento de sesión controlado | DEBE |
 | BP-21 | Cambios de nivel 2 con propuesta y evidencia | DEBERÍA |
 | BP-22 | Memoria de decisiones y errores conocidos | DEBERÍA |
+| BP-23 | Archivos de tamaño manejable: desacoplar en componentes y funciones | DEBERÍA |
 
 ---
 
@@ -142,7 +143,7 @@ with transaction.atomic():
 
 ---
 
-## 4. Sesión, permisos y proceso (BP-18 a BP-22)
+## 4. Sesión, permisos y proceso (BP-18 a BP-23)
 
 **BP-18. Tokens.**
 - El **access token** (JWT, de vida corta) DEBE vivir solo en memoria (estado del `AuthContext` o del cliente HTTP) y enviarse en `Authorization: Bearer <token>`.
@@ -172,6 +173,25 @@ Componentes: [`context/auth_context.md`](../components/context/auth_context.md),
 *Por qué:* queda escrito qué se decidió, qué quedó fuera y con qué evidencia se cerró.
 
 **BP-22. Memoria del proyecto.** Antes de un cambio relevante DEBERÍAN revisarse `memory/adrs/` (decisiones vigentes) y `memory/learnings/` (convenciones y errores ya resueltos). Un error difícil de diagnosticar se registra en `memory/learnings/bug_lessons.md`. Ver [protocolo 15](./15_protocolo_memoria_persistente_y_aprendizaje_agentes.md).
+
+**BP-23. Archivos de tamaño manejable.** Ningún archivo DEBERÍA crecer hasta volverse inmanejable. Cuando se acerca al límite, se desacopla: en el frontend, en componentes, hooks y hojas de estilo por componente; en el backend, en funciones y módulos por responsabilidad.
+
+| Tipo de archivo | Aviso (planear la división) | Límite (dividir antes de agregar más) |
+| :--- | :--- | :--- |
+| Componente o vista React (`.tsx`) | 300 líneas | 500 líneas |
+| Hook, servicio o utilidad (`.ts`) | 300 líneas | 500 líneas |
+| Hoja de estilos (`.css`) | 500 líneas | 800 líneas |
+| Módulo Python (router, servicio, esquemas, modelos) | 400 líneas | 600 líneas |
+| Función o método | 50 líneas | 80 líneas |
+
+Cómo se aplica:
+- **Antes de agregar código** a un archivo que ya pasó el límite, primero se extrae una parte (la que se va a tocar, como mínimo). No se suman líneas a un archivo que ya está por encima.
+- **Frontend.** Una vista se divide en componentes hijos con su propio archivo (`Usuarios/TablaUsuarios.tsx`, `Usuarios/FiltrosUsuarios.tsx`); la lógica con estado sale a hooks (`useUsuarios.ts`); los estilos van junto al componente (`TablaUsuarios.css`) o en hojas por área importadas desde un índice, nunca en una sola hoja global gigante. Un servicio de API se divide por dominio (`services/api/usuarios.ts`, `services/api/clientes.ts`) con un índice que reexporta, para no romper importaciones.
+- **Backend.** Un router grande pasa a ser un paquete por dominio (`routers/mensajes/__init__.py`, `conversaciones.py`, `adjuntos.py`); la lógica de negocio sale de los endpoints a funciones de servicio (`servicios/mensajes.py`) que se pueden probar solas; los esquemas y modelos se agrupan por dominio en módulos que el `__init__.py` reexporta.
+- **Sin cambio de comportamiento.** Dividir es un refactor: las rutas, los nombres exportados, las clases CSS y los contratos quedan iguales, y las pruebas existentes DEBEN pasar antes y después.
+- **Excepciones**: archivos generados (tipos de OpenAPI, migraciones, registros JSON), datos estáticos y archivos de terceros no cuentan.
+
+*Por qué:* un archivo de miles de líneas no cabe en la cabeza de una persona ni en el contexto de un asistente de IA. Cada cambio obliga a leer de más, los conflictos de git se multiplican, los estilos y funciones se pisan sin que se note y los errores se esconden. Dividir cuando el archivo crece es barato; dividirlo cuando ya tiene miles de líneas es un proyecto en sí mismo.
 
 ---
 
@@ -253,6 +273,7 @@ Plantillas: [`stack/`](../stack/README.md).
 - [ ] `pip-audit` y `npm audit --audit-level=high` sin hallazgos altos ni críticos.
 - [ ] La interfaz usa tokens y componentes del catálogo, y es accesible por teclado (sección 6).
 - [ ] `README.md` y `docs/` describen el estado actual (BP-16).
+- [ ] Ningún archivo tocado supera el límite de líneas de su tipo; si ya lo superaba, se extrajo al menos la parte modificada (BP-23).
 
 ---
 

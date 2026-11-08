@@ -56,7 +56,7 @@ Salida real (no resumida ni inventada) de:
 2. Pruebas de frontend: `npm test`.
 3. Prueba de humo HTTP: `.\.venv\Scripts\python.exe pruebas\validate_endpoints.py --base-url http://localhost:8000` (código de salida 0; contraseña en `SDD_LOGIN_PASSWORD`).
 4. Lint (`ruff check .`, `npm run lint`) y, si cambian dependencias, `pip-audit` / `npm audit --audit-level=high`.
-5. Revisión de la lista de verificación de la normativa 00 (BP-01 a BP-22) que aplique al cambio.
+5. Revisión de la lista de verificación de la normativa 00 (BP-01 a BP-23) que aplique al cambio.
 
 Lo que no se ejecutó se marca **NO EJECUTADO** con el motivo.
 
@@ -80,7 +80,7 @@ sequenceDiagram
     Dev->>Spec: Revisa y aprueba alcance
     IA->>Spec: Redacta design.md y tasks.md
     loop Por cada tarea
-        IA->>Code: Implementa respetando BP-01 a BP-22
+        IA->>Code: Implementa respetando BP-01 a BP-23
         IA->>Gate: Ejecuta la verificación de la tarea
         IA->>Spec: Marca [x] solo si pasó
     end

@@ -32,7 +32,6 @@ Este documento especifica el componente orquestador que ensambla todos los compo
         
         <!-- Campo: Número de Documento -->
         <div class="joli-login-input-group">
-          <label for="input-doc" class="joli-login-input-label">Número de Documento</label>
           <div class="joli-login-input-box">
             <span class="joli-login-input-prefix-icon" aria-hidden="true">
               <svg class="joli-login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,13 +52,13 @@ Este documento especifica el componente orquestador que ensambla todos los compo
               aria-describedby="input-doc-error"
               data-testid="input-username"
             />
+            <label for="input-doc" class="joli-login-float-label">Número de documento</label>
           </div>
           <span id="input-doc-error" class="joli-login-input-error" hidden>Documento inválido</span>
         </div>
 
         <!-- Campo: Contraseña con Toggle Ojo -->
         <div class="joli-login-input-group">
-          <label for="input-pass" class="joli-login-input-label">Contraseña</label>
           <div class="joli-login-input-box">
             <span class="joli-login-input-prefix-icon" aria-hidden="true">
               <svg class="joli-login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,6 +77,7 @@ Este documento especifica el componente orquestador que ensambla todos los compo
               aria-describedby="input-pass-error"
               data-testid="input-password"
             />
+            <label for="input-pass" class="joli-login-float-label">Contraseña</label>
             <button type="button" class="joli-login-input-toggle-btn" aria-label="Mostrar contraseña" aria-controls="input-pass" aria-pressed="false">
               <svg class="joli-login-input-svg" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-width="2"/>
@@ -201,7 +201,6 @@ export const LoginForm: React.FC = () => {
   return (
     <form className="joli-login-form-body" onSubmit={handleSubmit} noValidate>
       <div className="joli-login-input-group">
-        <label htmlFor="input-doc" className="joli-login-input-label">Número de Documento</label>
         <div className="joli-login-input-box">
           <input
             id="input-doc" name="numero_documento" type="text" inputMode="numeric"
@@ -209,18 +208,19 @@ export const LoginForm: React.FC = () => {
             placeholder="Ej. 1000000001" data-testid="input-username"
             value={documento} onChange={(e) => setDocumento(e.target.value)}
           />
+          <label htmlFor="input-doc" className="joli-login-float-label">Número de documento</label>
         </div>
       </div>
 
       <div className="joli-login-input-group">
-        <label htmlFor="input-pass" className="joli-login-input-label">Contraseña</label>
         <div className="joli-login-input-box">
           <input
-            id="input-pass" name="password" type="password"
+            id="input-pass" placeholder=" " name="password" type="password"
             className="joli-login-input-control" autoComplete="current-password" required
             data-testid="input-password"
             value={password} onChange={(e) => setPassword(e.target.value)}
           />
+          <label htmlFor="input-pass" className="joli-login-float-label">Contraseña</label>
         </div>
       </div>
 

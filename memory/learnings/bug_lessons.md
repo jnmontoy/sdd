@@ -24,6 +24,8 @@
 * [BUG-014: Guardar sin conexión que igual espera la red (app móvil)](#bug-014)
 * [BUG-015: Con señal débil la app «carga» aunque tenga los datos guardados](#bug-015)
 * [BUG-016: Guardado doble por llamar a la API dentro de setState(prev => …)](#bug-016)
+* [BUG-019: En FastAPI reciente, app.routes no lista las rutas de los routers incluidos](#bug-019)
+* [BUG-020: Menú que muestra todo cuando la consulta de permisos falla](#bug-020)
 
 ---
 
@@ -165,4 +167,31 @@
 * **Causa raíz**: la paleta base creó `--chat-leido: #3b9ae1` en `:root`, y el componente ya tenía `.chat-layout { --chat-leido: … }`; el reemplazo automático dejó `--chat-leido: var(--chat-leido)`. Una variable que se usa a sí misma es un ciclo: el navegador la marca como inválida en silencio.
 * **Solución**: nombrar la paleta por el color (`--azul-leido`) y dejar los nombres por uso (`--chat-leido`) solo como tokens semánticos en `variables.css`; mover los tokens del componente a `variables.css`.
 * **Regla preventiva**: los nombres de la paleta base describen el color (`--slate-800`, `--azul-leido`), nunca el uso; antes de un reemplazo masivo, buscar `--x: var(--x)` y nombres repetidos entre la paleta y las variables de los componentes.
+
+---
+
+### <a id="bug-019"></a> BUG-019: En FastAPI reciente, app.routes no lista las rutas de los routers incluidos
+* **Síntoma**: una prueba o un script que recorre `app.routes` para revisar todos los endpoints (deny-by-default, registro de endpoints) solo encuentra la ruta raíz y pasa sin revisar nada.
+* **Causa raíz**: desde FastAPI 0.14x, `include_router` agrega un objeto `_IncludedRouter` en vez de copiar cada ruta; las rutas reales quedan en `ruta.original_router.routes`.
+* **Solución**: recorrer de forma recursiva: si la ruta tiene `original_router`, bajar a sus `routes`; si no, usar la ruta (`APIRoute` o `APIWebSocketRoute`).
+* **Regla preventiva**: una prueba que recorre rutas DEBE comprobar también que encontró las que esperaba (p. ej. que la lista de públicas sea exactamente la declarada), para que una lista vacía no la haga pasar en falso.
+
+---
+
+### <a id="bug-020"></a> BUG-020: Menú que muestra todo cuando la consulta de permisos falla
+* **Síntoma**: los usuarios de un rol restringido ven todas las secciones del panel.
+* **Causa raíz**: la barra lateral pedía los permisos del rol a un endpoint reservado al superadministrador. Para los demás respondía 403, el estado de permisos quedaba en `null` y el menú interpretaba `null` como «sin filtro». Además, el backend solo verificaba que fuera administrador, no la sección.
+* **Solución**: endpoint propio `GET /api/v1/mis-permisos` (BP-19) para el menú, y validación de la sección en el backend con una dependencia por endpoint (`requiere_seccion(...)`).
+* **Regla preventiva**: los permisos DEBEN fallar cerrados (si no se pudieron leer, no se muestra nada restringido) y el backend DEBE exigir el mismo permiso que el menú; ocultar una opción no protege el endpoint. Una prueba que recorra las rutas del panel debe exigir que cada una declare su permiso.
+
+## Archivos monolíticos que se vuelven inmanejables (2026-11-08)
+- Síntoma: en un proyecto real, una hoja `index.css` llegó a ~7.100 líneas, una vista React a ~2.200 y routers de FastAPI a más de 1.000. Cada ajuste de diseño rompía otra pantalla y los asistentes de IA tenían que leer miles de líneas para un cambio pequeño.
+- Causa: se agregaba código al archivo existente en cada pedido, sin un límite que obligara a dividir.
+- Regla: BP-23 (límites por tipo de archivo y dividir antes de agregar a un archivo que ya los superó).
+- Cómo dividir sin romper (comprobado en un proyecto real con BP-23):
+  - **CSS (Vite):** partir en hojas por área y dejar `index.css` como índice de `@import` en el orden original produce un bundle idéntico byte a byte. Se comprueba guardando el CSS de `dist/` antes y comparando con `cmp` después.
+  - **Servicio TS con estado compartido:** cada variable `let` vive en un solo módulo; el `index.ts` de la carpeta reexporta solo lo que antes era público, así ningún import cambia. Verificar comparando la lista de exportaciones antes/después con el compilador.
+  - **Router FastAPI en paquete:** un solo `router` compartido por los submódulos; el orden de import en `__init__.py` es el orden de registro de rutas (importa con rutas fijas vs. con parámetros). Los `patch("paquete.X")` de las pruebas deben apuntar al submódulo donde se usa `X`. Si un registro de endpoints usa el nombre del módulo, tomarlo del paquete.
+  - **Modelos Django en paquete:** `models/__init__.py` importa todos los modelos; `makemigrations --check` debe decir «No changes detected».
+  - **Esquemas Pydantic en paquete:** el `__init__` reexporta todos los modelos; el contrato OpenAPI generado debe quedar idéntico.
 

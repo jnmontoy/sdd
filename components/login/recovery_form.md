@@ -31,7 +31,6 @@ Comprende dos pantallas:
     <form id="form-recovery" class="joli-login-form-body">
       <!-- Input Identificador -->
       <div class="joli-login-input-group">
-        <label for="recovery-id" class="joli-login-input-label">Cédula o Correo Corporativo</label>
         <div class="joli-login-input-box">
           <span class="joli-login-input-prefix-icon" aria-hidden="true">
             <svg class="joli-login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,6 +46,7 @@ Comprende dos pantallas:
             class="joli-login-input-control" 
             required 
           />
+          <label for="recovery-id" class="joli-login-float-label">Cédula o correo corporativo</label>
         </div>
       </div>
 
@@ -94,7 +94,6 @@ Comprende dos pantallas:
     <form id="form-new-password" class="joli-login-form-body">
       <!-- Nueva Contraseña -->
       <div class="joli-login-input-group">
-        <label for="new-pass" class="joli-login-input-label">Nueva Contraseña</label>
         <div class="joli-login-input-box">
           <input 
             id="new-pass" 
@@ -106,12 +105,12 @@ Comprende dos pantallas:
             class="joli-login-input-control" 
             required 
           />
+          <label for="new-pass" class="joli-login-float-label">Nueva contraseña</label>
         </div>
       </div>
 
       <!-- Confirmar Contraseña -->
       <div class="joli-login-input-group">
-        <label for="confirm-pass" class="joli-login-input-label">Confirmar Contraseña</label>
         <div class="joli-login-input-box">
           <input 
             id="confirm-pass" 
@@ -122,6 +121,7 @@ Comprende dos pantallas:
             class="joli-login-input-control" 
             required 
           />
+          <label for="confirm-pass" class="joli-login-float-label">Confirmar contraseña</label>
         </div>
       </div>
 

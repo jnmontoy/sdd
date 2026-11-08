@@ -31,7 +31,7 @@ graph TD
 |---|---|---|---|
 | 1. Descubrimiento | Entender el problema operativo sin presuponer la solución. Identificar a todas las áreas afectadas, no solo a quien pide. | Preguntas del paso 0, problema y valor esperado, áreas impactadas. | `SPEC_GUIDE.md` §1.1 |
 | 2. Especificación y prototipo | Contratos de datos, modelos y prototipo navegable. | Aprobación de pantallas por usuarios operativos antes de programar el backend. | Protocolo 05, `mock/` |
-| 3. Construcción y pruebas | Implementar con el stack del SDD. | BP-01 a BP-22 (normativa 00); pruebas del protocolo 11; validador de endpoints. | Protocolos 00, 11, 14 |
+| 3. Construcción y pruebas | Implementar con el stack del SDD. | BP-01 a BP-23 (normativa 00); pruebas del protocolo 11; validador de endpoints. | Protocolos 00, 11, 14 |
 | 4. Despliegue | Poner en producción con riesgo controlado. | Imágenes Docker multi-etapa, migraciones del protocolo 08, puertas de calidad del 06. Liberación gradual (*canary* o *blue/green*) PUEDE usarse si la infraestructura lo permite. | Protocolos 06, 08 |
 | 5. Operación | Medir estabilidad. | Sondas de salud, identificador de correlación, SLO. | Protocolo 07 |
 | 6. Análisis de uso | Saber qué módulos se usan, cuáles se abandonan y qué confunde. | Telemetría de eventos y micro-encuestas. | §4 |

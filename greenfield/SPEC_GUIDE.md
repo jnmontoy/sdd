@@ -2,7 +2,7 @@
 
 Esta guía define cómo las personas y los agentes de inteligencia artificial (IA) documentan, diseñan e implementan pantallas y módulos en proyectos de Joli Foods, tanto en proyectos nuevos (**modo greenfield**: desarrollo desde cero) como en proyectos existentes.
 
-**Lenguaje normativo** (RFC 2119): **DEBE / NO DEBE** = obligatorio (se reserva para seguridad e integridad de datos); **DEBERÍA / NO DEBERÍA** = convención recomendada, de la que se puede apartar con una decisión registrada (ADR en `memory/adrs/`) o por pedido explícito del usuario; **PUEDE** = opcional. Las buenas prácticas **BP-01 a BP-22** se definen solo en [`00_normativa_buenas_practicas_y_auditoria.md`](./00_normativa_buenas_practicas_y_auditoria.md); aquí se citan por su código.
+**Lenguaje normativo** (RFC 2119): **DEBE / NO DEBE** = obligatorio (se reserva para seguridad e integridad de datos); **DEBERÍA / NO DEBERÍA** = convención recomendada, de la que se puede apartar con una decisión registrada (ADR en `memory/adrs/`) o por pedido explícito del usuario; **PUEDE** = opcional. Las buenas prácticas **BP-01 a BP-23** se definen solo en [`00_normativa_buenas_practicas_y_auditoria.md`](./00_normativa_buenas_practicas_y_auditoria.md); aquí se citan por su código.
 
 ---
 
@@ -27,7 +27,7 @@ Para no imponer burocracia a cambios pequeños ni improvisar en cambios grandes,
 ```mermaid
 flowchart TD
     Req[Solicitud] --> Clasif{¿Tamaño del cambio?}
-    Clasif -->|Ajuste menor o error trivial| N1["Nivel 1: ajuste directo<br/>• Sin especificación formal<br/>• Respeta BP-01 a BP-22<br/>• Prueba que cubra el arreglo"]
+    Clasif -->|Ajuste menor o error trivial| N1["Nivel 1: ajuste directo<br/>• Sin especificación formal<br/>• Respeta BP-01 a BP-23<br/>• Prueba que cubra el arreglo"]
     Clasif -->|Capacidad nueva en módulo existente| N2["Nivel 2: cambio atómico<br/>• specs/changes/AAAA-MM-DD-nombre/<br/>• proposal, design, tasks, evidence<br/>• Protocolo 14"]
     Clasif -->|Pantalla o proyecto nuevo| N3["Nivel 3: greenfield<br/>• Paso 0: ¿prototipo o desarrollo?<br/>• Catálogo de componentes<br/>• Arquitectura completa"]
 ```
