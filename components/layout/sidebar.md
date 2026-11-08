@@ -14,12 +14,12 @@ La barra lateral ofrece navegación entre módulos con filtrado por rol/permiso 
 ## 1. Estados e interacción
 
 - **Expandida (escritorio, 260px):** ícono, etiqueta, badges.
-- **Colapsada (76px):** solo íconos; cada enlace conserva su nombre accesible (`aria-label`). Al pasar el mouse, **todo** ítem muestra su menú flotante (no el `title` del navegador): con submenú, el título y sus opciones; sin submenú, solo su nombre, que también abre el módulo (igual que el clic en el ícono). Los ítems `sinEnlace` muestran su nombre atenuado con la etiqueta «Próximamente».
+- **Colapsada (76px):** solo íconos; cada enlace conserva su nombre accesible (`aria-label`). Al pasar el mouse, **todo** ítem muestra su menú flotante (no el `title` del navegador): con submenú, el título y sus opciones; sin submenú, solo su nombre, que también abre el módulo (igual que el clic en el ícono). Los ítems `sinEnlace` muestran su nombre atenuado (en gris), sin etiquetas extra.
 - **Botón de colapsar (`.sidebar-collapse-toggle`):** circular, en el borde derecho; `ChevronLeft` (expandida) / `ChevronRight` (colapsada); `aria-expanded` y `aria-controls`. Reemplaza al botón de tres líneas (hamburguesa) en escritorio.
 - **Preferencia:** el estado colapsado PUEDE recordarse en `localStorage` con una clave de `STORAGE_KEYS` (prefijo de app).
 - **RBAC:** cada ítem declara `permissionKey` o `roles`; los ítems sin permiso no se renderizan. Las rutas siguen protegidas por [`ProtectedRoute`](../routing/protected_route.md) y por el backend.
 - **Íconos:** catálogo de Lucide React.
-- **Ítems sin enlace (`sinEnlace: true`):** opciones planeadas cuyo módulo aún no existe. Se muestran atenuadas (`.no-link`, `aria-disabled`), no navegan (con la barra colapsada, su menú flotante solo muestra el nombre y «Próximamente»), y se habilitan quitando la marca. Los subítems sin `to` (o sin acción) siguen la misma regla.
+- **Ítems sin enlace (`sinEnlace: true`):** opciones planeadas cuyo módulo aún no existe. Se muestran atenuadas (`.no-link`, `aria-disabled`), no navegan (con la barra colapsada, su menú flotante solo muestra el nombre en gris), y se habilitan quitando la marca. Los subítems sin `to` (o sin acción) siguen la misma regla.
 - **Sangría:** los ítems quedan más a la derecha que el título de su categoría (título 1.25rem, ítem 1.75rem) y los subítems de acordeón se desplazan lo mismo, para que su línea guía siga bajo el ícono.
 
 ---

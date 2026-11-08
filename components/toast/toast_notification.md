@@ -107,6 +107,12 @@ export const CorporateToaster: React.FC = () => {
 ### 3. Estilos CSS (`toast.css`)
 
 ```css
+/* El li de sonner (toastOptions.className). Ancho fijo: sin esto los avisos sin estilo propio se encogen al texto.
+   NUNCA z-index aquí: pisa el --z-index que sonner da a cada aviso y el más viejo queda encima (BUG-012). */
+.joli-toaster-item {
+  width: var(--width);
+}
+
 .joli-toast {
   --toast-accent: var(--status-info);
   --toast-accent-bg: var(--status-info-bg);
@@ -130,10 +136,16 @@ export const CorporateToaster: React.FC = () => {
   overflow: hidden;
   border-radius: var(--radius-md);
 }
-.joli-toaster-item[data-expanded='false'][data-front='false'] > .joli-toast {
+/* Sonner envuelve el aviso: li > [data-content] > [data-title] > .joli-toast; las tres capas toman la altura del li */
+.joli-toaster-item[data-expanded='false'][data-front='false'] > [data-content],
+.joli-toaster-item[data-expanded='false'][data-front='false'] [data-title],
+.joli-toaster-item[data-expanded='false'][data-front='false'] .joli-toast {
   height: 100%;
 }
-.joli-toaster-item[data-expanded='false'][data-front='false'] > .joli-toast > * {
+.joli-toaster-item[data-expanded='false'][data-front='false'] .joli-toast {
+  overflow: hidden;
+}
+.joli-toaster-item[data-expanded='false'][data-front='false'] .joli-toast > * {
   opacity: 0;
 }
 
