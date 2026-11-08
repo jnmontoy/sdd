@@ -157,3 +157,10 @@
 * **Causa raíz**: se usó `btn-icon-compact` sin su contenedor `compact-action-box` (que le da fondo, borde y sombra), y el ícono `RotateCcw` (flecha antihoraria) usaba la clase `spin`, que gira en sentido horario.
 * **Solución**: poner los botones de ícono de la barra dentro de `<div className="compact-action-box" role="toolbar">`; con `RotateCcw` usar `spin-antihorario` (la misma animación en `reverse`); con `RefreshCw` (flecha horaria), `spin`.
 * **Regla preventiva**: un botón solo-ícono de barra DEBE ir dentro de su grupo visual (ver [`icon_action_group.md`](../../components/button/icon_action_group.md)); la animación de giro DEBE seguir el sentido de la flecha del ícono.
+
+### <a id="bug-018"></a> BUG-018: Variable CSS que se referencia a sí misma al centralizar colores
+* **Síntoma**: tras pasar los colores a una paleta de variables, el color de «leído» del chat desaparece (el ícono toma el color heredado) sin ningún error en consola.
+* **Causa raíz**: la paleta base creó `--chat-leido: #3b9ae1` en `:root`, y el componente ya tenía `.chat-layout { --chat-leido: … }`; el reemplazo automático dejó `--chat-leido: var(--chat-leido)`. Una variable que se usa a sí misma es un ciclo: el navegador la marca como inválida en silencio.
+* **Solución**: nombrar la paleta por el color (`--azul-leido`) y dejar los nombres por uso (`--chat-leido`) solo como tokens semánticos en `variables.css`; mover los tokens del componente a `variables.css`.
+* **Regla preventiva**: los nombres de la paleta base describen el color (`--slate-800`, `--azul-leido`), nunca el uso; antes de un reemplazo masivo, buscar `--x: var(--x)` y nombres repetidos entre la paleta y las variables de los componentes.
+

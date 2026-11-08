@@ -5,7 +5,7 @@
 
 > **Sincronía:** la sección 3 de este documento reproduce `variables.css` completo. Si cambia un token, se DEBE actualizar el `.css` y copiarlo aquí en el mismo cambio.
 
-> **Pendiente de decisión de negocio (no modificar sin aprobación):** la paleta actual usa verde esmeralda (`--brand-primary: #10b981`) y la fuente `Inter`. La identidad de marca de Joli Foods es morado, amarillo, azul y naranja con tipografías Gotham y Arvo. Cambiar la marca es una decisión pendiente; mientras tanto, los componentes DEBEN consumir los tokens (`var(--brand-primary)`) para que el cambio futuro se haga en un solo lugar.
+> **Marca Joli (decidida en Pandora, nov. 2026):** Pandora ya usa la paleta Joli: morado `#4b3878` (sitio web), amarillo `#eebf31`, naranja `#d4652c` y azul `#67b6d9` (logo). Esa paleta vive en `frontend-admin/src/variables.css` como `--joli-*`, con una «paleta base» con nombre (`--slate-800`, `--red-500`…) de la que salen todos los colores. La hoja de la sección 3 todavía tiene la paleta verde anterior: al llevar la marca Joli a otro proyecto, tome como referencia la de Pandora y actualice esta sección. Las tipografías Gotham y Arvo siguen pendientes (Gotham requiere licencia).
 
 ---
 
@@ -636,7 +636,11 @@ La sección 3b de `variables.css` mapea nombres heredados a los tokens canónico
 1. **Tokens en lugar de colores fijos.** El CSS de los componentes DEBE usar `var(--token)` en `background`, `color`, `border` y `box-shadow`; NO DEBE quemar hexadecimales ni `rgba()` de color.
    - **Por qué:** un color fijo no cambia con el tema (rompe el Modo Día o el Noche) y obliga a buscar y reemplazar en todo el código si cambia la marca.
    - **Excepciones:** este archivo; los SVG de marca; la plantilla autocontenida de mock si replica los tokens en un único bloque `:root`; y el color que exige una API de Canvas (`strokeStyle`, `fillStyle`), que DEBERÍA leerse de un token con `getComputedStyle`.
-2. **No inventar variables.** Un componente NO DEBERÍA declarar variables de color propias. Si falta un token, se agrega aquí (en ambos temas si depende del tema) y se documenta en este archivo.
+1b. **Desde JavaScript, colores por clases.** Los componentes (JSX/TSX) NO DEBEN escribir colores: ni hexadecimales, ni `rgba()`, ni `style={{ color: 'var(--x)' }}`, ni `fill="var(--x)"`. Se aplica una clase (`className="texto-exito"`, `` `avatar-color-${n}` ``, `` `doc-${tipo}` ``) cuyo CSS usa los tokens de este archivo. Si el color depende de un dato, el código elige la clase, no el color.
+   - **Por qué:** así todos los colores quedan unidos a `variables.css` y se controlan desde su CSS; un color escrito en el componente no cambia con el tema ni con la marca, y no aparece al buscar en los CSS.
+   - **Única excepción:** un formato que no entiende CSS (por ejemplo el XML de Excel o un Canvas) lee el valor del token con `getComputedStyle(document.documentElement).getPropertyValue('--token')` en el momento de usarlo.
+   - **Apps móviles (React Native, sin CSS):** el equivalente de `variables.css` es `constants/theme.ts` (`PALETA` y `COLORS`); los componentes usan solo esas constantes, nunca colores escritos.
+2. **No inventar variables.** Un componente NO DEBE declarar variables de color propias (tampoco con nombres como `--chat-*` o `--serie-*` en su CSS). Si falta un token, se agrega aquí (en ambos temas si depende del tema) y se documenta en este archivo.
    - **Por qué:** los tokens dispersos producen paletas paralelas que no respetan el tema.
 3. **Conmutación dual.** Al cambiar de tema se DEBEN actualizar `data-theme` y `data-bs-theme` a la vez.
    - **Por qué:** Bootstrap lee `data-bs-theme`; los componentes propios leen `data-theme`. Si solo cambia uno, quedan colores mezclados.
