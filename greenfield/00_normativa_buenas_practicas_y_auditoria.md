@@ -223,7 +223,7 @@ Estas reglas dan consistencia entre aplicaciones. Son **DEBERÍA**: se pueden de
 **6.1. Tokens de diseño.** Los colores, espaciados, radios y fuentes DEBERÍAN venir de [`variables.css`](../components/variables.css) (`var(--...)`). NO DEBERÍAN escribirse colores hexadecimales en los componentes.
 *Por qué:* el modo noche/día y un cambio de marca se resuelven en un solo archivo.
 
-**6.2. Reutilizar componentes.** Antes de crear estilos o componentes nuevos se DEBERÍA usar el [catálogo](../components/README.md): tablas (`data_table.md`), barras de acciones (`icon_action_group.md`), filtros (`expandable_filter_group.md`), drawer (`drawer.md`), modales (`confirm_modal.md`) y selectores (`select_filter.md`). Si hace falta un estilo nuevo, se escribe con tokens y, si sirve a más de un proyecto, se propone para el catálogo.
+**6.2. Reutilizar componentes.** Antes de crear estilos o componentes nuevos se DEBERÍA usar el [catálogo](../components/README.md): tablas (`data_table.md`), barras de acciones (`icon_action_group.md`), filtros (`expandable_filter_group.md`), drawer (`drawer.md`), modales (`confirm_modal.md`), selectores (`select_filter.md`) y campos de formulario (`floating_field.md`). Si hace falta un estilo nuevo, se escribe con tokens y, si sirve a más de un proyecto, se propone para el catálogo.
 *Por qué:* cada CSS ad-hoc crea otra variante que se debe mantener, probar en ambos temas y revisar en accesibilidad.
 
 **6.3. Pantallas a todo el ancho.** Las vistas de trabajo (tablas, tableros, módulos) DEBERÍAN ocupar el ancho disponible, sin contenedores angostos centrados (`max-width` de lectura más `margin: auto`). Se centran los modales y la tarjeta de login. Los textos largos de lectura PUEDEN limitar su ancho de línea dentro del layout completo.
@@ -240,6 +240,9 @@ Estas reglas dan consistencia entre aplicaciones. Son **DEBERÍA**: se pueden de
 **6.7. Rendimiento en React.** `useMemo` y `useCallback` se usan cuando una medición o una lista grande lo justifican, no por defecto. Los efectos con temporizadores, suscripciones o peticiones DEBEN limpiarse (`return () => ...` y `AbortController`). Los formularios usan React Hook Form + Zod.
 
 **6.8. Almacenamiento del navegador.** `localStorage` solo guarda preferencias no sensibles (tema, anchos y visibilidad de columnas, documento recordado si el usuario lo marcó), con claves que llevan el slug de la app (`<app>:theme`) y acceso envuelto en `try/catch`.
+
+**6.9. Campos de captura con etiqueta flotante; filtros y buscadores sin ella.** Todo formulario donde el usuario captura datos (login, recuperar o cambiar contraseña, crear o editar registros) DEBERÍA usar el campo con etiqueta flotante de [`floating_field.md`](../components/form/floating_field.md) en sus inputs, selects (nativos y propios) y textareas, en web y en apps React Native: la etiqueta hace de placeholder y, con foco o valor, sube animada (220 ms) al borde superior y lo corta. Los **buscadores, filtros de tablas, barras de herramientas, cuadros de chat y campos de solo consulta NO DEBERÍAN usarlo**: conservan su estilo. Las etiquetas van con mayúscula inicial solamente y siguen siendo una `<label>` real (o `accessibilityLabel` en React Native), nunca solo un placeholder.
+*Por qué:* da presencia y orden a los formularios sin ocupar una fila extra por etiqueta; en filtros y buscadores, que se usan a cada rato, sería intrusivo. Un solo componente evita que cada pantalla invente su propio campo.
 
 ---
 
@@ -272,6 +275,7 @@ Plantillas: [`stack/`](../stack/README.md).
 - [ ] Las pruebas pasan: `pytest`, `npm test`, `npm run typecheck`, y `pruebas/validate_endpoints.py` con la app levantada.
 - [ ] `pip-audit` y `npm audit --audit-level=high` sin hallazgos altos ni críticos.
 - [ ] La interfaz usa tokens y componentes del catálogo, y es accesible por teclado (sección 6).
+- [ ] Los formularios de captura usan la etiqueta flotante y los filtros y buscadores no (6.9).
 - [ ] `README.md` y `docs/` describen el estado actual (BP-16).
 - [ ] Ningún archivo tocado supera el límite de líneas de su tipo; si ya lo superaba, se extrajo al menos la parte modificada (BP-23).
 

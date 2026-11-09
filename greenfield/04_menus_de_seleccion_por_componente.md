@@ -111,6 +111,8 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
  [!] CONVENCIÓN (DEBERÍA):
      -> Crear (+ Nuevo) y editar se hacen en el Right Drawer: mantiene visible la tabla de contexto.
      -> Modal o página separada solo si el usuario lo pide o queda registrado en un ADR.
+     -> Los campos del formulario usan la etiqueta flotante (inputs, selects y textareas):
+        .sdd/components/form/floating_field.md (normativa 6.9). No en filtros ni buscadores.
 
  [1] Drawer de Formulario y Edición CRUD (Predeterminado - Size: 'md' - 600px)
      -> Estructura: Deslizamiento lateral derecho (.joli-drawer-container), backdrop blur,
@@ -141,6 +143,8 @@ Al seleccionar la opción deseada, el sistema ya cuenta con el código **TypeScr
  [1] Searchable SelectFilter Simple (reemplazo recomendado del select nativo)
      -> Estructura: Desplegable accesible con campo de texto con filtro en vivo, navegación
         completa por teclado (flechas y Enter), badge de selección y mensaje de 'Sin resultados'.
+     -> Dentro de un formulario de captura: con 'label' y la prop 'flotante' (etiqueta flotante,
+        .sdd/components/form/floating_field.md §5.4). En filtros, sin 'flotante'.
      -> Código y CSS listos en: .sdd/components/dropdown/select_filter.md
 
  [2] Popover Checklist Tipo Excel (ChecklistPopover)

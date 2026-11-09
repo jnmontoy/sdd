@@ -52,4 +52,6 @@ npm --prefix frontend run typecheck; npm --prefix frontend test        # tipos y
 
 NO DEBE declarar una tarea como terminada sin esa evidencia, ni entregar archivos con código truncado o marcadores del tipo `// ... resto del código ...` (BP-14).
 
+En formularios de captura (login, contraseñas, crear o editar registros) DEBERÍA usar el campo con etiqueta flotante de `sdd/components/form/floating_field.md` en inputs, selects y textareas; NO DEBERÍA aplicarlo a buscadores, filtros ni cuadros de chat (normativa 6.9).
+
 NO DEBERÍA agregar código a un archivo que supera su límite de líneas (componente o `.ts` 500, `.css` 800, módulo Python 600, función 80): primero lo desacopla en componentes, hooks o funciones sin cambiar el comportamiento (BP-23).

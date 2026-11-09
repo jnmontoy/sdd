@@ -31,7 +31,7 @@ Comprende dos pantallas:
     <form id="form-recovery" class="joli-login-form-body">
       <!-- Input Identificador -->
       <div class="joli-login-input-group">
-        <div class="joli-login-input-box">
+        <div class="joli-login-input-box campo-flotante">
           <span class="joli-login-input-prefix-icon" aria-hidden="true">
             <svg class="joli-login-input-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke-width="2" />
@@ -46,7 +46,7 @@ Comprende dos pantallas:
             class="joli-login-input-control" 
             required 
           />
-          <label for="recovery-id" class="joli-login-float-label">Cédula o correo corporativo</label>
+          <label for="recovery-id" class="campo-flotante-label">Cédula o correo corporativo</label>
         </div>
       </div>
 
@@ -94,7 +94,7 @@ Comprende dos pantallas:
     <form id="form-new-password" class="joli-login-form-body">
       <!-- Nueva Contraseña -->
       <div class="joli-login-input-group">
-        <div class="joli-login-input-box">
+        <div class="joli-login-input-box campo-flotante">
           <input 
             id="new-pass" 
             name="new_password" 
@@ -105,13 +105,13 @@ Comprende dos pantallas:
             class="joli-login-input-control" 
             required 
           />
-          <label for="new-pass" class="joli-login-float-label">Nueva contraseña</label>
+          <label for="new-pass" class="campo-flotante-label">Nueva contraseña</label>
         </div>
       </div>
 
       <!-- Confirmar Contraseña -->
       <div class="joli-login-input-group">
-        <div class="joli-login-input-box">
+        <div class="joli-login-input-box campo-flotante">
           <input 
             id="confirm-pass" 
             name="confirm_password" 
@@ -121,7 +121,7 @@ Comprende dos pantallas:
             class="joli-login-input-control" 
             required 
           />
-          <label for="confirm-pass" class="joli-login-float-label">Confirmar contraseña</label>
+          <label for="confirm-pass" class="campo-flotante-label">Confirmar contraseña</label>
         </div>
       </div>
 

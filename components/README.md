@@ -11,7 +11,7 @@ Con **SDD** (*Spec-Driven Development*: desarrollo guiado por especificaciones) 
 
 ---
 
-## Índice de componentes (58 especificaciones)
+## Índice de componentes (59 especificaciones)
 
 | Componente | Archivo | Uso principal | Variantes / capacidades | Origen |
 | :--- | :--- | :--- | :--- | :--- |
@@ -19,7 +19,8 @@ Con **SDD** (*Spec-Driven Development*: desarrollo guiado por especificaciones) 
 | **Logo corporativo** | [`login/logo.md`](./login/logo.md) | Encabezado institucional | Isotipo, logotipo completo, monocromático | — |
 | **Tarjeta de login** | [`login/card.md`](./login/card.md) | Contenedor del formulario de acceso | Tarjeta centrada, pantalla dividida, quiosco | — |
 | **Botón Microsoft SSO** | [`login/button_microsoft.md`](./login/button_microsoft.md) | Inicio de sesión con Microsoft 365 | Logo oficial SVG, oscuro, claro | — |
-| **Campos de entrada** | [`login/input_field.md`](./login/input_field.md) | Documento y contraseña | Con icono, con mostrar/ocultar, con error | — |
+| **Campo con etiqueta flotante** | [`form/floating_field.md`](./form/floating_field.md) | Todo formulario de captura (login, contraseñas, CRUD); **no** filtros ni buscadores | Input, select nativo, selector propio, textarea, contraseña; web (CSS) y React Native; animación de 220 ms | pandora |
+| **Campos del login** | [`login/input_field.md`](./login/input_field.md) | Documento y contraseña | Etiqueta flotante, mostrar/ocultar, Bloq Mayús, error en línea | pandora |
 | **Botón primario** | [`login/button_primary.md`](./login/button_primary.md) | Envío de formularios | Normal, con spinner, deshabilitado | — |
 | **Mensajes y alertas** | [`login/feedback_alerts.md`](./login/feedback_alerts.md) | Errores y validación | Banner en línea, toast, aviso de inactividad | — |
 | **Restablecer contraseña** | [`login/recovery_form.md`](./login/recovery_form.md) | Solicitud y nueva clave | Solicitud por documento/correo y nueva contraseña | — |

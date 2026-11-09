@@ -3,6 +3,7 @@
 
 `SelectFilter` es el selector de las barras de herramientas, formularios y filtros. Reemplaza al `<select>` nativo cuando se necesita búsqueda interna en catálogos extensos (sedes, roles, clientes) y un aspecto coherente con el tema Noche/Día de [`variables.css`](../variables.css).
 
+- **Etiqueta flotante en formularios:** dentro de un formulario de captura (crear o editar), `SelectFilter` DEBE recibir `label` y la prop `flotante`: la etiqueta hace de placeholder y sube al borde, igual que los demás campos ([`../form/floating_field.md`](../form/floating_field.md) §5.4). En **filtros y barras de herramientas NO** se usa `flotante`: conservan la etiqueta encima o el placeholder.
 - **Regla:** los selectores de catálogo en formularios y filtros DEBERÍAN usar `SelectFilter`. Un `<select>` nativo PUEDE usarse en controles muy simples (p. ej. filas por página del paginador) siempre que tenga estilos con tokens y etiqueta asociada.
 - **Por qué:** búsqueda en listas largas, misma apariencia en todos los navegadores y en ambos temas.
 
@@ -24,6 +25,8 @@ export interface SelectOption {
 
 export interface SelectFilterProps {
   label?: string;
+  /** Formularios de captura: la etiqueta va dentro y sube al borde (form/floating_field.md §5.4). No usar en filtros. */
+  flotante?: boolean;
   options: SelectOption[];
   value: string;
   onChange: (value: string) => void;
