@@ -206,3 +206,8 @@
 ## `Animated.Value` en `useRef` rompe el lint de React (2026-11-09)
 - Síntoma: `npx expo lint` falla con `react-hooks/refs` («Cannot access refs during render») en `style={{ opacity: progreso }}` cuando `progreso = useRef(new Animated.Value(0)).current`.
 - Regla: crear el valor animado con `const [progreso] = useState(() => new Animated.Value(0))`: es estable entre renders y el lint lo acepta.
+
+## Coordenadas opcionales en rutas y mapas (2026-11-09)
+- Riesgo: al volver opcionales `lat`/`lon` de una parada, `haversine(null…)` da `NaN` y contamina toda la suma de km; un `Marker` con coordenadas nulas cierra la app en Android.
+- Regla: un solo guardián de tipo (`tieneCoordenadas(p): p is T & Punto`) y filtrar con él antes de medir, ordenar, trazar, encuadrar o pintar marcadores. Las paradas sin coordenadas van al final en su orden, sin distancia, y los enlaces de Google Maps usan la dirección escrita (dirección, barrio, ciudad, país) en su lugar.
+- Contrato: un campo que pasa de obligatorio a `Optional` rompe a los clientes viejos que lo dan por hecho; revisar qué hace la versión instalada antes de publicar.

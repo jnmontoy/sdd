@@ -9,6 +9,17 @@ Este documento define cuatro piezas de botones:
 
 ---
 
+## 0. Implementación de referencia (Pandora, módulo Usuarios)
+
+> Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
+
+- **Caja compacta** `div.compact-action-box role="toolbar"`: 36 px de alto (32 en móvil), `radius-md`, `bg-input`; botones `btn-icon-compact` de 36 px. Orden: crear (`btn-icon-add`, `UserPlus` 15, en `--brand-primary`) → acciones del módulo (`--text-secondary`, hover de marca) → `span.compact-divider` (18 px, `aria-hidden`) → recargar (`btn-icon-refresh`, `RotateCcw` 14 con `spin-antihorario` mientras carga). **Exportar no va en la caja:** es un botón con texto en la zona izquierda.
+- **Botonera de los tres** (`.view-switcher`, vista tabla / tarjetas / buscar): 38 px de alto, botones de 32 px; la búsqueda se despliega hasta 340 px. Detalle en [`admin_table_screen.md`](../data_table/admin_table_screen.md) §2.1.
+- **Acciones de fila** `div.row-actions-group role="group"`: 28 px de alto, botones `action-btn {map|edit|toggle danger|toggle success}` de 30 × 28 separados por `border-right` (no `btn-group btn-group-sm` ni `btn-row-*`). Detalle en §4.7 del patrón.
+- **Deuda en la referencia:** los botones de vista no tienen `aria-pressed`, la búsqueda no tiene `aria-label` ni `type="search"`, y el botón recargar no se deshabilita ni lleva `aria-busy` mientras carga.
+
+---
+
 ### Regla 1: acciones secundarias de tabla en caja compacta
 
 - **Regla:** las acciones secundarias de una tabla (agregar, exportar a Excel, refrescar, limpiar filtros) DEBERÍAN presentarse como botones solo-ícono agrupados en una caja compacta de 26–28px de alto, con divisores y `aria-label` + `title` en cada botón.

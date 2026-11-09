@@ -5,6 +5,19 @@ La utilidad `exportToExcel` y el botón `ExportExcelButton` permiten descargar l
 
 ---
 
+## 0. Implementación de referencia (Pandora, `utils/excelExport.ts`)
+
+> Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
+
+- **Sin dependencias:** genera **XML Spreadsheet 2003 (`.xls`)** en el navegador, con encabezado con estilo (colores de los tokens `--excel-encabezado-texto / -fondo / -borde`, Calibri 11, alto 24 en el encabezado y 19 en los datos) y columnas centradas a elección. No hace falta el backend para tener estilos.
+- **Seguridad:** neutraliza fórmulas (valores que empiezan por `= + - @ tab retorno` llevan apóstrofo) y escapa XML.
+- Nombre `{Modulo}_AAAAMMDD_HHMMSS.xls`, hoja con el nombre del módulo. Fechas `AAAA-MM-DD HH:MM` o «Nunca».
+- Exporta **todas las filas filtradas** (todas las páginas) con columnas propias de exportación, independientes de las visibles.
+- Botón con texto «Exportar» (`btn btn--secondary`, `FileSpreadsheet` en color de éxito) en la barra, fuera de la caja compacta; avisos «Sin datos para exportar», «Archivo Excel generado» («Se exportaron N …») y «No fue posible generar el archivo Excel».
+- SheetJS (`.xlsx`) del resto de este documento queda como alternativa cuando se necesiten varias hojas o fórmulas.
+
+---
+
 ### 1. Requisitos de negocio
 
 1. **Nombre de archivo**: `[Modulo]_[AAAAMMDD]_[HHmmss].xlsx` (hora local). Ej.: `Usuarios_20260930_123000.xlsx`.

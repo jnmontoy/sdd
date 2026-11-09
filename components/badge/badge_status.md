@@ -8,6 +8,17 @@ Las **badges** son indicadores compactos para comunicar el estado de una entidad
 
 ---
 
+## 0. Implementación de referencia (Pandora, módulo Usuarios)
+
+> Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
+
+En las tablas del panel el estado y el rol usan dos piezas ligeras en vez de `Badge`:
+- **Estado:** `span.status-pill.{active|inactive}` > `span.status-dot-indicator` (6 px, `currentColor`) + «Activo» / «Inactivo». Verde o rojo con fondo `--status-*-bg` y borde `color-mix` al 30 %. También se usa como `badge` en la cabecera del drawer y en las tarjetas.
+- **Categoría corta (rol):** `span.role-tag` (11 px semibold, `bg-input`, borde, `radius-sm`).
+- `Badge` / `joli-badge` sigue siendo el componente para el resto de los casos (tipos de cambio, avisos en tablas de otros módulos).
+
+---
+
 ## 1. Variantes
 
 | Variante (`variant`) | Clase | Tokens | Texto típico |

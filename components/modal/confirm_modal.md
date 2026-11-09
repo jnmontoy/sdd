@@ -7,6 +7,19 @@
 
 ---
 
+## 0. Implementación de referencia (Pandora, `ui/ConfirmModal.tsx`)
+
+> Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
+
+Props adicionales de carga, para operaciones largas:
+- `loadingText` (por defecto «Procesando...»): texto del botón mientras `isLoading`.
+- `loadingProgress` (0–100): llena el botón de confirmar como una barra de progreso. Ej.: «Actualizar usuarios» desde Vibra, `type="primary"`, botón «Actualizar», `loadingText` «Actualizando… N %».
+- `zIndex` (por defecto 100005), para abrirlo encima de un drawer.
+- `type`: `danger | success | warning | primary`. Mientras `isLoading` no se puede cerrar.
+- Al terminar una operación por lotes, el resultado va en toasts: éxito con el resumen («n nuevos · n actualizados · n sin cambios») y advertencias con hasta 3 detalles + «Y N más.».
+
+---
+
 ## 1. Regla de uso
 
 - **Regla:** las acciones destructivas o sensibles (eliminar, desactivar, cerrar sesión con cambios sin guardar, aprobar cambios) DEBEN pedir confirmación con `ConfirmModal`; el código NO DEBE usar `window.confirm()` ni `window.alert()`.

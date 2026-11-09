@@ -24,7 +24,7 @@ Es el **campo estándar de todo formulario de captura** (login, contraseñas, cr
 - Buscadores (barras de búsqueda de tablas, listas, chats, contactos, catálogos).
 - Filtros de tablas y barras de herramientas ([`expandable_filter_group.md`](../dropdown/expandable_filter_group.md), [`checklist_popover.md`](../data_table/checklist_popover.md)).
 - El cuadro para escribir mensajes de un chat.
-- Campos de solo consulta (detalle de un registro, enlaces para copiar).
+- Campos de solo consulta **fuera de un formulario** (ficha de detalle de un registro, enlaces para copiar). Un campo de solo lectura **dentro** de un formulario de captura (p. ej. «Contrato de uso aceptado» en el drawer de usuario) SÍ lleva etiqueta flotante, con candado y `aria-readonly`, para no romper la rejilla ([`drawer.md`](../drawer/drawer.md) §1.2).
 - Casillas, interruptores y radios.
 
 > **Razón:** el estilo da más presencia al formulario donde el usuario captura datos; en filtros y buscadores, que se usan a cada rato, sería intrusivo y ocuparía espacio sin aportar.
@@ -121,7 +121,7 @@ Igual que 5.1, con `<select>` en lugar de `<input>`. No necesita `placeholder`: 
 Con `flotante`, el componente pone `campo-flotante campo-flotante-envoltura` en su contenedor, añade `is-vacio` cuando no hay valor, está cerrado y no está deshabilitado, y dibuja la etiqueta después del disparador. **Sin `flotante`** (filtros) conserva su etiqueta de siempre. Ver [`select_filter.md`](../dropdown/select_filter.md).
 
 ### 5.5. Contraseña
-Igual que 5.1 con `has-suffix` y el botón ver/ocultar después de la etiqueta: `type="button"`, `aria-label` «Mostrar contraseña» / «Ocultar contraseña», `aria-pressed`, alcanzable con Tab (sin `tabIndex={-1}`).
+Igual que 5.1 con `has-suffix` y el botón ver/ocultar después de la etiqueta: `type="button"`, `aria-label` «Mostrar contraseña» / «Ocultar contraseña», `aria-pressed`, alcanzable con Tab (sin `tabIndex={-1}`). Si el campo lleva además un botón pegado a la derecha (p. ej. «Requiere cambio de contraseña»), ver el patrón `drawer-input-group` en [`drawer.md`](../drawer/drawer.md) §1.2. *(Deuda en la referencia: el ojo del drawer de usuario dice «Ver contraseña» y no tiene `aria-pressed`.)*
 
 ### 5.6. Variables por contenedor
 | Variable | Qué es | Valor por defecto |

@@ -9,6 +9,16 @@ Accesibilidad: `role="switch"` con `aria-checked`; el **nombre accesible describ
 
 ---
 
+## 0. Implementación de referencia (Pandora)
+
+> Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
+
+- **Activar o desactivar un registro de una tabla** (p. ej. una cuenta de usuario) NO usa este interruptor en la fila: usa el botón `Power` del grupo de acciones + `ConfirmModal` **en ambos sentidos** (desactivar `type="danger"`, activar `type="success"`), con un mensaje que explica las consecuencias. La justificación es opcional por módulo. Ver [`admin_table_screen.md`](../data_table/admin_table_screen.md) §4.8. Esto reemplaza el ejemplo de §4.
+- El interruptor SÍ se usa para permisos y preferencias que se guardan al instante (p. ej. cada sección en «Definición de roles», `size="sm"`, `label="Acceso a {sección}"`, `loading` mientras se guarda).
+- En el código `showLabel` es `false` por defecto.
+
+---
+
 ## 1. Anatomía Visual y Estados
 
 ```text

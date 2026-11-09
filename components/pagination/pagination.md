@@ -5,6 +5,19 @@ El componente `Pagination` navega conjuntos grandes de datos paginados en el bac
 
 ---
 
+## 0. Implementación de referencia (Pandora, módulo Usuarios)
+
+> Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
+
+- **Dos instancias:** arriba en la barra con `buttonsOnly` (`nav.joli-toolbar-pagination.pagination--buttons-only`: `«` `‹` números `›` `»`) y **al pie** de la tarjeta la versión completa: «Mostrar [select]» + «Mostrando X a Y de Z {itemLabel}» + botones. Esto reemplaza la regla de «solo arriba».
+- **Props adicionales:** `itemLabel` (por defecto «registros»), `showSizeSelector`, `showSummary`, `buttonsOnly`, `pageSizeOptions` (`[10, 20, 50, 100]`), `disabled`.
+- **Ventana de 3 números** alrededor de la página actual, sin elipsis. Íconos de 14 px; botones de 30 × 30 con `bg-input`; el activo con `--brand-solid`, texto blanco y sombra. `aria-current="page"`; `nav aria-label="Navegación de registros"`; botones con `aria-label` («Ir a la primera página»…) y `title`.
+- Tamaño por defecto 10, **no se guarda**; al cambiarlo se vuelve a página 1; la página se limita al total.
+- ≤768 px: se ocultan los números y la etiqueta «Mostrar».
+- **Deuda en la referencia:** el selector de tamaño usa solo `aria-label="Filas por página"` (sin `<label>`), el resumen no tiene `aria-live="polite"` y en móvil falta el indicador «Página X de Y».
+
+---
+
 ### 1. Requisitos, ubicación y accesibilidad
 
 #### Regla de ubicación: paginador arriba de la tabla

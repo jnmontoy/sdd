@@ -12,14 +12,49 @@
 ### 1. Requisitos y estructura visual
 
 1. **Animación:** entra desde el borde derecho (`translateX(100%)` → `translateX(0)`); se desactiva con `prefers-reduced-motion`.
-2. **Anchos:** `md` = **560px** (estándar), `lg` = **720px** (formularios extensos), `sm` = 400px (detalle breve). En pantallas angostas, hasta 100% del ancho.
+2. **Anchos:** `sm` = 420px (máx. 92vw, detalle breve), `md` = **580px** (máx. 94vw, estándar), `lg` = **820px** (máx. 96vw, formularios extensos o con historial). El usuario los puede **redimensionar y expandir** (§1.1).
 3. **Fondo y cierre:** fondo difuminado (`.joli-drawer-overlay`); se cierra con clic en el fondo, con `Escape` o con el botón de la cabecera.
-4. **Accesibilidad:** `role="dialog"`, `aria-modal="true"`, `aria-labelledby` al título, foco atrapado y devuelto al disparador (hook `useModalA11y` de [`modal_dialog.md`](../modal/modal_dialog.md) §2). Un `ConfirmModal` abierto encima toma el control del teclado.
-5. **Cabecera fija** con título, subtítulo/badge y botón de cierre; **cuerpo** con scroll vertical independiente (`.drawer-body`); **pie fijo** con "Cancelar" y el botón principal con texto contextual ("Guardar usuario", "Crear proveedor"), no genérico.
-6. **Cambios sin guardar:** si `isDirty` es verdadero, cerrar (fondo, Escape o X) DEBERÍA pedir confirmación con `ConfirmModal` antes de descartar.
+4. **Accesibilidad:** `role="dialog"`, `aria-modal="true"`, `aria-labelledby` al título, foco atrapado y devuelto al disparador (hook `useModalA11y` de [`modal_dialog.md`](../modal/modal_dialog.md) §2). Un `ConfirmModal` abierto encima toma el control del teclado. Mientras está abierto, `body` lleva `overflow: hidden`. *(Deuda en la referencia: el `RightDrawer` de Pandora usa `aria-label` en vez de `aria-labelledby` y aún no atrapa ni devuelve el foco.)*
+5. **Cabecera fija** con título, subtítulo, `badge` opcional junto al título (p. ej. el `status-pill` del registro al editar) y botón de cierre (`X` 18 px, «Cerrar panel lateral», `title` «Cerrar (Esc)»; bloqueado mientras se guarda); **cuerpo** con scroll vertical independiente (`.drawer-body`); **pie fijo** con «Cancelar» (`modal-btn-cancel`) y el botón principal (`modal-btn-save`, `type="submit"` con `form="{id}"`) con texto contextual («Guardar cambios» al editar, «Crear colaborador» al crear; mientras guarda, `Loader2` girando + «Guardando...»), no genérico.
+6. **Cambios sin guardar:** si `isDirty` es verdadero, cerrar (fondo, Escape o X) DEBERÍA pedir confirmación con `ConfirmModal` antes de descartar. *(Deuda en la referencia: Usuarios aún no lo hace.)*
 7. **Controles de formulario:** usar las clases `.drawer-form-field`, `.drawer-input-control` y `.drawer-field-input` definidas en [`variables.css`](../variables.css) §4; no se redefinen aquí. En formularios de captura (crear o editar) cada campo DEBE usar la **etiqueta flotante** de [`form/floating_field.md`](../form/floating_field.md): la caja lleva `campo-flotante` y la `<label className="campo-flotante-label">` va dentro, después del control (§5.1). La etiqueta separada `.drawer-field-label` queda solo para bloques que no son un campo (p. ej. «Repetición», «Historial»).
-8. **Opcional:** mini-KPIs del registro (`.drawer-kpi-grid`) al inicio del cuerpo.
+8. **Opcional:** mini-KPIs del registro (`.drawer-kpi-grid`) al inicio del cuerpo (§1.2).
 9. **Detalle de solo lectura (ficha):** cuando el panel muestra un registro sin editarlo, NO DEBERÍA usar inputs `readOnly` uno tras otro (se ve como un formulario deshabilitado y desordenado). Se agrupa en **secciones** con título e ícono (`FichaSeccion`: cabecera con ícono en color de marca, título y dato a la derecha, cuerpo en tarjeta) y los datos en **lista etiqueta → valor de dos columnas** (`<dl>`, `FichaDatos`; en pantallas angostas, una debajo de la otra). Orden: mini-KPIs → secciones de lo más usado a lo menos usado → datos técnicos (códigos internos, fecha de actualización) en letra pequeña al final. Los valores vacíos se muestran como «—». Referencia: ficha de cliente del panel de Pandora (`ClienteDrawer.tsx`).
+
+---
+
+### 1.1. Redimensionar y expandir (`RightDrawer`)
+
+Implementación de referencia: `frontend-admin/src/components/ui/RightDrawer.tsx` + `styles/drawer.css` (Pandora). Props: `isOpen, onClose, title, subtitle?, size: 'sm' | 'md' | 'lg' = 'md', badge?: ReactNode, children, footer`.
+
+```text
+portal a <body>
+└─ div.joli-drawer-overlay  (role="dialog", aria-modal; clic cierra; fondo slate-950 al 62 % + blur 5px; z-index 2500)
+   └─ div.joli-drawer-shell (animación drawerSlideIn .26s)
+      ├─ button.drawer-expand-toggle   (círculo de 28 px en left:-14px, borde de marca 2 px)
+      ├─ div.drawer-resizer-handle     (role="separator" aria-orientation="vertical")
+      └─ aside.joli-drawer-container.size-{size}[.is-resizing]
+         ├─ header.drawer-header > .drawer-title-group > .drawer-title-row (h2.drawer-title + badge) + p.drawer-subtitle ; button.drawer-close-btn
+         ├─ div.drawer-body
+         └─ footer.drawer-footer
+```
+
+- **Redimensionar:** arrastrar el borde izquierdo. Mínimo 360 px; máximo = ancho de la ventana menos el borde derecho del menú lateral (`.joli-sidebar`), recalculado con `ResizeObserver` y `resize`. Mientras se arrastra: `cursor: col-resize` y `user-select: none` en `body`. Se guarda **al soltar** en `localStorage['<app>_drawer_ancho_{size}']` con `try/catch`; doble clic restablece y borra la clave.
+- **Expandir:** el botón circular lleva el panel hasta el borde del menú lateral y vuelve («Expandir panel lateral» / «Contraer panel lateral», `ChevronLeft` / `ChevronRight`, `title` «Expandir hasta el menú lateral»). Su `top` sigue la altura de la cabecera (`altoHeader − 14`).
+- El ancho anima con `transition: width .25s`. En ≤768 px se ocultan el redimensionador y el botón de expandir.
+- Todo panel lateral derecho del panel administrativo DEBERÍA usar este componente (no paneles propios).
+
+### 1.2. Patrones del formulario de crear/editar
+
+Referencia: `UserFormDrawer.tsx` + `useFormularioUsuario.ts` (Pandora).
+
+- **Mini-KPIs (solo al editar):** `div.drawer-kpi-grid` (3 columnas fijas, `gap: .65rem`; 1 columna en ≤640 px) con `div.drawer-kpi-card` (`bg-input`, `border-left: 3px` de marca) > `span.drawer-kpi-label` (0.65rem, mayúsculas) + `strong.drawer-kpi-value`. Ej.: Documento (`mono-badge`), Rol actual, Último acceso.
+- **Foto de perfil:** caja `div.drawer-avatar-upload-box` (borde punteado) con `button.drawer-avatar-preview` (64 px redondo, foto o iniciales, insignia de cámara), `input type="file" hidden accept="image/png,image/jpeg,image/webp,image/gif"`, la pista «PNG, JPG, WEBP o GIF (Máx. 5 MB)» o «Seleccionado: {archivo}», y los botones «Subir foto» / «Cambiar foto» y «Descartar» (solo con archivo nuevo). Validación de formato y tamaño con toast; vista previa con `createObjectURL`. La foto se sube **después** de guardar los datos; si falla, aviso «Datos guardados sin foto» y el panel se cierra igual.
+- **Rejilla del formulario:** `form#{id}.drawer-form-grid` (2 columnas, `gap: 1rem`; 1 columna en ≤640 px). Campos con etiqueta flotante ([`floating_field.md`](../form/floating_field.md) §5.1). La llave primaria (p. ej. documento) queda deshabilitada al editar con la pista `p.drawer-field-hint` «Llave primaria: no se puede modificar».
+- **Campo con botón pegado** (`div.drawer-input-group`): el campo (`has-icon has-suffix`) y un `button.drawer-input-addon` de 42 px unido a la derecha (`margin-left: -1px`, radio solo a la derecha; el campo pierde su radio derecho). El botón es un interruptor de ícono con `aria-pressed` y un `aria-label` que dice su estado; `.is-on` en color de marca con fondo `color-mix` 14 %. La explicación va en `title` y en una pista debajo. Ej.: contraseña + llave «Requiere cambio de contraseña» (deshabilitado al crear, porque siempre aplica, y en la propia cuenta).
+- **Campo de solo lectura dentro del formulario:** mantiene la etiqueta flotante para no romper la rejilla ([`floating_field.md`](../form/floating_field.md) §1). `input.drawer-field-readonly readOnly tabIndex={-1} aria-readonly="true"`, candado `span.drawer-input-toggle-btn.drawer-input-lock` (`Lock` 14, `aria-hidden`) y `title` con la razón («Solo lo acepta el propio usuario»). Debajo, una línea de estado `p.drawer-agreement-status.is-{neutral|accepted|pending}`.
+- **Validación:** errores en línea con `aria-invalid` (normativa 6.7). *(Deuda en la referencia: Usuarios valida a mano y avisa con toasts.)*
+- **Al abrir:** la contraseña vuelve a quedar oculta y el formulario se llena con el registro o con los valores por defecto (p. ej. rol ATC al crear).
 
 ---
 
@@ -129,8 +164,8 @@ Ejemplo de pie con texto contextual:
   isDirty={formState.isDirty}
   footer={
     <>
-      <button type="button" className="joli-btn-secondary" onClick={close}>Cancelar</button>
-      <button type="submit" form="form-usuario" className="joli-btn-primary" disabled={isSaving}>
+      <button type="button" className="modal-btn-cancel" onClick={close}>Cancelar</button>
+      <button type="submit" form="form-usuario" className="modal-btn-save" disabled={isSaving}>
         {editing ? 'Guardar usuario' : 'Crear usuario'}
       </button>
     </>
@@ -172,9 +207,9 @@ Ejemplo de pie con texto contextual:
   outline: none;
 }
 
-.joli-drawer-container.size-sm { width: 400px; max-width: 100vw; }
-.joli-drawer-container.size-md { width: 560px; max-width: 100vw; }
-.joli-drawer-container.size-lg { width: 720px; max-width: 100vw; }
+.joli-drawer-container.size-sm { width: 420px; max-width: 92vw; }
+.joli-drawer-container.size-md { width: 580px; max-width: 94vw; }
+.joli-drawer-container.size-lg { width: 820px; max-width: 96vw; }
 
 .drawer-header {
   display: flex;

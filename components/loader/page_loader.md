@@ -7,6 +7,16 @@ Familia de indicadores de espera: cargador de página y *skeletons* (siluetas gr
 
 ---
 
+## 0. Implementación de referencia (Pandora, pantallas de tabla)
+
+> Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
+
+- Primera carga: `TableSkeleton` (8 filas, columnas visibles) dentro de la tarjeta de la tabla.
+- La cortinilla `PageLoader variant="curtain"` (mensaje + submensaje) se muestra al cargar el módulo. En recargas DEBERÍA bastar con el giro del botón Recargar y `aria-busy` en la tarjeta. *(Deuda en la referencia: Usuarios la muestra en cada recarga.)*
+- Los huesos `.joli-skeleton-bone` respetan `prefers-reduced-motion`.
+
+---
+
 ### 1. Variantes y cuándo usarlas
 
 | Variante | Uso |

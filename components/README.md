@@ -11,7 +11,7 @@ Con **SDD** (*Spec-Driven Development*: desarrollo guiado por especificaciones) 
 
 ---
 
-## Índice de componentes (59 especificaciones)
+## Índice de componentes (60 especificaciones)
 
 | Componente | Archivo | Uso principal | Variantes / capacidades | Origen |
 | :--- | :--- | :--- | :--- | :--- |
@@ -30,7 +30,8 @@ Con **SDD** (*Spec-Driven Development*: desarrollo guiado por especificaciones) 
 | **Reglas de layout** | [`layout/layout_rules.md`](./layout/layout_rules.md) | Distribución de pantallas | Ancho completo; centrado solo en modales y login | — |
 | **Menú de perfil de usuario** | [`layout/user_profile_dropdown.md`](./layout/user_profile_dropdown.md) | Sesión en el TopHeader | Avatar, datos del usuario, rol, Mi perfil, salir con confirmación | vibra, tiendita |
 | **Menú lateral** | [`layout/sidebar.md`](./layout/sidebar.md) | Navegación de módulos | Opcional; por defecto sin sidebar | — |
-| **Tabla de datos** | [`data_table/data_table.md`](./data_table/data_table.md) | Listados y CRUD | Paginación en servidor, buscador con espera, exportación | bi (cartera) |
+| **Pantalla de tabla administrativa** | [`data_table/admin_table_screen.md`](./data_table/admin_table_screen.md) | Listados del panel (usuarios, clientes, versiones, rutas) | Datos en el navegador, botonera vista/búsqueda, filtros expandibles, columnas configurables, paginación arriba y al pie, vista en tarjetas, sondeo | pandora (Usuarios) |
+| **Tabla de datos** | [`data_table/data_table.md`](./data_table/data_table.md) | Catálogos grandes | Paginación en servidor, buscador con espera, exportación | bi (cartera) |
 | **Filtro tipo Excel por columna** | [`data_table/checklist_popover.md`](./data_table/checklist_popover.md) | Filtros de tabla | Ordenar A-Z/Z-A, buscador, lista con conteo, "Solo" | bi (cartera) |
 | **Columnas redimensionables** | [`data_table/column_resizer.md`](./data_table/column_resizer.md) | Ancho de columnas | Arrastre, doble clic restablece, ancho mínimo, persistencia | bi (cartera) |
 | **Visibilidad de columnas** | [`data_table/column_visibility.md`](./data_table/column_visibility.md) | Mostrar/ocultar columnas | Casillas con conteo, Todas / Restablecer | — |

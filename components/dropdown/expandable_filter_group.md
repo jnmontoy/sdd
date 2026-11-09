@@ -13,6 +13,18 @@ Accesibilidad: cada disparador expone `aria-expanded` y `aria-controls`; el cont
 
 ---
 
+## 0. Implementación de referencia (Pandora, módulo Usuarios)
+
+> Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
+
+- Clases reales: `div.expandable-filter-group` > `div.expandable-filter-item[.is-open][.has-active-val]` > `button.filter-trigger-btn` (`.trigger-icon` 15 px, `.trigger-text`, `.trigger-badge` con el valor visible cuando está cerrado, `.trigger-arrow` 13 px que **rota −90°** al abrir) + `div.filter-expanded-content` (`select.filter-expanded-select` nativo + `button.filter-expanded-close`).
+- Disparador de 38 px; abierto `rgba(brand, .1)`, con valor `rgba(brand, .06)`; expansión `max-width: 420px` con `border-left: 1px dashed`; select mínimo 165 × 28.
+- Al elegir: aplica, vuelve a página 1 y **cierra**. Un solo filtro abierto a la vez; clic fuera cierra. Ocultos en ≤768 px.
+- **Limpiar todo:** `div.filter-actions-group > div.filter-action-clear-wrapper[.is-visible] > button.filter-action-btn.filter-clear-btn` (`FilterX` 16, 38 × 38, hover rojo); cuenta también los filtros de columna y el orden.
+- **Deuda en la referencia:** sin `role="group"`/`aria-label` en el grupo, sin `aria-controls`, sin `aria-label` en el select, sin `Escape`, y el botón limpiar sin `aria-label`.
+
+---
+
 ### 1. Variables del componente
 
 Se derivan de los tokens de [`variables.css`](../variables.css), así que funcionan en ambos temas. Solo la flecha del selector necesita dos versiones, porque un SVG en `background-image` no hereda `currentColor` (excepción válida de SVG).

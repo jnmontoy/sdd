@@ -5,6 +5,8 @@ La **Data Table** es el componente base para listados operativos, inventarios, t
 
 Trabaja con **paginación en el servidor** (el navegador solo recibe la página visible), buscador con espera (*debounce*) de 350 ms, filtros por columna tipo Excel, ordenamiento, visibilidad y ancho de columnas persistidos, y exportación a Excel (`.xlsx`).
 
+> **¿Es este el componente que necesitas?** Las pantallas de listado del panel administrativo cuyo listado completo cabe en memoria (usuarios, roles, versiones, rutas) siguen el patrón [`admin_table_screen.md`](./admin_table_screen.md): datos en el navegador, botonera de vista y búsqueda desplegable, paginación arriba y al pie, y vista en tarjetas. Este `DataTable` con paginación en servidor es para catálogos grandes o que crecen sin límite.
+
 > La paginación en servidor reduce memoria y tiempo de transferencia; **no** resuelve consultas N+1. Evitar N+1 es responsabilidad del backend (`select_related` / `prefetch_related` en Django, consultas agregadas en FastAPI).
 
 Piezas que lo componen:

@@ -6,22 +6,15 @@ Pantalla administrativa para listar, crear, editar, asignar roles y suspender us
 > **Origen:** patrón tomado de tiendita (gestión de roles y permisos). Aquí se describe de forma genérica.
 
 > [!IMPORTANT]
-> **REGLAS DE INTERFAZ Y BOTONERAS EN GESTIÓN DE USUARIOS (PANDORA ADMIN)**:
-> 1. **Botonera Agrupada de los Tres (`.view-switcher`: Tabla + Cards + Buscar — Solo Iconos)**:
->    En el extremo izquierdo del toolbar se ubica la botonera segmentada de **tres iconos sin texto**:
->    - **Tabla** (`Table2`): Activa la vista tabular `.joli-data-table`.
->    - **Cards** (`LayoutGrid`): Activa la cuadrícula de tarjetas `.users-cards-grid` / `.user-profile-card`.
->    - **Buscar** (`Search`): Al hacer clic en el icono de lupa, anima horizontalmente hacia la derecha el contenedor `.switcher-search-expanded` desplegando el `<input class="switcher-search-input">` de búsqueda en tiempo real.
-> 2. **Grupo de Filtros Expandibles (`.expandable-filter-group`)**: A continuación de la botonera de los tres se ubica el grupo de filtros para `Rol` y `Estado`, que también se despliegan horizontalmente en línea al seleccionarlos, junto al botón dinámico `FilterX` para limpiar filtros.
-> 3. **Diseño de Botoneras de Acciones de Solo Iconos (Cero Texto)**:
->    - **Botonera de Acciones del Toolbar (`.compact-action-box`)**: Botonera segmentada con solo los iconos `UserPlus` (Nuevo Usuario) y `RotateCcw` (Recargar), separados por `.compact-divider`, sin texto.
->    - **Botonera de Acciones en Filas y Cards (`.row-actions-group`)**: Botonera segmentada con solo los iconos `Edit2` (Editar) y `Power` (Activar/Desactivar), sin texto.
-> 4. **Prohibición Estricta de Modales para Crear o Editar — Uso Obligatorio de Sidebar Derecho (`RightDrawer`)**:
->    Tanto la acción de **Agregar (Nuevo Colaborador)** como la de **Editar Colaborador** **DEBEN abrirse siempre en un Sidebar al lado derecho (`.joli-drawer-container` / `RightDrawer`)** deslizando desde el borde derecho (`translateX(100%) -> translateX(0)`), y **NUNCA** en un modal flotante centrado. En modo edición, el Sidebar Derecho muestra una fila superior de Mini-KPIs contextuales (`.drawer-kpi-grid`: Documento, Rol Actual y Último Acceso).
-> 5. **Paginador Superior Integrado en Toolbar (`.joli-table-toolbar.pagination-container` — SDD `pagination.md`)**:
->    El paginador **NUNCA se ubica al pie de la tabla**. Se ubica **ARRIBA DE LA TABLA**, integrado directamente en la barra superior junto a la botonera de acciones, mostrando el selector de tamaño de página (`Mostrar [10 | 20 | 50 | 100]`), el resumen numérico (`Mostrando X a Y de Z Colaboradores`) y los controles de navegación (`<<`, `<`, números de página con elipsis, `>`, `>>`).
-> 6. **Card Contenedora hasta Abajo de la Pantalla (`.joli-table-card` — SDD `data_table.md`)**:
->    La tarjeta principal de la tabla utiliza `flex: 1; min-height: 420px; display: flex; flex-direction: column; overflow: hidden;` dentro de un layout de altura completa (`height: 100vh; overflow: hidden;`), garantizando que el contenedor llegue hasta el borde inferior visible de la pantalla sin dejar huecos vacíos, mientras `.joli-table-wrapper` administra el scroll interno (`flex: 1; overflow: auto;`).
+> **Reglas de interfaz de Usuarios (implementación de referencia: Pandora Admin).** El patrón completo, con estructura, clases, medidas y comportamiento, está en [`admin_table_screen.md`](../../../components/data_table/admin_table_screen.md). En resumen:
+> 1. **Botonera de los tres** (`.view-switcher`, solo íconos): Tabla (`Table2`), Tarjetas (`LayoutGrid`) y Buscar (`Search`, que despliega `.switcher-search-expanded` con búsqueda en vivo sobre documento, nombre, correo, cargo, área y zona). En móvil solo hay tarjetas.
+> 2. **Filtros expandibles** Rol y Estado (`.expandable-filter-group`), visibilidad de columnas, botón **Exportar** con texto y el botón `FilterX` que limpia búsqueda, filtros, filtros de columna y orden.
+> 3. **Caja compacta** (`.compact-action-box`, solo íconos): `UserPlus` (Nuevo usuario), `FileText` (Contrato de uso), divisor y `RotateCcw` (Recargar). A su derecha, el botón con texto «Definición de roles» si el usuario tiene ese permiso. «Actualizar usuarios» (traer desde Vibra) se abre desde el menú lateral, no desde la barra.
+> 4. **Acciones de fila y de tarjeta** (`.row-actions-group`, solo íconos): `MapPin` (ver última ubicación en Google Maps), `Edit2` (Editar) y `Power` (Activar/Desactivar con `ConfirmModal` en ambos sentidos; deshabilitado en la propia cuenta).
+> 5. **Crear y editar en el panel lateral derecho** (`RightDrawer`, redimensionable y expandible), nunca en un modal centrado. Al editar muestra mini-KPIs (Documento, Rol actual, Último acceso); campos con etiqueta flotante; foto de perfil; contraseña con la llave «Requiere cambio de contraseña»; contrato de uso de solo lectura.
+> 6. **Paginación arriba y al pie:** arriba, en la barra, solo los botones; al pie de la tarjeta, la versión completa (`Mostrar [10 | 20 | 50 | 100]`, `Mostrando X a Y de Z Colaboradores` y botones).
+> 7. **Tarjeta hasta abajo** (`.joli-table-card`: `flex: 1; min-height: 420px; display: flex; flex-direction: column; overflow: hidden`), con el scroll dentro de `.joli-table-wrapper`.
+> 8. **Datos en el navegador:** Pandora trae la lista completa, filtra, ordena y pagina en el navegador, y refresca cada 30 s. El código de las secciones 1.3 y 2 de este documento es la **variante con paginación en servidor**, para cuando la cantidad de usuarios no quepa en memoria.
 
 ---
 
@@ -85,6 +78,8 @@ def obtener_usuarios_paginados(page: int = 1, page_size: int = 10, search: str =
 ---
 
 ## 2. Vista (`UsuariosPage.tsx`)
+
+> Variante con paginación en servidor. Para la variante con datos en el navegador (la de Pandora), seguir [`admin_table_screen.md`](../../../components/data_table/admin_table_screen.md).
 
 Composición: tabla [`DataTable`](../../../components/data_table/data_table.md) a todo lo ancho con paginador arriba, creación/edición en [`Drawer`](../../../components/drawer/drawer.md) derecho, confirmaciones con [`ConfirmModal`](../../../components/modal/confirm_modal.md) y gobierno de roles en [`RolesAdminSidebar`](../../../components/roles/roles_admin_sidebar.md). Estas convenciones son DEBERÍA (ver `AGENTS.md` del entorno); se pueden cambiar con un ADR o pedido explícito del usuario.
 

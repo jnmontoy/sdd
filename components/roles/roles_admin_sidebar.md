@@ -7,6 +7,22 @@
 
 ---
 
+## 0. Implementación de referencia (Pandora, «Definición de roles»)
+
+> Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
+
+Diseño vigente (reemplaza al del resto de este documento donde se contradicen):
+- `RightDrawer size="md"`, título «Definición de roles», subtítulo «Elige qué secciones del menú puede usar cada rol». Se abre desde un botón con texto en la barra de Usuarios, solo con el permiso de sección correspondiente.
+- **Selector de rol:** botonera segmentada centrada (`div.role-btn-group role="radiogroup"`, `button.role-btn role="radio" aria-checked`, 34 px, activo con `--brand-solid`). Al abrir se elige el primer rol.
+- **Buscador de secciones** y barra con «**N** de M secciones permitidas» + «Colapsar todo» / «Expandir todo».
+- **Catálogo desde el backend** (secciones del menú), agrupado por categoría y subgrupo en acordeones accesibles (`role="button" tabIndex=0 aria-expanded`, `Enter` y espacio), con contador «x/y» y «Activar todos» / «Quitar todos». Si una categoría tiene una sola sección, no lleva acordeón.
+- **Cada sección** es una fila con texto y descripción y un `ToggleSwitch size="sm"`; clic en la fila también cambia el permiso.
+- **Guardado automático en cola:** el cambio se ve al instante, se envía el estado completo del rol y los cambios se procesan en orden. El pie muestra el estado (`role="status"`): «Los cambios se guardan al instante» / «Guardando…» / «Cambios guardados» / «No se guardó el último cambio», y un botón «Cerrar». Si falla, toast de error y se vuelve a lo que tiene el servidor. Al guardar se emite el evento `<app>:permisos-actualizados` para refrescar el menú.
+- Las secciones protegidas (administración) las protege el **backend** (BP-19), no una lista fija en el frontend.
+- Sondeo de 30 s mientras está abierto, sin consultar si hay guardados pendientes. Primera carga con esqueleto.
+
+---
+
 ## 1. Principio de arquitectura: permisos como datos
 
 Los roles y permisos se modelan como **datos administrables**, no como código.

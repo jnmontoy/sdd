@@ -12,6 +12,17 @@ Este componente define el estándar visual para tarjetas de contenido corporativ
 
 ---
 
+## 0. Implementación de referencia (Pandora, `CorporateCard`)
+
+> Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
+
+- Clases BEM `corp-card` (no `joli-card`): `<article class="corp-card">` con `corp-card__header | __title-group | __icon-box | __heading | __title-row | __title | __badge--{variant} | __subtitle | __header-actions | __body | __plain-grid | __footer | __footer-meta | __footer-actions`. Título `h3`.
+- Props usadas por Usuarios: `title`, `subtitle`, `icon`, `elevation` (`flat | raised | glow`, **por defecto `glow`**), `headerActions`, `footerMetadata`, **`footerCustomActions`** (nodo libre en el pie, p. ej. el grupo de acciones de fila), `className`, `id`. Botones de `footerActions` con `btn btn--{variant} btn--sm`.
+- CSS: `border-top: 2px` de marca al 48 %, radio 12 px; hover solo cambia borde y sombra (no se mueve). Variante `.is-inactive`: borde superior rosa y `opacity: .9`.
+- Cuerpo de datos: `div.corp-card__plain-grid` (2 columnas, `gap: 6px 14px`) con filas etiqueta (ícono 12 px + texto) → valor.
+
+---
+
 ## 1. Anatomía Visual y Estructura
 
 ```text

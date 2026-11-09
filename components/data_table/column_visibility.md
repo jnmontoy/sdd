@@ -5,6 +5,17 @@ El **Selector de Visibilidad de Columnas** permite mostrar u ocultar columnas de
 
 ---
 
+## 0. Implementación de referencia (Pandora, módulo Usuarios)
+
+> Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
+
+- `ColumnVisibilityDropdown` con `columns={[{key, label}]}`, `onResetDefault` y `storageKey`. El componente **escribe en almacenamiento** al cambiar y en «Todas», y lo borra en «Restablecer» (no usa un hook aparte).
+- Botón de 38 px alineado con la barra; menú de 230 px abierto hacia la derecha (`left: 0`); casilla `col-checkbox`. Mínimo una columna visible. Solo en escritorio y vista tabla.
+- Clave `<app>_<modulo>_visible_columns_v<N>` (Pandora: `pandora_users_visible_columns_v3`): subir `vN` cuando cambian las columnas. Al leer se descartan claves de columnas que ya no existen.
+- **Deuda en la referencia:** sin `try/catch` al escribir, sin `Escape` ni `aria-controls`.
+
+---
+
 ## 1. Características
 
 1. **Botón disparador** con icono `Columns3`, etiqueta "Columnas", contador `{visibles}/{totales}` y flecha que rota al abrir. Expone `aria-expanded` y `aria-controls`.

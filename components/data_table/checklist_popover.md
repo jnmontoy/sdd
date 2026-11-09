@@ -7,6 +7,17 @@ El **Checklist Popover** es el filtro avanzado por columna de [`DataTable`](./da
 
 ---
 
+## 0. Implementación de referencia (Pandora, módulo Usuarios)
+
+> Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
+
+- Firma real: `<ChecklistPopover colKey colLabel dataType items getValue activeValues onApply onSort currentSortField currentSortOrder onClose />`. Los valores salen de `getValue(item)` sobre **todas** las filas en memoria (no hay prop `options` del servidor). `onApply(null)` = sin filtro.
+- Se abre desde `button.th-filter-btn` del encabezado (ícono `Filter` 12 px + punto `.th-filter-dot` si hay filtro; `active` si hay filtro o está abierto) dentro de `div.th-filter-popover-container`; se cierra con clic fuera. Por defecto **toda columna es filtrable** salvo `filterable: false`.
+- Medidas: menú de 270 px, lista de máximo 185 px, `z-index` 1100; encabezado filtrado `.th-filtered` con `rgba(brand, .12)`.
+- **Deuda en la referencia:** sin `role="dialog"` ni `Escape`; lista con `div` (no `ul`/`li`); el botón «Solo» solo aparece con el mouse (invisible al foco de teclado); textos de orden para fechas genéricos («A a Z»). Lo correcto es lo del resto de este documento.
+
+---
+
 ## 1. Características
 
 1. **Ordenamiento integrado:** ascendente / descendente (`ASC` / `DESC`) con textos según el tipo de dato (`text`, `number`, `date`).
