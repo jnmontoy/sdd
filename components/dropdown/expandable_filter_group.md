@@ -21,7 +21,7 @@ Accesibilidad: cada disparador expone `aria-expanded` y `aria-controls`; el cont
 - Disparador de 38 px; abierto `rgba(brand, .1)`, con valor `rgba(brand, .06)`; expansión `max-width: 420px` con `border-left: 1px dashed`; select mínimo 165 × 28.
 - Al elegir: aplica, vuelve a página 1 y **cierra**. Un solo filtro abierto a la vez; clic fuera cierra. Ocultos en ≤768 px.
 - **Limpiar todo:** `div.filter-actions-group > div.filter-action-clear-wrapper[.is-visible] > button.filter-action-btn.filter-clear-btn` (`FilterX` 16, 38 × 38, hover rojo); cuenta también los filtros de columna y el orden.
-- **Deuda en la referencia:** sin `role="group"`/`aria-label` en el grupo, sin `aria-controls`, sin `aria-label` en el select, sin `Escape`, y el botón limpiar sin `aria-label`.
+- **Componentes compartidos (`ui/tabla/`):** `GrupoFiltros` (`role="group" aria-label="Filtros"`), `FiltroExpandible` (opciones `{value, label}`, `valorTodos`, `aria-controls`, `aria-label` en el select, foco al select al abrir, `Escape` cierra y devuelve el foco, insignia con `title`) y `BotonLimpiarFiltros` (con `aria-label`; fuera del orden de Tab cuando no se ve).
 
 ---
 

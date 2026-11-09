@@ -9,7 +9,7 @@ Cómo se arma una **pantalla de listado del panel administrativo** (usuarios, cl
 > - **Este patrón (datos en el navegador):** el listado completo cabe en memoria (hasta unos pocos miles de filas). Se trae todo, se filtra, ordena y pagina en el navegador, y se refresca con sondeo. Es el caso de usuarios, roles, versiones, rutas del día.
 > - **`DataTable` con paginación en servidor:** catálogos grandes o que crecen sin límite (facturas, movimientos, logs históricos). Búsqueda con espera, filtros y conteos calculados por el backend.
 
-> **Convención de este documento:** «DEBE» marca lo que define el patrón. Los puntos marcados **«Deuda en la referencia»** son cosas que Usuarios aún no cumple: se especifica la versión correcta y no se copia la del código.
+> **Convención de este documento:** «DEBE» marca lo que define el patrón. Las piezas repetidas de la barra y del encabezado de la tabla ya existen como **componentes compartidos** (§11): una pantalla nueva DEBE usarlos en vez de copiar el marcado.
 
 ---
 
@@ -91,7 +91,6 @@ Cómo se arma una **pantalla de listado del panel administrativo** (usuarios, cl
 - **Comportamiento:** el campo se enfoca 60 ms después de abrir; `Escape` cierra sin borrar; un clic fuera de `.toolbar-left` cierra solo si está vacío; la X borra, vuelve a página 1 y cierra; al escribir se vuelve a página 1. Con texto y cerrado, un punto (`.switcher-search-dot`, 6 px, `--brand-solid`) avisa que hay búsqueda activa.
 - **Búsqueda en el navegador, sin espera:** `includes` sin distinguir mayúsculas sobre los campos declarados (en Usuarios: documento, nombre, correo, cargo, área y zona).
 - **CSS:** `.view-switcher` 38 px de alto, `padding: 3px`, `gap: 2px`, `radius-md`, `bg-input`; `.switcher-btn` 32 px de ancho; activo con `rgba(var(--brand-primary-rgb), .16)` y `--brand-primary` (tema claro: fondo blanco). Divisor 18 px. La búsqueda se expande hasta `max-width: 340px` en 0.34 s (`cubic-bezier(.16, 1, .3, 1)`, opacidad y `scaleX(.85 → 1)`); input 230 × 28. En móvil: 36 px; abierta, `max-width: calc(100vw - 150px)`.
-- **Deuda en la referencia:** Usuarios no pone `aria-pressed` en los botones de vista, ni `aria-label`/`type="search"`/`aria-controls` en la búsqueda, ni `aria-hidden` en el divisor. El bloque de arriba es la versión correcta.
 
 ### 2.2. Filtros expandibles
 Cada filtro de la cabecera (en Usuarios: Rol y Estado) es un ítem de [`expandable_filter_group.md`](../dropdown/expandable_filter_group.md):
@@ -118,7 +117,6 @@ Cada filtro de la cabecera (en Usuarios: Rol y Estado) es un ítem de [`expandab
 - Al elegir: aplica, vuelve a página 1 y **cierra** el filtro. Un solo filtro abierto a la vez; se cierra con clic fuera y con `Escape` (devuelve el foco al disparador).
 - **CSS:** disparador de 38 px, `padding: 0 .875rem`, `font-size: var(--font-size-xs)`; abierto con `rgba(brand, .1)`, con valor `rgba(brand, .06)`; la flecha rota **−90°** al abrir; expansión `max-width: 420px` con `border-left: 1px dashed`; select mínimo 165 × 28.
 - Se ocultan en ≤768 px.
-- **Deuda en la referencia:** sin `role`/`aria-label` en el grupo, sin `aria-controls`, sin `aria-label` en el select y sin `Escape`.
 
 ### 2.3. Limpiar todo
 ```tsx
@@ -191,7 +189,8 @@ export interface ColumnaTabla<T> {
   defaultWidth: number;          // px
   dataType?: 'text' | 'number' | 'date';
   filterable?: boolean;          // filtro tipo Excel; por defecto true
-  getValue: (fila: T) => string; // texto para ordenar, filtrar y mostrar en el filtro
+  getValue: (fila: T) => string; // texto para filtrar y mostrar en el filtro (y ordenar, si no hay sortValue)
+  sortValue?: (fila: T) => string; // valor para ordenar cuando el texto mostrado no ordena bien (fechas: ISO)
 }
 ```
 
@@ -204,7 +203,7 @@ Ejemplo (Usuarios):
 | `zona` | Zona | 120 | zona o «Sin zona» |
 | `rol` | Rol | 110 | rol o «Sin rol» |
 | `estado` | Estado | 115 | «Activo» / «Inactivo» |
-| `ultimo_inicio` | Último inicio APK | 175 | fecha formateada; `dataType: 'date'`, `filterable: false` |
+| `ultimo_inicio` | Último inicio APK | 175 | fecha formateada; `sortValue` = fecha ISO; `dataType: 'date'`, `filterable: false` |
 | `ubicacion` | Ubicación | 260 | dirección, «Dirección pendiente» o «Sin ubicación» (nunca coordenadas) |
 
 Más una columna **Acciones** fija de 124 px, alineada a la derecha. Valores vacíos se muestran con un texto («Sin cargo asignado»), nunca en blanco.
@@ -236,10 +235,9 @@ Más una columna **Acciones** fija de 124 px, alineada a la derecha. Valores vac
 .joli-data-table td.actions-cell { overflow: visible; }
 .joli-data-table tbody tr:hover { background: var(--bg-hover); }
 ```
-- **Deuda en la referencia:** Usuarios ordena desde un `span` (no accesible con teclado) y no pone `scope`/`aria-sort`. El bloque de arriba es la versión correcta.
 
 ### 4.3. Ordenar
-Clic en otra columna → ascendente; en la misma → alterna. Todas las columnas se pueden ordenar. Comparación con `localeCompare('es', { numeric: true, sensitivity: 'base' })` sobre `getValue`. Las columnas de **fecha** DEBEN ordenar por el valor crudo (ISO o timestamp), no por el texto formateado (**deuda en la referencia**: «Último inicio APK» ordena por texto).
+Clic en otra columna → ascendente; en la misma → alterna. Todas las columnas se pueden ordenar. Comparación con `localeCompare('es', { numeric: true, sensitivity: 'base' })` sobre `sortValue ?? getValue`. Las columnas de **fecha** DEBEN declarar `sortValue` con el valor crudo (ISO o timestamp): ordenar por el texto formateado («08/11/2026») da un orden falso.
 
 ### 4.4. Filtro tipo Excel por columna
 Botón en el encabezado y [`ChecklistPopover`](./checklist_popover.md) con los valores de **todas** las filas:
@@ -259,7 +257,6 @@ Botón en el encabezado y [`ChecklistPopover`](./checklist_popover.md) con los v
 
 ### 4.5. Columnas redimensionables y persistidas
 Separador `div.resizable-th-resizer` (5 px; hover `--brand-solid`) en el borde derecho del encabezado: arrastrar cambia el ancho; doble clic restablece el ancho por defecto. Ancho mínimo **70 px**. Detalle en [`column_resizer.md`](./column_resizer.md) §0.
-- **Deuda en la referencia:** Usuarios escribe en almacenamiento en cada movimiento y sin `try/catch`, y el separador no tiene `role="separator"` ni teclado. Lo correcto: guardar al soltar, con `try/catch`, y flechas para ajustar.
 
 ### 4.6. Celdas tipo
 | Celda | Estructura | Notas |
@@ -305,7 +302,7 @@ Botón `Power` + [`ConfirmModal`](../modal/confirm_modal.md) **en ambos sentidos
 
 ## 6. Carga, vacío y refresco
 
-- **Primera carga:** `TableSkeleton` (8 filas) dentro de la tarjeta. La cortinilla `PageLoader variant="curtain"` PUEDE mostrarse en la primera carga; en recargas y después de guardar DEBERÍA bastar con el giro del botón Recargar y `aria-busy` (ver [`page_loader.md`](../loader/page_loader.md); **deuda en la referencia:** Usuarios muestra la cortinilla en cada recarga).
+- **Primera carga:** `TableSkeleton` (8 filas) dentro de la tarjeta y cortinilla `PageLoader variant="curtain"` solo con `isLoading && datos.length === 0`. En recargas y después de guardar basta con el giro del botón Recargar y `aria-busy`; sin botón Recargar, la tabla se atenúa con `.joli-table-wrapper.is-recargando` (ver [`page_loader.md`](../loader/page_loader.md)).
 - **Vacío:** `div.table-centered-empty-state role="status"` (ilustración SVG de 58 px + `p.table-empty-message`), centrado, `min-height: 260px`. En tabla va **después** del `<table>` (el encabezado se queda); en tarjetas reemplaza la rejilla. Mensaje según la causa, en este orden: «No hay datos registrados» → `No se encontraron datos para "{búsqueda}"` → filtro de estado → filtro de cabecera (con el **nombre** visible del valor, no su id) → «No se encontraron datos».
 - **Sondeo:** `useSmartPolling(cargar, { intervalMs: 30000, pauseOnHidden: true, immediate: false })` ([`js_polling_architecture.md`](../realtime/js_polling_architecture.md)). Se salta mientras el drawer de edición está abierto o guardando, y solo reemplaza el estado si los datos cambiaron (comparación del JSON). Con sesión vencida no muestra toast.
 
@@ -352,3 +349,21 @@ En un drawer ([`drawer.md`](../drawer/drawer.md) §1.1), con campos de etiqueta 
 - [ ] Esqueleto, vacío con mensaje según la causa y sondeo de 30 s que se pausa al editar.
 - [ ] Claves de almacenamiento §7 con `try/catch`.
 - [ ] Revisado en tema claro y oscuro, escritorio y móvil.
+
+---
+
+## 11. Componentes compartidos (`frontend-admin/src/components/ui/tabla/`)
+
+Las 6 pantallas de tabla del panel (Usuarios, Clientes, Historial de rutas, Programación de ruta, Control de versiones y Logs) los usan; la accesibilidad y la persistencia se corrigen una sola vez aquí.
+
+| Pieza | Reemplaza | Lo que garantiza |
+| :--- | :--- | :--- |
+| `BotoneraVista` | `.view-switcher` escrito a mano (§2.1) | `aria-pressed` en las vistas, búsqueda `type="search"` con `aria-label`/`aria-controls`, foco al abrir, `Escape` cierra sin borrar, la X borra y cierra. `sinVistas` para pantallas solo con buscador |
+| `GrupoFiltros` + `FiltroExpandible` | `.expandable-filter-group` / `-item` (§2.2) | `role="group"`, `aria-controls`, `aria-label` en el select, foco al abrir, `Escape` cierra y devuelve el foco, insignia con el texto de la opción y `title` |
+| `BotonLimpiarFiltros` | `.filter-actions-group` (§2.3) | `aria-label`; fuera del orden de Tab cuando está oculto |
+| `EncabezadoColumna` | `<th className="resizable-th">` (§4.2–4.5) | `scope="col"`, `aria-sort`, ordenar con un botón, filtro Excel con `aria-haspopup`/`aria-expanded`/`aria-controls`, separador de ancho `role="separator"` con teclado |
+| `useAnchosColumnas(clave, porDefecto)` | estado de anchos de cada pantalla (§4.5) | mínimo 70 px, guardar al soltar con `try/catch`, doble clic y Enter restablecen, flechas ajustan |
+
+Fuera de `tabla/`, también compartidos: `Pagination` (§3), `ChecklistPopover` (§4.4), `ColumnVisibilityDropdown` (§2.4), `RightDrawer` + `useFocoAtrapado` (§9) y `ConfirmModal`.
+
+Se quedan propios de cada pantalla los controles que no son 1 a 1 con un componente: el filtro de **Fecha** del planeador de rutas (selector de fecha + flechas + insignia calculada) y los filtros rápidos por KPI (Clientes, Versiones).

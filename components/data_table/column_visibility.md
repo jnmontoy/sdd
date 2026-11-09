@@ -12,7 +12,7 @@ El **Selector de Visibilidad de Columnas** permite mostrar u ocultar columnas de
 - `ColumnVisibilityDropdown` con `columns={[{key, label}]}`, `onResetDefault` y `storageKey`. El componente **escribe en almacenamiento** al cambiar y en «Todas», y lo borra en «Restablecer» (no usa un hook aparte).
 - Botón de 38 px alineado con la barra; menú de 230 px abierto hacia la derecha (`left: 0`); casilla `col-checkbox`. Mínimo una columna visible. Solo en escritorio y vista tabla.
 - Clave `<app>_<modulo>_visible_columns_v<N>` (Pandora: `pandora_users_visible_columns_v3`): subir `vN` cuando cambian las columnas. Al leer se descartan claves de columnas que ya no existen.
-- **Deuda en la referencia:** sin `try/catch` al escribir, sin `Escape` ni `aria-controls`.
+- Escribe en almacenamiento con `try/catch`, cierra con `Escape` (devuelve el foco al botón) y el menú tiene `id` + `aria-controls` y `role="group"`.
 
 ---
 

@@ -12,7 +12,7 @@ El **Column Resizer** permite ajustar el ancho de cada columna arrastrando su bo
 - Separador `div.resizable-th-resizer` (5 px; hover `--brand-solid`) dentro de cada `th.resizable-th`; `title` «Arrastra para redimensionar columna (Doble clic para restablecer)». Doble clic vuelve al ancho por defecto.
 - Ancho mínimo **70 px**; respaldo 140 px si una columna no tiene ancho por defecto. Los `th` y `td` fijan `width`, `minWidth` y `maxWidth` iguales (tabla con `table-layout: fixed`).
 - Anchos guardados en `<app>_<modulo>_col_widths` (objeto JSON mezclado con los anchos por defecto). La lógica vive en el hook de la vista (`useVistaUsuarios.ts`), no en un hook genérico.
-- **Deuda en la referencia:** escribe en almacenamiento en cada `mousemove` y sin `try/catch`; no cambia el cursor del `body`; el separador no tiene `role="separator"`, `tabIndex` ni teclado. Lo correcto es lo del resto de este documento: guardar al soltar, con `try/catch`, accesible con teclado.
+- **Hook compartido `useAnchosColumnas(clave, porDefecto)`** (`ui/tabla/`): guarda **al soltar** con `try/catch`, pone `cursor: col-resize` en `body` mientras se arrastra, y el separador (dentro de `EncabezadoColumna`) es `role="separator"` enfocable: flechas ajustan 10 px (Mayús 40 px) y Enter restablece.
 
 ---
 

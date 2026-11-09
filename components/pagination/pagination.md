@@ -14,7 +14,7 @@ El componente `Pagination` navega conjuntos grandes de datos paginados en el bac
 - **Ventana de 3 números** alrededor de la página actual, sin elipsis. Íconos de 14 px; botones de 30 × 30 con `bg-input`; el activo con `--brand-solid`, texto blanco y sombra. `aria-current="page"`; `nav aria-label="Navegación de registros"`; botones con `aria-label` («Ir a la primera página»…) y `title`.
 - Tamaño por defecto 10, **no se guarda**; al cambiarlo se vuelve a página 1; la página se limita al total.
 - ≤768 px: se ocultan los números y la etiqueta «Mostrar».
-- **Deuda en la referencia:** el selector de tamaño usa solo `aria-label="Filas por página"` (sin `<label>`), el resumen no tiene `aria-live="polite"` y en móvil falta el indicador «Página X de Y».
+- El selector de tamaño tiene `<label>` real, el resumen `aria-live="polite"`, cada número `aria-label="Página N"`, y en móvil aparece el indicador `.page-indicator` «X / Y» en lugar de los números.
 
 ---
 

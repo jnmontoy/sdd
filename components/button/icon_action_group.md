@@ -16,7 +16,7 @@ Este documento define cuatro piezas de botones:
 - **Caja compacta** `div.compact-action-box role="toolbar"`: 36 px de alto (32 en móvil), `radius-md`, `bg-input`; botones `btn-icon-compact` de 36 px. Orden: crear (`btn-icon-add`, `UserPlus` 15, en `--brand-primary`) → acciones del módulo (`--text-secondary`, hover de marca) → `span.compact-divider` (18 px, `aria-hidden`) → recargar (`btn-icon-refresh`, `RotateCcw` 14 con `spin-antihorario` mientras carga). **Exportar no va en la caja:** es un botón con texto en la zona izquierda.
 - **Botonera de los tres** (`.view-switcher`, vista tabla / tarjetas / buscar): 38 px de alto, botones de 32 px; la búsqueda se despliega hasta 340 px. Detalle en [`admin_table_screen.md`](../data_table/admin_table_screen.md) §2.1.
 - **Acciones de fila** `div.row-actions-group role="group"`: 28 px de alto, botones `action-btn {map|edit|toggle danger|toggle success}` de 30 × 28 separados por `border-right` (no `btn-group btn-group-sm` ni `btn-row-*`). Detalle en §4.7 del patrón.
-- **Deuda en la referencia:** los botones de vista no tienen `aria-pressed`, la búsqueda no tiene `aria-label` ni `type="search"`, y el botón recargar no se deshabilita ni lleva `aria-busy` mientras carga.
+- **Componentes compartidos (`frontend-admin/src/components/ui/tabla/`):** `BotoneraVista` (vista y búsqueda con `aria-pressed`, `type="search"`, `aria-label` y `aria-controls`). El botón recargar va con `disabled` y `aria-busy` mientras carga y el divisor con `aria-hidden`.
 
 ---
 

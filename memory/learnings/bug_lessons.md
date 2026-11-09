@@ -211,3 +211,10 @@
 - Riesgo: al volver opcionales `lat`/`lon` de una parada, `haversine(null…)` da `NaN` y contamina toda la suma de km; un `Marker` con coordenadas nulas cierra la app en Android.
 - Regla: un solo guardián de tipo (`tieneCoordenadas(p): p is T & Punto`) y filtrar con él antes de medir, ordenar, trazar, encuadrar o pintar marcadores. Las paradas sin coordenadas van al final en su orden, sin distancia, y los enlaces de Google Maps usan la dirección escrita (dirección, barrio, ciudad, país) en su lugar.
 - Contrato: un campo que pasa de obligatorio a `Optional` rompe a los clientes viejos que lo dan por hecho; revisar qué hace la versión instalada antes de publicar.
+
+## Defectos copiados en todas las pantallas de tabla (2026-11-09)
+- Síntoma: al revisar la pantalla de referencia (Usuarios) aparecieron fallas de accesibilidad y persistencia (ordenar desde un `span`, botones sin `aria-pressed`, anchos de columna guardados en cada movimiento del mouse y sin `try/catch`). Las mismas fallas estaban en las otras 5 pantallas de tabla.
+- Causa: la barra de herramientas y el encabezado de la tabla se copiaban de pantalla en pantalla en vez de ser componentes.
+- Regla: cuando una pieza de interfaz aparece en 3 o más pantallas, se extrae a un componente compartido y se corrige ahí (en Pandora: `ui/tabla/`, ver `components/data_table/admin_table_screen.md` §11). Una pantalla nueva usa el componente, nunca copia el marcado.
+- Al migrar, un control que no es 1 a 1 con el componente (p. ej. un filtro de fecha con flechas) se deja propio en vez de forzarlo.
+

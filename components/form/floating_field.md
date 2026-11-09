@@ -121,7 +121,7 @@ Igual que 5.1, con `<select>` en lugar de `<input>`. No necesita `placeholder`: 
 Con `flotante`, el componente pone `campo-flotante campo-flotante-envoltura` en su contenedor, añade `is-vacio` cuando no hay valor, está cerrado y no está deshabilitado, y dibuja la etiqueta después del disparador. **Sin `flotante`** (filtros) conserva su etiqueta de siempre. Ver [`select_filter.md`](../dropdown/select_filter.md).
 
 ### 5.5. Contraseña
-Igual que 5.1 con `has-suffix` y el botón ver/ocultar después de la etiqueta: `type="button"`, `aria-label` «Mostrar contraseña» / «Ocultar contraseña», `aria-pressed`, alcanzable con Tab (sin `tabIndex={-1}`). Si el campo lleva además un botón pegado a la derecha (p. ej. «Requiere cambio de contraseña»), ver el patrón `drawer-input-group` en [`drawer.md`](../drawer/drawer.md) §1.2. *(Deuda en la referencia: el ojo del drawer de usuario dice «Ver contraseña» y no tiene `aria-pressed`.)*
+Igual que 5.1 con `has-suffix` y el botón ver/ocultar después de la etiqueta: `type="button"`, `aria-label` «Mostrar contraseña» / «Ocultar contraseña», `aria-pressed`, alcanzable con Tab (sin `tabIndex={-1}`). Si el campo lleva además un botón pegado a la derecha (p. ej. «Requiere cambio de contraseña»), ver el patrón `drawer-input-group` en [`drawer.md`](../drawer/drawer.md) §1.2.
 
 ### 5.6. Variables por contenedor
 | Variable | Qué es | Valor por defecto |
