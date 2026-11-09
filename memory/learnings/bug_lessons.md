@@ -195,3 +195,14 @@
   - **Modelos Django en paquete:** `models/__init__.py` importa todos los modelos; `makemigrations --check` debe decir «No changes detected».
   - **Esquemas Pydantic en paquete:** el `__init__` reexporta todos los modelos; el contrato OpenAPI generado debe quedar idéntico.
 
+  - **Componentes React / React Native (2026-11-09, 17 archivos de un proyecto real):** el archivo original queda como componente de entrada con el mismo nombre exportado y las mismas props (ningún import cambia; si otros módulos importaban tipos o constantes de él, reexportarlos). Las piezas van en una subcarpeta junto a él: `estilos.ts` (el `StyleSheet.create` copiado tal cual), `use*.ts` (estado y efectos), `*Config.ts` / `utilidades.ts` (constantes y funciones puras) y subcomponentes. Las funciones que devolvían JSX (`celda()`, `filtro()`) pasan a ser componentes; el DOM queda igual. Verificar con `tsc`, lint y pruebas; los cambios visuales solo se confirman abriendo la pantalla.
+  - **Constantes con iconos en un `.ts` de configuración:** si llevan JSX, el archivo tiene que ser `.tsx` y el lint marca `only-export-components`; usar `createElement(Icono, { size })` permite dejarlo en `.ts`.
+
+## Vite responde 404 a un módulo que se convirtió en carpeta (2026-11-09)
+- Síntoma: tras reemplazar `src/services/api.ts` por la carpeta `src/services/api/` (con `index.ts`), el navegador pedía `/src/services/api.ts?t=...` y recibía 404; el panel no cargaba.
+- Causa: el servidor de desarrollo de Vite, iniciado antes del cambio, conservaba en su grafo de módulos la ruta del archivo viejo.
+- Regla: al convertir un archivo en carpeta (o mover módulos importados por muchos), reiniciar `vite` antes de diagnosticar. No es un error del código si `tsc` pasa.
+
+## `Animated.Value` en `useRef` rompe el lint de React (2026-11-09)
+- Síntoma: `npx expo lint` falla con `react-hooks/refs` («Cannot access refs during render») en `style={{ opacity: progreso }}` cuando `progreso = useRef(new Animated.Value(0)).current`.
+- Regla: crear el valor animado con `const [progreso] = useState(() => new Animated.Value(0))`: es estable entre renders y el lint lo acepta.
