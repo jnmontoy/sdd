@@ -11,7 +11,7 @@ Lenguaje normativo: **DEBE / NO DEBE** (obligatorio, para seguridad e integridad
 | Documento | Para qué sirve |
 | :--- | :--- |
 | [`SPEC_GUIDE.md`](./SPEC_GUIDE.md) | Guía maestra: niveles de formalidad, preguntas iniciales, estructura de proyecto. |
-| [`00_normativa_buenas_practicas_y_auditoria.md`](./00_normativa_buenas_practicas_y_auditoria.md) | Fuente única de las buenas prácticas BP-01 a BP-24 y lista de verificación. |
+| [`00_normativa_buenas_practicas_y_auditoria.md`](./00_normativa_buenas_practicas_y_auditoria.md) | Fuente única de las buenas prácticas BP-01 a BP-25 y lista de verificación. |
 | [`01_calificacion_final_ecosistema_sdd.md`](./01_calificacion_final_ecosistema_sdd.md) | Evaluación de madurez: qué está implementado, qué solo documentado y qué falta. |
 
 ## 2. Catálogos y asistentes de diseño

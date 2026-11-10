@@ -248,3 +248,8 @@
 - Síntoma: aun con un mensaje único para «usuario inexistente» y «contraseña incorrecta», el usuario inexistente respondía al instante y el existente tardaba lo del hash (PBKDF2, cerca de 1 s): midiendo el tiempo se sabía qué cédulas tenían cuenta.
 - Arreglo: si el usuario no existe, verificar la contraseña contra un hash ficticio del mismo costo (`make_password` una sola vez, con `functools.cache`) y devolver el mismo 401. El estado de la cuenta (inactiva) solo después de validar la contraseña.
 - Regla: BP-24. Pruebas que comparen código y cuerpo de ambos casos.
+
+## Hooks de Claude Code en Windows: probarlos con rutas de Windows (2026-11-10)
+- Síntoma: al probar un hook de Node desde Git Bash con `$(pwd)`, la ruta llega como `/c/Users/...`; Node en Windows no la encuentra (`existsSync` da `false`) y el hook parece no funcionar.
+- Causa: Claude Code le entrega al hook rutas `C:\...`; la de Git Bash es solo de la prueba.
+- Regla: probar los hooks con el JSON real (`{"tool_input":{"file_path":"C:\..."}}`) desde PowerShell, o con `cygpath -w`. Un hook DEBE terminar en silencio ante cualquier error para no interrumpir el trabajo.

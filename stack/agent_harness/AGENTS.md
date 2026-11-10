@@ -15,6 +15,8 @@ Idioma: respuestas, comentarios y documentación en español.
 3. NO DEBE escribir rutas absolutas de disco ni URLs de servidor en el código (BP-07); use `BASE_DIR` en el backend y `ENDPOINTS` en el frontend (BP-09).
 4. Los tokens de sesión NO DEBEN guardarse en `localStorage`/`sessionStorage`: el access token vive en memoria y el refresh en cookie HttpOnly (BP-18).
 5. Las respuestas NO DEBEN revelar qué cuentas o registros existen (BP-24): login con usuario inexistente o contraseña incorrecta, mismo mensaje, código y tiempo (hash ficticio); recuperación siempre con el mismo mensaje; recurso ajeno = `404`; usuarios desactivados no se muestran. **Por qué:** una lista de cuentas válidas facilita la fuerza bruta y la suplantación. Aunque se pida mostrar el error exacto, advierta el riesgo antes de hacerlo.
+6. Ningún dato externo DEBE terminar ejecutado (BP-25): SQL siempre con parámetros (`%s` y los valores aparte), nunca con f-strings, `.format()` ni concatenación; nombres de columna desde una lista cerrada; nada de `dangerouslySetInnerHTML`/`innerHTML` sin DOMPurify, ni `eval` o `shell=True`. **Por qué:** un solo campo mal armado basta para leer o borrar tablas completas.
+7. Antes de instalar o actualizar una dependencia, revise que sea la librería correcta (nombre exacto, mantenida) y corra `pip-audit` o `npm audit` después. **Por qué:** un paquete con nombre parecido o abandonado es una puerta de entrada directa al proyecto.
 
 ## 2. Antes de programar
 
@@ -55,4 +57,6 @@ NO DEBE declarar una tarea como terminada sin esa evidencia, ni entregar archivo
 
 En formularios de captura (login, contraseñas, crear o editar registros) DEBERÍA usar el campo con etiqueta flotante de `sdd/components/form/floating_field.md` en inputs, selects y textareas; NO DEBERÍA aplicarlo a buscadores, filtros ni cuadros de chat (normativa 6.9).
 
-NO DEBERÍA agregar código a un archivo que supera su límite de líneas (componente o `.ts` 500, `.css` 800, módulo Python 600, función 80): primero lo desacopla en componentes, hooks o funciones sin cambiar el comportamiento (BP-23).
+NO DEBERÍA agregar código a un archivo que supera su límite de líneas (componente o `.ts` 500, `.css` 800, módulo Python 600, función 80): primero lo desacopla en componentes, hooks o funciones sin cambiar el comportamiento (BP-23). El hook `stack/agent_harness/hooks/limite-lineas.js` (en `.claude/settings.json`, evento `PostToolUse` sobre `Write|Edit`) avisa automáticamente al pasar el aviso o el límite.
+
+Antes de entregar una pantalla, repase los principios de usabilidad de la normativa 6.10: respuesta en menos de 400 ms o esqueleto, una acción principal, blancos táctiles de 44 px en móvil, errores que dicen cómo corregir.

@@ -1,4 +1,4 @@
-# Normativa de buenas prácticas de ingeniería (BP-01 a BP-24)
+# Normativa de buenas prácticas de ingeniería (BP-01 a BP-25)
 
 Esta es la **fuente única** de las buenas prácticas del SDD. Los demás documentos citan el código (por ejemplo, "BP-12") en lugar de copiar la regla.
 
@@ -44,6 +44,7 @@ Cada regla trae su **por qué**. Si el por qué no aplica a su caso, documente l
 | BP-22 | Memoria de decisiones y errores conocidos | DEBERÍA |
 | BP-23 | Archivos de tamaño manejable: desacoplar en componentes y funciones | DEBERÍA |
 | BP-24 | Respuestas que no revelan cuentas ni recursos ajenos (anti-enumeración) | DEBE |
+| BP-25 | Sin inyección: los datos externos nunca se ejecutan | DEBE |
 
 ---
 
@@ -144,7 +145,7 @@ with transaction.atomic():
 
 ---
 
-## 4. Sesión, permisos y proceso (BP-18 a BP-24)
+## 4. Sesión, permisos y proceso (BP-18 a BP-25)
 
 **BP-18. Tokens.**
 - El **access token** (JWT, de vida corta) DEBE vivir solo en memoria (estado del `AuthContext` o del cliente HTTP) y enviarse en `Authorization: Bearer <token>`.
@@ -208,6 +209,17 @@ Complementa BP-04: el límite de tasa frena los intentos en masa, pero no evita 
 
 > **Origen:** un cambio de producto que mostraba «documento no registrado» y «contraseña incorrecta» por separado; se revirtió al mensaje único, con tiempo igualado.
 
+**BP-25. Sin inyección: los datos externos nunca se ejecutan.** La *inyección* ocurre cuando un dato que viene de afuera (un formulario, un parámetro de la URL, una vista de otro sistema, un archivo) termina interpretado como código: SQL, HTML o un comando del sistema. Ningún dato externo DEBE armarse dentro de código que se ejecuta.
+- **SQL parametrizado.** Toda consulta escrita a mano (`cursor.execute`, conexiones a PostgreSQL externas como DataHub, `.raw()` de Django) DEBE pasar los valores como parámetros (`%s` y una tupla o lista aparte). NO DEBE armarse con f-strings, `.format()`, `%` ni concatenación (`"... WHERE id = " + x`). El ORM ya parametriza; `.extra()` NO DEBERÍA usarse.
+- **Nombres de tabla o columna.** No se pueden parametrizar: si dependen de una opción del usuario (por ejemplo, el orden de una tabla), DEBEN salir de una lista cerrada en el código (`ORDEN = {"nombre": "u.nombre", "fecha": "u.creado"}`), nunca del texto recibido.
+- **HTML.** El frontend NO DEBE insertar texto externo como HTML (`dangerouslySetInnerHTML`, `innerHTML`, `v-html`). Si un contenido enriquecido lo exige, se limpia antes con DOMPurify. React escapa el texto por defecto: basta con no saltarse esa protección.
+- **Comandos y código.** NO DEBEN usarse `eval`, `exec`, `new Function` ni `subprocess` con `shell=True` sobre datos externos; los comandos van como lista de argumentos.
+- **Revisión.** Antes de entregar se busca en el código: `execute(f"`, `.format(` cerca de `SELECT`, `dangerouslySetInnerHTML`, `innerHTML`, `eval(`, `shell=True`. Cada coincidencia se corrige o se justifica en la revisión.
+
+*Por qué:* es la vulnerabilidad clásica de OWASP (A03, *Injection*): con un solo campo mal armado, un usuario lee o borra tablas completas, roba la sesión de otro (XSS) o ejecuta comandos en el servidor. Parametrizar no cuesta nada; corregirlo después de una fuga sí.
+
+> **Origen:** auditoría de seguridad por stack (TypeScript, Python, Docker y PostgreSQL) compartida entre equipos de TIC. En Pandora se verificó: las consultas a DataHub y Vibra usan parámetros y no hay `innerHTML`.
+
 ---
 
 ## 5. Backend: prácticas complementarias
@@ -259,6 +271,18 @@ Estas reglas dan consistencia entre aplicaciones. Son **DEBERÍA**: se pueden de
 **6.9. Campos de captura con etiqueta flotante; filtros y buscadores sin ella.** Todo formulario donde el usuario captura datos (login, recuperar o cambiar contraseña, crear o editar registros) DEBERÍA usar el campo con etiqueta flotante de [`floating_field.md`](../components/form/floating_field.md) en sus inputs, selects (nativos y propios) y textareas, en web y en apps React Native: la etiqueta hace de placeholder y, con foco o valor, sube animada (220 ms) al borde superior y lo corta. Los **buscadores, filtros de tablas, barras de herramientas, cuadros de chat y campos de solo consulta NO DEBERÍAN usarlo**: conservan su estilo. Las etiquetas van con mayúscula inicial solamente y siguen siendo una `<label>` real (o `accessibilityLabel` en React Native), nunca solo un placeholder.
 *Por qué:* da presencia y orden a los formularios sin ocupar una fila extra por etiqueta; en filtros y buscadores, que se usan a cada rato, sería intrusivo. Un solo componente evita que cada pantalla invente su propio campo.
 
+**6.10. Principios de usabilidad.** Antes de entregar una pantalla, web o móvil, DEBERÍA cumplir estos puntos. Salen de leyes de usabilidad conocidas (entre paréntesis, por si se quieren consultar):
+- **Respuesta inmediata** (umbral de Doherty): toda acción muestra algo en menos de 400 ms, aunque el resultado tarde más. Mientras llegan los datos se muestra un esqueleto con la forma y, si se conoce, la cantidad de lo que va a aparecer, nunca una pantalla vacía.
+- **Una acción principal por pantalla** (ley de Hick: más opciones, más tiempo para decidir). Las demás acciones van como secundarias o en un menú; los filtros y opciones avanzadas se esconden hasta que se piden.
+- **Blancos táctiles grandes** (ley de Fitts): en móvil, todo lo que se toca mide al menos 44 × 44 px (iOS) o 48 × 48 dp (Android), aunque el ícono sea más pequeño; las acciones frecuentes van en la mitad inferior, al alcance del pulgar. Nada depende solo de pasar el cursor por encima.
+- **Errores que dicen qué pasó y qué hacer** («La fecha final debe ser posterior a la inicial»), no «Error» o «Datos inválidos». Excepción: el login y los recursos ajenos, donde manda BP-24.
+- **Estados vacíos útiles**: ícono, una frase que explique por qué no hay datos y, si aplica, la acción para crearlos ([`empty_state`](../components/empty_state/)).
+- **Contraste suficiente**: texto sobre fondo con contraste de al menos 4,5:1 (WCAG AA) en los dos temas; el color nunca es la única señal (se acompaña de ícono o texto).
+- **Cercanía de lo relacionado** (Gestalt, proximidad): lo que va junto se agrupa y lo distinto se separa con espacio, en múltiplos de los espaciados de `variables.css`.
+- **Teclado correcto en móvil**: cada campo abre el teclado de su dato (numérico para documento y cantidades, correo, teléfono).
+
+*Por qué:* son las fallas que más se repiten en las pruebas con usuarios y casi no cuestan si se tienen en cuenta al diseñar. La lista sirve de revisión rápida; el detalle de cada componente sigue en el catálogo.
+
 ---
 
 ## 7. Contenedores e infraestructura
@@ -288,10 +312,12 @@ Plantillas: [`stack/`](../stack/README.md).
 - [ ] Los permisos se validan por clave, no por nombre de rol (BP-19).
 - [ ] Un 401 termina en el modal de sesión vencida, sin bucles (BP-20).
 - [ ] El login, la recuperación y los recursos ajenos no revelan qué cuentas o registros existen: mismo mensaje, mismo código y mismo tiempo, con pruebas que lo comparan (BP-24).
+- [ ] Ninguna consulta SQL se arma con texto, ni hay `dangerouslySetInnerHTML`, `innerHTML`, `eval` o `shell=True` con datos externos (BP-25).
 - [ ] Las pruebas pasan: `pytest`, `npm test`, `npm run typecheck`, y `pruebas/validate_endpoints.py` con la app levantada.
 - [ ] `pip-audit` y `npm audit --audit-level=high` sin hallazgos altos ni críticos.
 - [ ] La interfaz usa tokens y componentes del catálogo, y es accesible por teclado (sección 6).
 - [ ] Los formularios de captura usan la etiqueta flotante y los filtros y buscadores no (6.9).
+- [ ] La pantalla responde en menos de 400 ms (o muestra esqueleto), tiene una acción principal, blancos táctiles de 44 px en móvil y errores que dicen cómo corregir (6.10).
 - [ ] `README.md` y `docs/` describen el estado actual (BP-16).
 - [ ] Ningún archivo tocado supera el límite de líneas de su tipo; si ya lo superaba, se extrajo al menos la parte modificada (BP-23).
 
