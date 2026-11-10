@@ -253,3 +253,14 @@
 - Síntoma: al probar un hook de Node desde Git Bash con `$(pwd)`, la ruta llega como `/c/Users/...`; Node en Windows no la encuentra (`existsSync` da `false`) y el hook parece no funcionar.
 - Causa: Claude Code le entrega al hook rutas `C:\...`; la de Git Bash es solo de la prueba.
 - Regla: probar los hooks con el JSON real (`{"tool_input":{"file_path":"C:\..."}}`) desde PowerShell, o con `cygpath -w`. Un hook DEBE terminar en silencio ante cualquier error para no interrumpir el trabajo.
+
+## Un campo que se despliega no debe forzar el salto de línea (2026-11-10)
+- Síntoma: al abrir el buscador de la botonera (ancho fijo 230/340 px) en una cabecera con `flex-wrap: wrap`, los filtros, Exportar o el paginador saltaban a otra línea.
+- Causa: el salto de línea de flexbox usa el ancho intrínseco de cada elemento; al crecer el campo, crece el de su contenedor.
+- Arreglo: el campo desplegado lleva `contain: inline-size` + `flex: 1 1 0` y sin padding propio (no aporta ancho intrínseco), y su contenedor abierto crece con `flex-grow` hasta un `max-width` tope; así toma solo el espacio libre de su línea. Los ancestros (`.toolbar-left`) necesitan `flex: 1 1 auto; min-width: 0`. Detalle en `admin_table_screen.md` §2.1.
+
+## Un porcentaje redondeado no puede decir «100 %» si falta algo (2026-11-10)
+- Síntoma: el modal de carga de reglas mostraba «100 % se puede subir» con 2.219 de 2.220 filas válidas, y el tramo rojo de la barra (0,05 %) no se veía.
+- Causa: `Math.round(ok / total * 100)` lleva 99,95 a 100; el ancho proporcional de una fila entre miles queda en menos de 1 px.
+- Arreglo: truncar (no redondear) a dos decimales con formato `es-CO` («99,95 %»), «100 %» solo si son todas (`porcentajeSubible` en `cargaReglasTexto.ts`), y `min-width` al tramo de error para que siempre se vea.
+- Regla: todo porcentaje de avance o completitud se trunca, nunca se redondea hacia arriba; una parte no vacía de una barra lleva ancho mínimo visible.
