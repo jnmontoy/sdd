@@ -15,6 +15,10 @@ Props adicionales de carga, para operaciones largas:
 - `loadingText` (por defecto «Procesando...»): texto del botón mientras `isLoading`.
 - `loadingProgress` (0–100): llena el botón de confirmar como una barra de progreso. Ej.: «Actualizar usuarios» desde Vibra, `type="primary"`, botón «Actualizar», `loadingText` «Actualizando… N %».
 - `zIndex` (por defecto 100005), para abrirlo encima de un drawer.
+- `confirmDisabled`: deshabilita el botón de confirmar cuando no hay nada que hacer (p. ej. «Subir 0 reglas» en la carga masiva de Reglas del rutero).
+- `accionPie`: un botón extra en el pie, a la derecha de Confirmar (Confirmar queda al centro), con la clase `joli-btn-modal-secondary` (p. ej. «Informe de errores» en la carga masiva). Úsalo solo para una acción secundaria que no cierra el modal.
+- `ancho`: `normal` (460 px, por defecto) o `amplio` (560 px, clase `.is-amplio`) para que tres botones del pie quepan en una sola línea.
+- `cancelText=""` oculta Cancelar: sirve para mostrar un resultado con un solo botón «Cerrar».
 - `type`: `danger | success | warning | primary`. Mientras `isLoading` no se puede cerrar.
 - Al terminar una operación por lotes, el resultado va en toasts: éxito con el resumen («n nuevos · n actualizados · n sin cambios») y advertencias con hasta 3 detalles + «Y N más.».
 

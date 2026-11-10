@@ -1,4 +1,4 @@
-# Normativa de buenas prácticas de ingeniería (BP-01 a BP-23)
+# Normativa de buenas prácticas de ingeniería (BP-01 a BP-24)
 
 Esta es la **fuente única** de las buenas prácticas del SDD. Los demás documentos citan el código (por ejemplo, "BP-12") en lugar de copiar la regla.
 
@@ -43,6 +43,7 @@ Cada regla trae su **por qué**. Si el por qué no aplica a su caso, documente l
 | BP-21 | Cambios de nivel 2 con propuesta y evidencia | DEBERÍA |
 | BP-22 | Memoria de decisiones y errores conocidos | DEBERÍA |
 | BP-23 | Archivos de tamaño manejable: desacoplar en componentes y funciones | DEBERÍA |
+| BP-24 | Respuestas que no revelan cuentas ni recursos ajenos (anti-enumeración) | DEBE |
 
 ---
 
@@ -143,7 +144,7 @@ with transaction.atomic():
 
 ---
 
-## 4. Sesión, permisos y proceso (BP-18 a BP-23)
+## 4. Sesión, permisos y proceso (BP-18 a BP-24)
 
 **BP-18. Tokens.**
 - El **access token** (JWT, de vida corta) DEBE vivir solo en memoria (estado del `AuthContext` o del cliente HTTP) y enviarse en `Authorization: Bearer <token>`.
@@ -192,6 +193,20 @@ Cómo se aplica:
 - **Excepciones**: archivos generados (tipos de OpenAPI, migraciones, registros JSON), datos estáticos y archivos de terceros no cuentan.
 
 *Por qué:* un archivo de miles de líneas no cabe en la cabeza de una persona ni en el contexto de un asistente de IA. Cada cambio obliga a leer de más, los conflictos de git se multiplican, los estilos y funciones se pisan sin que se note y los errores se esconden. Dividir cuando el archivo crece es barato; dividirlo cuando ya tiene miles de líneas es un proyecto en sí mismo.
+
+**BP-24. Respuestas que no revelan cuentas ni recursos ajenos (anti-enumeración).** La *enumeración* es averiguar qué usuarios o registros existen comparando las respuestas del sistema: un mensaje distinto, otro código HTTP o una respuesta más rápida bastan para saber que una cédula, un correo o un id existen. Ninguna respuesta DEBE permitirlo.
+- **Inicio de sesión.** Usuario inexistente y contraseña incorrecta DEBEN responder igual: mismo código (`401`) y mismo mensaje (por ejemplo, «El documento o la contraseña no son correctos.»). El estado de la cuenta (inactiva, bloqueada, cambio de clave obligatorio) solo se informa **después** de validar la contraseña.
+- **Mismo tiempo de respuesta.** Si el usuario no existe, el backend DEBE verificar la contraseña contra un hash ficticio del mismo algoritmo y costo (en Django, uno generado una vez con `make_password` y guardado en memoria). Responder al instante cuando el usuario no existe delata lo mismo que el mensaje.
+- **Recuperación de contraseña y formularios públicos.** DEBEN responder siempre el mismo mensaje («Si los datos están registrados, recibirás un correo con las instrucciones.»), exista o no la cuenta. El envío del correo va en segundo plano, para que el tiempo tampoco cambie. Un formulario público de registro NO DEBE decir «ese correo ya está registrado»: se avisa por correo al dueño de la cuenta.
+- **Recursos ajenos.** Pedir un recurso que existe pero no es del usuario (una conversación, un pedido, un archivo) DEBE responder `404`, igual que uno inexistente, no `403`. El `403` se reserva para lo que el usuario ya sabe que existe, como una sección del panel que su rol no tiene.
+- **Usuarios desactivados.** NO DEBEN aparecer a otros usuarios en contactos, buscadores ni listados, y lo compartido con ellos (conversaciones, por ejemplo) deja de mostrarse y responde `404`. Los datos se conservan: si lo reactivan, vuelve a verse.
+- **El detalle va al log.** La causa real (usuario inexistente, cuenta inactiva, recurso ajeno) se registra en el log del servidor con el identificador de correlación (5.1), nunca en la respuesta.
+- **Pruebas.** DEBE haber pruebas de contrato que comparen las respuestas: usuario inexistente frente a contraseña incorrecta (mismo código y mismo cuerpo), y recurso ajeno frente a inexistente (los dos `404`).
+
+Complementa BP-04: el límite de tasa frena los intentos en masa, pero no evita que cada intento revele algo; BP-24 evita que lo revele.
+*Por qué:* con una lista de cuentas válidas, el atacante concentra los intentos de contraseña (fuerza bruta y relleno de credenciales filtradas de otros sitios) y arma correos de suplantación creíbles. Es un hallazgo estándar de las guías de autenticación de OWASP (*Authentication Cheat Sheet*, ASVS V2).
+
+> **Origen:** un cambio de producto que mostraba «documento no registrado» y «contraseña incorrecta» por separado; se revirtió al mensaje único, con tiempo igualado.
 
 ---
 
@@ -272,6 +287,7 @@ Plantillas: [`stack/`](../stack/README.md).
 - [ ] Ningún token está en `localStorage`, `sessionStorage` ni en la URL (BP-18).
 - [ ] Los permisos se validan por clave, no por nombre de rol (BP-19).
 - [ ] Un 401 termina en el modal de sesión vencida, sin bucles (BP-20).
+- [ ] El login, la recuperación y los recursos ajenos no revelan qué cuentas o registros existen: mismo mensaje, mismo código y mismo tiempo, con pruebas que lo comparan (BP-24).
 - [ ] Las pruebas pasan: `pytest`, `npm test`, `npm run typecheck`, y `pruebas/validate_endpoints.py` con la app levantada.
 - [ ] `pip-audit` y `npm audit --audit-level=high` sin hallazgos altos ni críticos.
 - [ ] La interfaz usa tokens y componentes del catálogo, y es accesible por teclado (sección 6).

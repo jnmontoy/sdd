@@ -61,7 +61,7 @@ Luego:
 
 | # | Documento | Para qué |
 | :---: | :--- | :--- |
-| 00 | [Normativa de buenas prácticas](greenfield/00_normativa_buenas_practicas_y_auditoria.md) | BP-01 a BP-22, fuente única de las reglas |
+| 00 | [Normativa de buenas prácticas](greenfield/00_normativa_buenas_practicas_y_auditoria.md) | BP-01 a BP-24, fuente única de las reglas |
 | 01 | [Evaluación de madurez del SDD](greenfield/01_calificacion_final_ecosistema_sdd.md) | Qué está cubierto, qué se verifica con herramienta y qué falta |
 | 02 | [Catálogo de complementos](greenfield/02_catalogo_y_menu_de_complementos.md) | Módulos de negocio listos para usar |
 | 03 | [Asistente de diseño de páginas](greenfield/03_asistente_interactivo_diseno_paginas.md) | Entrevista guiada para especificar una pantalla |

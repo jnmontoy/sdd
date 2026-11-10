@@ -14,6 +14,7 @@ Idioma: respuestas, comentarios y documentación en español.
 2. NO DEBE instalar paquetes fuera del entorno virtual del proyecto (BP-15): `.\.venv\Scripts\python.exe -m pip ...` (Windows) o `./.venv/bin/python -m pip ...` (Linux/macOS). **Por qué:** instalar en el Python global mezcla versiones entre proyectos y no se puede reproducir.
 3. NO DEBE escribir rutas absolutas de disco ni URLs de servidor en el código (BP-07); use `BASE_DIR` en el backend y `ENDPOINTS` en el frontend (BP-09).
 4. Los tokens de sesión NO DEBEN guardarse en `localStorage`/`sessionStorage`: el access token vive en memoria y el refresh en cookie HttpOnly (BP-18).
+5. Las respuestas NO DEBEN revelar qué cuentas o registros existen (BP-24): login con usuario inexistente o contraseña incorrecta, mismo mensaje, código y tiempo (hash ficticio); recuperación siempre con el mismo mensaje; recurso ajeno = `404`; usuarios desactivados no se muestran. **Por qué:** una lista de cuentas válidas facilita la fuerza bruta y la suplantación. Aunque se pida mostrar el error exacto, advierta el riesgo antes de hacerlo.
 
 ## 2. Antes de programar
 

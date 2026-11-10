@@ -218,3 +218,33 @@
 - Regla: cuando una pieza de interfaz aparece en 3 o más pantallas, se extrae a un componente compartido y se corrige ahí (en Pandora: `ui/tabla/`, ver `components/data_table/admin_table_screen.md` §11). Una pantalla nueva usa el componente, nunca copia el marcado.
 - Al migrar, un control que no es 1 a 1 con el componente (p. ej. un filtro de fecha con flechas) se deja propio en vez de forzarlo.
 
+## React Native: texto en negrilla cortado en Android (2026-11-09)
+- Síntoma: en el login con huella de la APK, el enlace «Ingresar con contraseña» se veía como «Ingresar con» junto al ícono de llave: la última palabra desaparecía.
+- Causa: un `Text` con `fontWeight: "700"` dentro de una fila (`flexDirection: "row"`) en un contenedor con `alignItems: "center"`. En algunos Android (letra del sistema agrandada, fuentes del fabricante) el texto se mide más angosto de lo que se dibuja y lo que sobra se recorta.
+- Regla: en botones y enlaces de una línea con ícono, dar ancho al contenedor (`alignSelf: "stretch"`), `flexShrink: 1` y `textAlign: "center"` al `Text`, y `textBreakStrategy="simple"`. Así el texto baja de línea en vez de cortarse. Probar con la letra del sistema en el tamaño máximo.
+
+
+## oxlint: `react(set-state-in-effect)` con una función async llamada desde el efecto (2026-11-09)
+- Síntoma: `useEffect(() => { void revisar() }, [revisar])`, con `revisar = useCallback(async () => { … setX(…) })`, da el aviso «Calling setState synchronously within an effect».
+- Regla: en el efecto de carga inicial, llamar al servicio con `.then(...)` directamente dentro del efecto y una bandera `activo` para no actualizar tras desmontar; la función reutilizable (recargar tras guardar) queda aparte y se usa solo desde eventos.
+
+## oxlint: `react(refs)` cuando un hook devuelve un ref dentro de un objeto (2026-11-09)
+- Síntoma: `const carga = useHook()` con `carga.inputRef` y `onClick={carga.abrirSelector}` en el JSX da «Cannot access refs during render».
+- Regla: el `useRef` del `<input type="file">` oculto vive en el componente que lo pinta (`onClick={() => ref.current?.click()}`); el hook solo maneja el estado y el `onChange`.
+
+## Botones con estado de carga: cambiar el ícono por el loader (2026-11-09, preferencia del usuario)
+- Mientras un botón revisa, sube o descarga, su ícono se reemplaza por `Loader2` con la clase `spin` (no se hace girar el ícono propio, salvo el de «Actualizar», que ya es circular); al terminar vuelve el ícono original.
+
+- **Cargador encima de un modal (2026-11-09, Pandora, carga de reglas):** `PageLoader variant="overlay"` y el modal comparten `z-index: var(--z-modal)` y ambos van a `document.body`; para que el cargador quede encima y bloquee el modal, se monta con `createPortal` **después** del modal (mismo z-index: gana el que va después en el DOM). El modal además pasa `isLoading` para que Escape no lo cierre a mitad de la operación.
+
+## ConfirmModal: el contenido toma el ancho de su texto (2026-11-09)
+- Síntoma: al quitar un texto largo del mensaje, las tarjetas o grillas internas se encogen (`.joli-confirm-modal-content` no ocupa todo el ancho porque el contenedor centra con `align-items: center`).
+- Regla: un mensaje con grilla o tarjetas fija `width: 100%` en `.joli-confirm-modal-content:has(.su-clase)` y quita el tope de 220 px de `.joli-confirm-modal-message` si lo necesita.
+
+## Subidas largas con avance en el botón (2026-11-09)
+- Una operación que tarda (p. ej. la carga masiva de reglas) responde en NDJSON (`{tipo:'avance',porcentaje}` … `{tipo:'fin',…}` / `{tipo:'error',detail}`) y el panel la lee con `sincronizarConAvance` (acepta `cuerpo`, p. ej. un `FormData`). El botón de confirmar muestra `loadingText="Subiendo… N %"` y `loadingProgress`; no se tapa el modal con el `PageLoader` overlay. Los errores de validación previos (413) se lanzan antes de abrir el flujo.
+
+## Login: el tiempo de respuesta también delata si la cuenta existe (2026-11-10)
+- Síntoma: aun con un mensaje único para «usuario inexistente» y «contraseña incorrecta», el usuario inexistente respondía al instante y el existente tardaba lo del hash (PBKDF2, cerca de 1 s): midiendo el tiempo se sabía qué cédulas tenían cuenta.
+- Arreglo: si el usuario no existe, verificar la contraseña contra un hash ficticio del mismo costo (`make_password` una sola vez, con `functools.cache`) y devolver el mismo 401. El estado de la cuenta (inactiva) solo después de validar la contraseña.
+- Regla: BP-24. Pruebas que comparen código y cuerpo de ambos casos.
