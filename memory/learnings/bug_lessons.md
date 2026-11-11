@@ -26,6 +26,7 @@
 * [BUG-016: Guardado doble por llamar a la API dentro de setState(prev => …)](#bug-016)
 * [BUG-019: En FastAPI reciente, app.routes no lista las rutas de los routers incluidos](#bug-019)
 * [BUG-020: Menú que muestra todo cuando la consulta de permisos falla](#bug-020)
+* [BUG-021: WebSocket cerrado antes de que la conexión se establezca](#bug-021)
 
 ---
 
@@ -183,6 +184,16 @@
 * **Causa raíz**: la barra lateral pedía los permisos del rol a un endpoint reservado al superadministrador. Para los demás respondía 403, el estado de permisos quedaba en `null` y el menú interpretaba `null` como «sin filtro». Además, el backend solo verificaba que fuera administrador, no la sección.
 * **Solución**: endpoint propio `GET /api/v1/mis-permisos` (BP-19) para el menú, y validación de la sección en el backend con una dependencia por endpoint (`requiere_seccion(...)`).
 * **Regla preventiva**: los permisos DEBEN fallar cerrados (si no se pudieron leer, no se muestra nada restringido) y el backend DEBE exigir el mismo permiso que el menú; ocultar una opción no protege el endpoint. Una prueba que recorra las rutas del panel debe exigir que cada una declare su permiso.
+
+---
+
+### <a id="bug-021"></a> BUG-021: WebSocket cerrado antes de que la conexión se establezca
+* **Síntoma**: en la consola del navegador aparece `WebSocket connection to 'ws://...' failed: WebSocket is closed before the connection is established.` y el chat en tiempo real no recibe eventos.
+* **Causa raíz**: el `cleanup` del `useEffect` llama `socket.close()` mientras el socket todavía está en estado `CONNECTING` (montaje doble de `StrictMode` en desarrollo, o salida de la vista antes de que el handshake terminara). El navegador aborta el handshake y lo reporta como error de conexión. Bugs asociados: si el socket viejo se cierra tarde, su `onclose` borra el `ping` del socket nuevo (queda sin ping y el servidor lo revale), y el `onclose` de un socket cerrado a propósito programa un reintento que duplica conexiones.
+* **Solución**: al cerrar, marcar el socket como `cerrado` (para que su `onclose` no reintente) y, si está en `CONNECTING`, esperar a `onopen` para cerrarlo ahí. Cada socket guarda su propio intervalo de ping.
+* **Regla preventiva**: todo WebSocket DEBE distinguir el cierre intencional de la caída (marca propia) y NO DEBE cerrarse en estado `CONNECTING`; los timers que dependen del socket (ping) DEBEN vivir con el socket, no en variables globales.
+
+---
 
 ## Archivos monolíticos que se vuelven inmanejables (2026-11-08)
 - Síntoma: en un proyecto real, una hoja `index.css` llegó a ~7.100 líneas, una vista React a ~2.200 y routers de FastAPI a más de 1.000. Cada ajuste de diseño rompía otra pantalla y los asistentes de IA tenían que leer miles de líneas para un cambio pequeño.
