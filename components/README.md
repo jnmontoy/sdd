@@ -34,6 +34,7 @@ Con **SDD** (*Spec-Driven Development*: desarrollo guiado por especificaciones) 
 | **Tabla de datos** | [`data_table/data_table.md`](./data_table/data_table.md) | Catálogos grandes | Paginación en servidor, buscador con espera, exportación | bi (cartera) |
 | **Filtro tipo Excel por columna** | [`data_table/checklist_popover.md`](./data_table/checklist_popover.md) | Filtros de tabla | Ordenar A-Z/Z-A, buscador, lista con conteo, "Solo" | bi (cartera) |
 | **Columnas redimensionables** | [`data_table/column_resizer.md`](./data_table/column_resizer.md) | Ancho de columnas | Arrastre, doble clic restablece, ancho mínimo, persistencia | bi (cartera) |
+| **Encuadre con la rueda** | [`data_table/encuadre_con_rueda.md`](./data_table/encuadre_con_rueda.md) | Tablas con scroll interno dentro de una página con scroll | La rueda mueve primero la página hasta centrar la tabla y luego su interior; margen de gracia; sin cambios en táctil, teclado y Shift | fichas (hallazgos) |
 | **Visibilidad de columnas** | [`data_table/column_visibility.md`](./data_table/column_visibility.md) | Mostrar/ocultar columnas | Casillas con conteo, Todas / Restablecer | — |
 | **Tarjetas KPI** | [`kpi/kpi_cards.md`](./kpi/kpi_cards.md) | Indicadores | KPI clicable como filtro, cajas de icono, esqueletos | bi (cartera) |
 | **Modal accesible** | [`modal/modal_dialog.md`](./modal/modal_dialog.md) | Diálogos (no CRUD) | Tamaños `sm`–`xl`, foco atrapado | — |
