@@ -264,3 +264,27 @@
 - Causa: `Math.round(ok / total * 100)` lleva 99,95 a 100; el ancho proporcional de una fila entre miles queda en menos de 1 px.
 - Arreglo: truncar (no redondear) a dos decimales con formato `es-CO` («99,95 %»), «100 %» solo si son todas (`porcentajeSubible` en `cargaReglasTexto.ts`), y `min-width` al tramo de error para que siempre se vea.
 - Regla: todo porcentaje de avance o completitud se trunca, nunca se redondea hacia arriba; una parte no vacía de una barra lleva ancho mínimo visible.
+
+## react-native-maps en Android: pin con `View`/`Text` sale sin el texto (2026-11-11)
+- Síntoma: en la APK los marcadores de la ruta se veían como círculos de color, pero sin el número de la visita; en el select de ruta sí aparecía.
+- Causa: `tracksViewChanges={false}` fija la imagen del marcador en cuanto se monta; en Android la vista se rasteriza antes de que el `Text` esté medido y el número queda fuera.
+- Regla: no desactivar `tracksViewChanges` de entrada en un marcador con hijos nativos. Se deja activo y se apaga tras un pequeño retraso (≈800 ms) con estado local (`PinVisita` en `mapaUbicacion/PiezasMapa.tsx`); la `key` debe cambiar al cambiar el estado/color para forzar el redibujo.
+
+## El aviso de un cambio sale cuando el dato ya está en pantalla (2026-11-11)
+- Síntoma: al cambiar un valor (p. ej. el asesor de un cliente), el aviso (sonner) salía al instante pero el campo seguía con el valor viejo; el usuario lo cambiaba otra vez y parecía que «el sistema lo devolvía». Un aviso que confirma un cambio debe ir con el loader del control que lo dispara, no antes.
+- Causa raíz: el aviso se emitía apenas respondía el `PUT`, y el valor visible solo se actualizaba cuando llegaba la lista recargada (una segunda petición). Además, el aviso no decía nada mientras el control seguía ocupado.
+- Solución: el control que dispara el cambio expone una **promesa** que resuelve cuando la lista ya trae el dato nuevo (`recargar()` → `Promise` que resuelve al aplicar la respuesta); el aviso se emite **después** de ese `await`, y el control muestra un loader (`Loader2` + `spin`, `aria-busy`) mientras guarda.
+- Regla preventiva: un cambio DEBE tener tres estados visibles — *intentado* (loader en el control), *confirmado* (el valor ya en pantalla) y *avisado* (el aviso). El aviso nunca antes que la pantalla. Para que eso sea posible, la función que recarga la lista DEBE devolver una promesa.
+
+## Una caché ETag compartida ignora las respuestas que llegan fuera de orden (2026-11-11)
+- Síntoma: un cambio hecho en la pantalla «se perdía»: el valor volvía al anterior a los pocos segundos.
+- Causa raíz: la caché ETag en memoria (módulo compartido por varias pantallas) la escribía **cualquier** respuesta 200, incluso de una petición **anterior** que se había lanzado antes y llegó tarde (con el dato viejo). El sondeo periódico (30 s) también podía aplicar una respuesta vieja.
+- Solución: numerar las peticiones; **solo la petición más reciente iniciada escribe en la caché**, y una respuesta vieja devuelve la copia más reciente conocida. En el consumidor, una respuesta se descarta si su versión no es la vigente (`signal.aborted` o versión distinta).
+- Regla preventiva: toda caché HTTP compartida (ETag/304) DEBE llevar un número de secuencia por petición; sin él, dos respuestas fuera de orden se pisan y el usuario ve el dato viejo.
+
+## N+1: las FK que se leen dentro de un bucle van en `select_related` (2026-11-11)
+- Síntoma: un endpoint que recorre todas las filas leía una relación por fila (1 consulta extra por fila).
+- Causa raíz: `select_related("cliente")` no trae `cliente.atc`; leerlo dentro del bucle abre una consulta por fila.
+- Regla preventiva: al recorrer filas leyendo una FK (o su FK), incluirla en `select_related` (`select_related("cliente__atc")`); si la relación se lee por un campo de la ruta (p. ej. la ruta de cada día de una regla), traer **todas** las filas de esa relación de una vez (una consulta con `fecha__in`) y no una por iteración.
+- Nota: `codigo` de visitas/rutas es `UNIQUE NOT NULL`; no se puede crear en lote con el código vacío (dos filas con `''` chocan) — el código depende del pk, así que el alta en lote necesita un código provisional único.
+

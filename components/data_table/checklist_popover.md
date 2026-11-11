@@ -11,7 +11,7 @@ El **Checklist Popover** es el filtro avanzado por columna de [`DataTable`](./da
 
 > Patrón completo de la pantalla: [`admin_table_screen.md`](../data_table/admin_table_screen.md). Lo de esta sección manda sobre el resto del documento cuando se contradicen; lo marcado **«Deuda en la referencia»** es lo que el código aún no cumple y NO se copia.
 
-- Firma real: `<ChecklistPopover colKey colLabel dataType items getValue activeValues onApply onSort currentSortField currentSortOrder onClose />`. Los valores salen de `getValue(item)` sobre **todas** las filas en memoria (no hay prop `options` del servidor). `onApply(null)` = sin filtro.
+- Firma real: `<ChecklistPopover colKey colLabel dataType items getValue getValues? emptyValues? activeValues onApply onSort currentSortField currentSortOrder onClose />`. Los valores salen de `getValue(item)` sobre **todas** las filas en memoria (no hay prop `options` del servidor). `onApply(null)` = sin filtro. `getValues` permite que una fila aporte varios valores de filtro (p. ej. su ATC y «Sin vendedor SAP») y `emptyValues` alimenta el atajo «Solo vacíos».
 - Se abre desde `button.th-filter-btn` del encabezado (ícono `Filter` 12 px + punto `.th-filter-dot` si hay filtro; `active` si hay filtro o está abierto) dentro de `div.th-filter-popover-container`; se cierra con clic fuera. Por defecto **toda columna es filtrable** salvo `filterable: false`.
 - Medidas: menú de 270 px, lista de máximo 185 px, `z-index` 1100; encabezado filtrado `.th-filtered` con `rgba(brand, .12)`.
 - Accesibilidad: `role="dialog"` con `aria-label`, `Escape` cierra solo el filtro, el botón «Solo» es visible al enfocarlo con teclado (`opacity`, no `display: none`) y lleva `aria-label`, el buscador es `type="search"` con etiqueta, y las fechas usan «Más antiguo primero» / «Más reciente primero». **Deuda en la referencia:** la lista aún usa `div` en vez de `ul`/`li`.
@@ -26,6 +26,7 @@ El **Checklist Popover** es el filtro avanzado por columna de [`DataTable`](./da
 4. **Conteo de ocurrencias** por valor `(count)`.
 5. **Botón "Solo":** deja seleccionado únicamente ese valor. Visible al pasar el cursor **o al enfocar la fila con teclado**.
 6. **Acciones:** "Limpiar" (quita el filtro de la columna), "Cancelar" y "Aplicar". `Escape` cierra sin aplicar.
+7. **Atajo "Solo vacíos":** si la columna declara `emptyValues` (valores que cuentan como vacíos, p. ej. `«Sin ATC»` en Vendedor SAP) o tiene el valor en blanco, junto a «(Seleccionar todo)» aparece el botón «Solo vacíos» que deja marcados únicamente esos valores. Sirve para filtrar las filas sin dato sin buscarlas en la lista.
 
 ### Origen de los valores (importante con paginación en servidor)
 

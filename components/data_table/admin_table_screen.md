@@ -290,6 +290,41 @@ Botón `Power` + [`ConfirmModal`](../modal/confirm_modal.md) **en ambos sentidos
 - Activar: `type="success"`, «Activar cuenta» / «Activar», «Podrá volver a ingresar con su documento y contraseña.»
 - Mientras se procesa no se puede cerrar. Éxito: toast «Cuenta activada» / «Cuenta desactivada» y recarga. La justificación (`requiresJustification`) es opcional por módulo.
 
+### 4.9. Filas agrupadas con acordeón (una por cliente, sus sedes debajo)
+
+Cuando la unidad de negocio es la **sede** pero el usuario piensa en **clientes** (Clientes: varias sedes comparten `codigo_sap`), la tabla muestra **una fila por cliente** y el «+» del inicio abre sus sedes como filas hijas:
+
+```tsx
+<tr>
+  <th scope="col" className="cliente-expand-th" aria-label="Sedes del cliente" />
+  {/* columnas declarativas */}
+</tr>
+<tbody>
+  <tr className="cliente-fila" onClick={() => onAbrir(principal.codigo)}>
+    <td className="cliente-expand-td">
+      <button type="button" className="cliente-expand-btn" aria-expanded={abierta}
+              aria-label={`Ver las ${sedes.length} sedes de ${principal.nombre}`}
+              onClick={(e) => { e.stopPropagation(); alternarGrupo(codigo_sap) }}>
+        {abierta ? <Minus size={14} /> : <Plus size={14} />}
+      </button>
+    </td>
+    {/* celdas de la sede principal */}
+  </tr>
+  {abierta && otras.map((s) => (
+    <tr key={s.codigo} className="cliente-sede-fila" onClick={() => onAbrir(s.codigo)}>
+      <td className="cliente-expand-td"><span className="cliente-sede-guia" /></td>
+      {/* celdas de la sede */}
+    </tr>
+  ))}
+</tbody>
+```
+
+- **Columna fija de 44 px al inicio** para el «+» (`Plus` cerrado / `Minus` abierto), independiente de las columnas visibles; así el control queda siempre en la primera posición aunque el usuario oculte columnas.
+- La fila cerrada usa la **sede predeterminada** del cliente (o la primera); las hijas son las demás sedes del grupo. El `onClick` va en la fila y el «+» hace `stopPropagation` para no abrir el panel lateral.
+- Filas hijas con `.cliente-sede-fila` (fondo `--bg-elevated`, guía vertical) e indentación por la columna del «+». El `aria-expanded` va en el botón del acordeón.
+- La **paginación cuenta clientes** (grupos) en vista tabla y sedes en tarjetas; el `itemLabel` del paginador cambia igual. Los filtros y el orden se aplican antes de agrupar, así que filtrar por una columna de sede deja el grupo con esas sedes.
+- Helpers puros (probados en `filtrosClientes.test.ts`): `agruparPorCliente()` devuelve `{ codigo_sap, principal, sedes }` con la predeterminada primero; `contarSedes()` sigue alimentando KPIs y el filtro «varias sedes».
+
 ---
 
 ## 5. Vista en tarjetas
