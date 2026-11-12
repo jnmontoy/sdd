@@ -9,6 +9,37 @@
 
 Accesibilidad: patrón *combobox* de WAI-ARIA con `listbox`; navegación con `↑`/`↓`, `Home`/`End`, `Enter` para elegir y `Escape` para cerrar devolviendo el foco al disparador.
 
+### Buscador interno
+
+- **Umbral (DEBE):** con **10 opciones o más** (`MIN_OPCIONES_CON_BUSCADOR`) la lista lleva un campo de búsqueda arriba; con menos, no. Es el valor por defecto (`withSearch="auto"`). `withSearch={true|false}` fuerza el comportamiento solo con una razón registrada.
+- Al abrir, el foco pasa al campo, con el texto guía «Buscar en (etiqueta)…». Escribir una letra con el disparador enfocado y la lista cerrada la abre con esa letra ya escrita.
+- **Filtra** por cualquier parte de la etiqueta, **sin distinguir mayúsculas ni tildes** («calidad» encuentra «Calidad», «garcia» encuentra «García», «pena» encuentra «Peña»). Las opciones conservan su orden original.
+- **Sin coincidencias:** «Ninguna opción contiene «texto».», anunciado al lector de pantalla (`role="status"`).
+
+### Teclado
+
+| Tecla | Lista sin buscador | Lista con buscador (foco en el campo) |
+| :--- | :--- | :--- |
+| `↑` / `↓` | Recorren las opciones, sin dar la vuelta | Recorren solo las filtradas |
+| `Home` / `End` | Primera / última opción | Mueven el cursor del texto |
+| `Enter` | Elige la activa | Elige la activa |
+| `Escape` | Cierra | Limpia la búsqueda; si ya está vacía, cierra |
+| `Tab` | Cierra y sigue al siguiente control | Cierra y sigue al siguiente control |
+
+Al elegir o cerrar con teclado, el foco vuelve al disparador. `Escape` no debe cerrar también el modal o panel que contiene el selector.
+
+### Celular (hasta 768 px)
+
+- **Sin buscador:** PUEDE usarse el `<select>` nativo del teléfono, con estilos de tokens.
+- **Con buscador:** panel a lo ancho, arriba del área visible. Su alto sigue al área que de verdad se ve (`window.visualViewport`), para que el teclado virtual no tape las opciones. No se cierra al desplazar ni al cambiar el tamaño (el teclado provoca las dos cosas); se cierra al elegir, con `Escape` o al tocar fuera.
+- **El campo de búsqueda NUNCA mide menos de 16 px** de letra: con menos, el teléfono hace zoom al enfocarlo.
+
+### Colores
+
+Solo tokens de [`variables.css`](../variables.css). La opción elegida se marca con fondo neutro (`--bg-active`) y el ícono de check con el color de marca (`--brand-primary`): así hereda la marca de cada proyecto. **No** usar colores de estado (`--status-success-*`, `--status-error-*`) para marcar la selección: elegir una opción no es un éxito ni un error.
+
+**Procedencia:** comportamiento probado en Fichas técnicas de materias primas (noviembre de 2026).
+
 ---
 
 ## 1. Código JSX / React de referencia (`SelectFilter.tsx`)
@@ -16,6 +47,13 @@ Accesibilidad: patrón *combobox* de WAI-ARIA con `listbox`; navegación con `�
 ```tsx
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, Search } from 'lucide-react';
+
+/** Con esta cantidad de opciones o más, la lista lleva buscador. */
+export const MIN_OPCIONES_CON_BUSCADOR = 10;
+
+/** Minúsculas y sin tildes: «García» -> «garcia», «Peña» -> «pena». */
+const normalizar = (texto: string) =>
+  texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 export interface SelectOption {
   value: string;
@@ -31,7 +69,8 @@ export interface SelectFilterProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  withSearch?: boolean;
+  /** 'auto' (por defecto): buscador con MIN_OPCIONES_CON_BUSCADOR opciones o más. */
+  withSearch?: boolean | 'auto';
   disabled?: boolean;
 }
 
@@ -41,9 +80,10 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
   value,
   onChange,
   placeholder = 'Seleccione una opción...',
-  withSearch = false,
+  withSearch = 'auto',
   disabled = false,
 }) => {
+  const conBuscador = withSearch === 'auto' ? options.length >= MIN_OPCIONES_CON_BUSCADOR : withSearch;
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -59,9 +99,9 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
   const selectedOption = options.find((o) => o.value === value);
 
   const filteredOptions = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return withSearch && q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
-  }, [options, search, withSearch]);
+    const q = normalizar(search.trim());
+    return conBuscador && q ? options.filter((o) => normalizar(o.label).includes(q)) : options;
+  }, [options, search, conBuscador]);
 
   const close = (returnFocus = true) => {
     setIsOpen(false);
@@ -79,7 +119,7 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
     if (!isOpen) return;
     const selectedIndex = filteredOptions.findIndex((o) => o.value === value);
     setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
-    (withSearch ? searchRef.current : listRef.current)?.focus();
+    (conBuscador ? searchRef.current : listRef.current)?.focus();
 
     const onMouseDown = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) close(false);
@@ -122,7 +162,13 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
         break;
       case 'Escape':
         e.preventDefault();
-        close();
+        e.stopPropagation(); // no cerrar el modal o panel de fondo
+        if (conBuscador && search) {
+          setSearch('');
+          setActiveIndex(0);
+        } else {
+          close();
+        }
         break;
       case 'Tab':
         close(false);
@@ -141,8 +187,14 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
         className="joli-select-trigger"
         onClick={() => (isOpen ? close() : setIsOpen(true))}
         onKeyDown={(e) => {
-          if (!isOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+          if (isOpen) return;
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             e.preventDefault();
+            setIsOpen(true);
+          } else if (conBuscador && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            // Escribir sobre el disparador abre la lista con esa letra ya escrita
+            e.preventDefault();
+            setSearch(e.key);
             setIsOpen(true);
           }
         }}
@@ -160,7 +212,7 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
 
       {isOpen && (
         <div className="joli-select-dropdown">
-          {withSearch && (
+          {conBuscador && (
             <div className="joli-select-search-box">
               <Search size={14} aria-hidden="true" />
               <input
@@ -168,7 +220,7 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
                 type="text"
                 role="combobox"
                 className="joli-select-search-input"
-                placeholder="Filtrar..."
+                placeholder={label ? `Buscar en ${label.toLowerCase()}…` : 'Buscar…'}
                 aria-label={label ? `Filtrar ${label}` : 'Filtrar opciones'}
                 aria-controls={listId}
                 aria-expanded="true"
@@ -189,12 +241,14 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
             role="listbox"
             className="joli-select-menu"
             aria-labelledby={label ? labelId : undefined}
-            aria-activedescendant={withSearch ? undefined : activeDescendant}
-            tabIndex={withSearch ? -1 : 0}
-            onKeyDown={withSearch ? undefined : onListKeyDown}
+            aria-activedescendant={conBuscador ? undefined : activeDescendant}
+            tabIndex={conBuscador ? -1 : 0}
+            onKeyDown={conBuscador ? undefined : onListKeyDown}
           >
             {filteredOptions.length === 0 ? (
-              <li className="joli-select-empty" role="presentation">No hay resultados</li>
+              <li className="joli-select-empty" role="presentation">
+                <span role="status">Ninguna opción contiene «{search.trim()}».</span>
+              </li>
             ) : (
               filteredOptions.map((opt, index) => {
                 const isSelected = opt.value === value;
@@ -349,8 +403,9 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
   box-shadow: inset 2px 0 0 var(--border-focus);
 }
 
+/* Selección con fondo neutro; la marca la pone el check (no usar colores de estado) */
 .joli-select-item.selected {
-  background-color: var(--status-success-bg);
+  background-color: var(--bg-active);
   color: var(--text-primary);
   font-weight: var(--font-weight-semibold);
 }
@@ -373,5 +428,12 @@ export const SelectFilter: React.FC<SelectFilterProps> = ({
   text-align: center;
   font-size: var(--font-size-xs);
   color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+  /* Con menos de 16 px el teléfono hace zoom al enfocar el campo */
+  .joli-select-search-input {
+    font-size: var(--font-size-base);
+  }
 }
 ```
