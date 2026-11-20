@@ -329,7 +329,13 @@ Cuando la unidad de negocio es la **sede** pero el usuario piensa en **clientes*
 
 ## 5. Vista en tarjetas
 
-- Rejilla `div.users-cards-grid`: 3 columnas, `gap: 1rem`, `padding: 1.25rem`; ≤1200 px 2 columnas; ≤768 px 1 columna (`gap/padding .65rem`).
+- **Cálculo dinámico de columnas y filas completas (`useGridCards` + `calcularPageSizeCards`):** en lugar de depender solo de breakpoints de viewport (que no consideran si la barra lateral está abierta o cerrada), el contenedor de la rejilla se mide con `ResizeObserver` y calcula las columnas que caben según su ancho real:
+  - Fórmula: `columnas = Math.max(1, Math.floor((ancho - paddingHorizontal + gap) / (anchoMinTarjeta + gap)))`.
+  - Valores de referencia:
+    - Tarjetas `CorporateCard` (`div.users-cards-grid`, `gap: 1rem` = 16 px, `padding: 1.25rem` → 40 px horizontales): `anchoMinTarjeta = 320` px.
+    - Tarjetas compactas de catálogo visual (`div.catalogo-cards-grid`, `gap: 0.9rem` ≈ 14 px, `padding: 1.15rem` → 36 px horizontales): `anchoMinTarjeta = 195` px.
+  - La rejilla aplica `style={{ gridTemplateColumns: \`repeat(\${columnas}, minmax(0, 1fr))\` }}` para repartir el ancho disponible de forma uniforme (el CSS `@media` queda solo como respaldo previo a la medición).
+  - **Paginación por filas completas:** en modo tarjetas (`effectiveViewMode === 'cards'` y `columnas > 0`), el tamaño de página efectivo se ajusta al múltiplo más cercano de `columnas` (mínimo 2 filas): `Math.max(columnas * 2, Math.round(pageSize / columnas) * columnas)`. Así no quedan tarjetas huérfanas o filas incompletas al final de una página llena.
 - Cada fila es una [`CorporateCard`](../card/corporate_card.md) (§0): `title` = nombre, `subtitle` = correo, `elevation="glow"`, `icon` = avatar de 36 px, `headerActions` = `status-pill`, `footerMetadata` = `SessionIndicator`, `footerCustomActions` = el mismo `row-actions-group` de la tabla. Inactivos con `.is-inactive` (borde superior rosa, `opacity: .9`).
 - Cuerpo `div.corp-card__plain-grid` (2 columnas, `gap: 6px 14px`) con filas `div.user-card-meta-row` > `span.meta-label` (ícono 12 px + texto) + `span.meta-value` (o `mono-badge` para documentos).
 - En ≤768 px la vista de tarjetas es obligatoria (se oculta el botón Tabla).

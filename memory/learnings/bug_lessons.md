@@ -233,6 +233,7 @@
 - Síntoma: en el login con huella de la APK, el enlace «Ingresar con contraseña» se veía como «Ingresar con» junto al ícono de llave: la última palabra desaparecía.
 - Causa: un `Text` con `fontWeight: "700"` dentro de una fila (`flexDirection: "row"`) en un contenedor con `alignItems: "center"`. En algunos Android (letra del sistema agrandada, fuentes del fabricante) el texto se mide más angosto de lo que se dibuja y lo que sobra se recorta.
 - Regla: en botones y enlaces de una línea con ícono, dar ancho al contenedor (`alignSelf: "stretch"`), `flexShrink: 1` y `textAlign: "center"` al `Text`, y `textBreakStrategy="simple"`. Así el texto baja de línea en vez de cortarse. Probar con la letra del sistema en el tamaño máximo.
+- Ampliación (2026-11-18, pie del catálogo y botones de la visita): también corta el texto (1) `numberOfLines={1}` en etiquetas que compiten con un control a su lado, y (2) un `lineHeight` fijo (p. ej. 19) con `fontSize` escalado por la letra del sistema: el alto de línea debe salir del mismo tamaño (`Math.round(tamaño * 1.3)`). En insignias, `flexShrink: 0` y relleno lateral propio; el vecino es el que cede.
 
 
 ## oxlint: `react(set-state-in-effect)` con una función async llamada desde el efecto (2026-11-09)
@@ -299,3 +300,101 @@
 - Regla preventiva: al recorrer filas leyendo una FK (o su FK), incluirla en `select_related` (`select_related("cliente__atc")`); si la relación se lee por un campo de la ruta (p. ej. la ruta de cada día de una regla), traer **todas** las filas de esa relación de una vez (una consulta con `fecha__in`) y no una por iteración.
 - Nota: `codigo` de visitas/rutas es `UNIQUE NOT NULL`; no se puede crear en lote con el código vacío (dos filas con `''` chocan) — el código depende del pk, así que el alta en lote necesita un código provisional único.
 
+## Encabezado sticky de tabla con filtro activo deja traslucir las filas al hacer scroll (2026-11-13)
+- Síntoma: en todas las tablas con `EncabezadoColumna` + `ChecklistPopover`, al activar un filtro en una columna y desplazarse verticalmente por la tabla, el texto de las filas del `tbody` se superpone visualmente sobre el encabezado filtrado (`th.th-filtered`).
+- Causa raíz: `.joli-data-table th.th-filtered` en `frontend-admin/src/styles/columnas-filtro-excel.css` usaba un fondo translúcido (`rgba(var(--brand-primary-rgb), 0.12)`), anulando el fondo opaco `var(--bg-elevated)` de `.joli-data-table th`; además `.resizable-th` declaraba `position: relative` junto a `position: sticky` de `th`.
+- Solución: usar un color 100 % opaco mezclado sobre el fondo del encabezado (`color-mix(in srgb, var(--bg-elevated) 88%, var(--brand-primary))`), elevar el `z-index` de `.joli-data-table th` a `20` (`30` cuando tiene `.th-filter-popover-container` abierto) y quitar `position: relative` de `.resizable-th`.
+- Regla preventiva: todo encabezado `sticky` de tabla (`th`, `thead`) DEBE tener un `background-color` 100 % opaco en todos sus estados (`normal`, `:hover`, `.th-filtered`), nunca `rgba(...)` sin base sólida.
+
+
+## PostgreSQL: `select_for_update()` con `select_related` de una FK anulable (2026-11-15)
+- Síntoma: en SQLite funciona, pero en PostgreSQL la misma consulta falla con `FOR UPDATE cannot be applied to the nullable side of an outer join` (`NotSupportedError`).
+- Causa: `select_related` de una FK `null=True` arma un `LEFT OUTER JOIN`; sin `of`, Django pide bloquear todas las tablas de la consulta, también el lado anulable. SQLite ignora `FOR UPDATE`, así que el error no aparece en desarrollo.
+- Regla: todo `select_for_update()` sobre un queryset con `select_related` (o joins) DEBE indicar qué bloquear: `select_for_update(of=("self",))`. Revisarlo al pasar de SQLite a PostgreSQL buscando `select_for_update(` sin `of=`.
+
+## Reintento de un PUT con control de versión: 409 falso (2026-11-15)
+- Síntoma: una edición enviada desde la cola de una app sin conexión se aplica, la respuesta se pierde y el reintento recibe 409 («cambió mientras lo veías»), aunque el cambio que «se adelantó» es el mismo reintento.
+- Regla: los PUT que se reintentan desde una cola llevan un `id_operacion` opcional; el servidor guarda el último aplicado en el registro y, si llega repetido, responde 200 con el estado actual sin reaplicar (antes de comparar la versión).
+
+## Una lectura externa en el hilo compartido congela toda la plataforma (2026-11-18)
+- Síntoma: mientras se actualizaba el catálogo (70 s), pantallas sin relación (`mis-permisos`, Actualizaciones) tardaron lo mismo y terminaron en el mismo segundo que la actualización.
+- Causa raíz: `sync_to_async` usa por defecto `thread_sensitive=True`, **un solo hilo** compartido por todo lo que toca la base. La lectura de SAP (DataHub) iba dentro de esa función, así que ninguna otra petición podía leer la base mientras SAP respondía.
+- Solución: la lectura externa va en su propio hilo (`sync_to_async(leer, thread_sensitive=False)`) y solo el guardado usa el hilo de la base. Se mide por separado cuánto tarda cada parte en el log.
+- Regla preventiva: toda llamada a un sistema externo (DataHub, Vibra, festivos, mapas, correo) DEBE ir con `thread_sensitive=False` y fuera de la función que guarda en la base; nunca leer un sistema externo dentro de una transacción.
+
+## Una vista que graba al abrirse frena a todos (2026-11-18)
+- Síntoma: abrir una pantalla lanzaba un POST que recalculaba y grababa en una transacción de 4-6 s; con tres aperturas seguidas, las demás consultas pasaron de 0,1 s a 6 s (SQLite solo permite una escritura a la vez).
+- Regla preventiva: al abrir una vista solo se **consulta** (GET); se graba únicamente si la consulta dice que hay cambios o si el usuario lo pide. Todo POST largo que recalcula en bloque lleva un candado que responde 409 si ya hay otro en curso.
+
+## Una bitácora solo-inserción bloquea el borrado total del documento (2026-11-18)
+- Síntoma: «Eliminar pedido» (SA) respondía 500 con `PermissionError: La bitácora de aprobaciones es solo-inserción`.
+- Causa: el queryset de la bitácora bloquea `delete()` (bien para el día a día) y la eliminación total la llamaba.
+- Regla: si una acción explícita y auditada debe borrar filas de una bitácora, se hace con un método con nombre propio
+  en el queryset (`purgar()`/`vaciar()` con `_raw_delete`) usado solo en ese flujo, y se deja el log de quién y por qué.
+
+## `tsc -p .` en el panel no revisa nada (2026-11-18)
+- Síntoma: `npx tsc --noEmit -p .` en `frontend-admin/` terminaba sin errores, pero había un error de tipos real en
+  `exportarVentas.ts`.
+- Causa: el `tsconfig.json` raíz del panel solo tiene `references` (proyecto Vite); sin `-b` no compila ningún archivo.
+- Regla: verificar el panel con `npx tsc --noEmit -p tsconfig.app.json` (o `tsc -b`). En la APK basta `npx tsc --noEmit`.
+
+## Sacar una operación de la cola mientras la cola envía (2026-11-18)
+- Riesgo: la cola lee la lista de pendientes al empezar y las marca `enviando` una a una con `UPDATE … WHERE id = ?`;
+  si el usuario anula una (la borra de la cola) mientras se envían las anteriores, el UPDATE no cambia nada pero la
+  operación se envía igual con los datos en memoria.
+- Regla: tomar cada operación con `UPDATE … WHERE id = ? AND estado = 'pendiente'` y saltarla si `changes === 0`; quitar
+  de la cola solo con `DELETE … AND estado = 'pendiente'` (lo que ya está `enviando` se anula en el servidor).
+
+## Botones lentos en la APK por descargas de fondo que reescriben tablas locales (2026-11-19)
+- Síntoma: en Clientes y Catálogo los toques (filtros, abrir una tarjeta) tardaban en responder, sobre todo al entrar.
+- Causa: el catálogo de productos se descargaba completo cada minuto sin ETag y reescribía su tabla SQLite con un
+  `await` por fila (miles de viajes JavaScript ↔ SQLite que ocupan el hilo de JS); al terminar avisaba siempre «cambió»
+  y la lista se volvía a consultar y pintar entera. Además las listas pintaban cada tarjeta con una función nueva en
+  cada render y el panel lateral armaba la ficha completa antes de empezar a deslizarse.
+- Regla: toda descarga periódica a una tabla local va con ETag (304 = no tocar la tabla ni avisar a la pantalla); el
+  reemplazo de tablas se hace por lotes (`insertarPorLotes`, ~200 filas por INSERT); las tarjetas de listas largas van
+  en un componente `memo` con props simples y `renderItem`/`onPress` con `useCallback`; los paneles montan su contenido
+  un cuadro después de arrancar la animación nativa; los buscadores consultan con rebote (`useValorConEspera`).
+
+## Variable reasignada dentro de una función anidada rompe el filtro (UnboundLocalError)
+- **Síntoma:** el catálogo de clientes de la APK seguía mostrando todos los clientes aunque el servidor ya filtraba por ATC.
+- **Causa:** dentro de `obtener()` (función anidada que corre en `sync_to_async`) se usaba el `perfil` del endpoint para filtrar y, más abajo, se reasignaba `perfil = ...` para el ATC de cada fila. Python vuelve local la variable en toda la función: el filtro lanzaba `UnboundLocalError`, el endpoint respondía 500 y el celular conservaba la tabla vieja completa.
+- **Regla:** en funciones anidadas no reasignar nombres del ámbito de afuera; usar otro nombre (`perfil_atc`). Tras cambiar un endpoint de sincronización, llamarlo una vez con un usuario real y comparar cifras: el celular oculta los errores porque sigue mostrando su copia local.
+
+## La APK se marca «Fuera de línea» cada vez que corre una actualización desde SAP (2026-11-19)
+- Síntoma: cada 30 min (refresco automático de clientes) todas las peticiones tardaban 20-66 s; la consulta de sesión
+  de la APK (espera 8 s) fallaba y el encabezado pasaba a «Fuera de línea».
+- Causa: el guardado largo iba en `sync_to_async(fn)` con `thread_sensitive=True` (el valor por defecto), el único hilo
+  que comparten todos los endpoints de Django: cada petición hacía fila detrás del guardado. SQLite sin WAL lo agravaba.
+- Regla: todo trabajo largo de base de datos dentro de un endpoint o tarea async va en hilo propio
+  (`sincronizaciones.en_hilo_propio(fn)`, que cierra su conexión al terminar); SQLite va con WAL, `timeout` 30 y
+  `transaction_mode` IMMEDIATE (`core/settings.py`). Verificar en `backend.log` los tiempos de `auth/me` durante la corrida.
+- Segunda causa (misma fecha): `get_current_user` guardaba la actividad del usuario (escritura) en el hilo compartido.
+  Con la actualización teniendo el candado de escritura de SQLite (~40 s), esa escritura esperaba hasta el `timeout` y
+  con ella todas las peticiones (auth/me 15 s, mis-visitas «database is locked»). Regla: en el camino de cada petición
+  no se escribe en el hilo compartido; lo informativo (actividad, contadores) va en segundo plano y en hilo propio
+  (`sesion._registrar_actividad`). Escrituras reales de la APK durante una actualización aún pueden esperar.
+
+## APK: un bloque fijo arriba de una lista con scroll tapa la pantalla y no deja deslizar (2026-11-19)
+- Síntoma: en Recaudo, con varias facturas por recaudar, no se podía bajar; la pantalla quedaba quieta.
+- Causa: `ListaDocumentosCliente` pintaba `arribaDeNuevo` (cupo y facturas pendientes) fijo, fuera del `ScrollView`;
+  solo la lista de documentos se desplazaba. Con contenido largo, lo fijo ocupaba todo el alto.
+- Regla: todo contenido de alto variable (listas que vienen de datos) va dentro de un `ScrollView`. Si debe quedar
+  arriba de otra zona desplazable, va en su propio `ScrollView` con `flexGrow: 0, flexShrink: 1` para que se encoja y
+  deslice sin quitarle a la de abajo su alto mínimo. Probar con un cliente de muchas facturas.
+
+## Lentitud por consultas periódicas de la APK (2026-11-20)
+
+- **Síntoma:** la APK revisa inventario, productos y clientes cada minuto; con varios asesores el servidor se ponía lento aunque cada endpoint, solo, respondía rápido.
+- **Causa:** cada 304 reconstruía la respuesta completa (consulta + serialización + hash) en el hilo compartido del ORM, y las peticiones se encolaban detrás. Además, la actualización de sedes desde SAP reescribía todas las filas cada hora y sostenía el bloqueo de escritura de SQLite (hipótesis; se mide con el log `⏱️ Guardado`).
+- **Regla:** las respuestas que la APK consulta en ciclo se guardan en memoria con vencimiento corto (`etag.respuesta_en_memoria`) y se descartan al terminar cada actualización desde SAP. Serializar y calcular la huella fuera del hilo compartido. En sincronizaciones, escribir solo lo que cambió.
+
+## APK: FlashList v2 recicla celdas y necesita un padre con alto real (2026-11-20)
+- **Síntoma esperado si no se cuida:** en una hoja inferior con solo `maxHeight` la lista queda en 0 de alto (FlashList
+  usa `flex: 1`); en el chat, el reproductor de una nota de voz o la foto de otro mensaje aparecen en la fila reciclada.
+- **Regla:** FlashList solo en contenedores con alto definido (pantallas, `flex: 1`); listas cortas dentro de hojas que
+  se ajustan al contenido se quedan en FlatList. Filas con estado interno (audio, reproductor) llevan `key` propia para
+  montarse por elemento; las imágenes dentro de FlashList llevan `recyclingKey` (expo-image). Sin `estimatedItemSize`
+  ni `getItemLayout`, y el chat invertido con `maintainVisibleContentPosition={{ disabled: true }}`.
+- **Prettier:** la APK no tiene archivo de configuración; el código va a 120 columnas. Nunca correr `prettier --write`
+  sin `--print-width 120` (a 80 reformatea el archivo entero).

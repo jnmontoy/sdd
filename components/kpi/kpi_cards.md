@@ -117,24 +117,27 @@ export const KPIRow: React.FC<KPIRowProps> = ({ items, loading = false, skeleton
 Los estilos consumen solo tokens de `variables.css`. Los fondos translúcidos se derivan con `color-mix()` en lugar de quemar `rgba()`.
 
 ```css
-/* REJILLA RESPONSIVE */
+/* UNA SOLA FILA SIEMPRE: las tarjetas se reparten el ancho y se compactan, nunca saltan a una segunda fila.
+   En pantallas angostas la fila se desplaza de lado. Cifras con clamp() para que encojan sin cortarse. */
 .joli-kpi-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: var(--space-4);
   margin-bottom: var(--space-5);
 }
 
 @media (max-width: 1200px) {
-  .joli-kpi-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .joli-kpi-row { gap: var(--space-3); }
+  .joli-kpi-row .joli-kpi-card { padding: var(--space-3) var(--space-3); }
 }
 
 @media (max-width: 768px) {
-  .joli-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-@media (max-width: 480px) {
-  .joli-kpi-row { grid-template-columns: 1fr; }
+  .joli-kpi-row {
+    grid-auto-columns: minmax(10rem, 1fr);
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
 }
 
 /* TARJETA KPI */
