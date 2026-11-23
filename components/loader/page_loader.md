@@ -57,7 +57,7 @@ Aspecto: tres anillos concéntricos que giran a distinto ritmo y sentido, el log
 
 ```tsx
 import { createPortal } from 'react-dom';
-import logoUrl from '../../assets/brand/logo.svg'; // isotipo de la marca en SVG (en Fichas, flor.svg)
+import logoUrl from '../../assets/flor.svg'; // isotipo de la marca: copia de .sdd/assets/flor.svg (no Joli.svg)
 import './PageLoader.css';
 
 export type PageLoaderVariant = 'curtain' | 'inline' | 'overlay';
