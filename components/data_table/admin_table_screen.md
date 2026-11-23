@@ -235,6 +235,7 @@ Más una columna **Acciones** fija de 124 px, alineada a la derecha. Valores vac
 .joli-data-table td.actions-cell { overflow: visible; }
 .joli-data-table tbody tr:hover { background: var(--bg-hover); }
 ```
+Las celdas son de una línea (`nowrap` + `ellipsis`). Si una columna necesita varias líneas, aplica [`anchos_y_alto_de_fila.md`](./anchos_y_alto_de_fila.md): `break-word` (nunca `anywhere`), ancho mínimo por clase, máximo unas tres líneas con el detalle en el drawer, celdas arriba y encabezados abajo.
 
 ### 4.3. Ordenar
 Clic en otra columna → ascendente; en la misma → alterna. Todas las columnas se pueden ordenar. Comparación con `localeCompare('es', { numeric: true, sensitivity: 'base' })` sobre `sortValue ?? getValue`. Las columnas de **fecha** DEBEN declarar `sortValue` con el valor crudo (ISO o timestamp): ordenar por el texto formateado («08/11/2026») da un orden falso.
