@@ -9,7 +9,7 @@ El componente `ProtectedRoute` intercepta la navegación para que solo usuarios 
 
 ### 1. Requisitos
 
-1. **Sin parpadeos:** mientras `AuthContext` recupera la sesión (`isLoading`), se muestra un loader a pantalla completa (es un estado de carga, no una vista de trabajo).
+1. **Sin parpadeos:** mientras `AuthContext` recupera la sesión (`isLoading`), se muestra la cortinilla común `PageLoader variant="curtain"` con mensaje visible ("Verificando sesión"), definida en [`page_loader.md`](../loader/page_loader.md). No se arma una pantalla de carga propia ni un texto suelto.
 2. **Redirección a login:** sin sesión, redirige a `/login` guardando la ruta solicitada en `state.from`, para volver a ella tras autenticarse.
 3. **Control RBAC:** propiedades opcionales `allowedRoles`, `permissionKey` y `adminOnly`. Si el usuario está autenticado pero no autorizado, redirige a `/403`.
 4. **Cambio de clave obligatorio:** si `user.debe_cambiar_clave` es verdadero, toda ruta protegida redirige a `/primer-ingreso` (excepto esa misma ruta).
@@ -22,8 +22,8 @@ El componente `ProtectedRoute` intercepta la navegación para que solo usuarios 
 ```tsx
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { PageLoader } from '../ui/PageLoader';
 
 export interface ProtectedRouteProps {
   children?: React.ReactNode;
@@ -46,12 +46,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // 1. Recuperando sesión: evita redirecciones falsas a /login
   if (isLoading) {
-    return (
-      <div className="joli-route-loader-screen" role="status" aria-live="polite">
-        <Loader2 size={36} className="joli-route-spinner" aria-hidden="true" />
-        <p className="joli-route-loader-text">Validando sesión...</p>
-      </div>
-    );
+    return <PageLoader variant="curtain" message="Verificando sesión" />;
   }
 
   // 2. Sin sesión
@@ -97,38 +92,6 @@ En `LoginPage`, tras un `login()` exitoso: `navigate(user.debe_cambiar_clave ? '
 
 ---
 
-### 3. Estilos CSS (`route_loader.css`)
+### 3. Estilos
 
-```css
-.joli-route-loader-screen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  width: 100%;
-  min-height: 100vh;
-  background-color: var(--bg-viewport);
-  color: var(--text-primary);
-}
-
-.joli-route-spinner {
-  color: var(--brand-primary);
-  animation: joli-route-spin 1s linear infinite;
-}
-
-.joli-route-loader-text {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-}
-
-@keyframes joli-route-spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .joli-route-spinner { animation: none; }
-}
-```
+El estado de carga no tiene estilos propios: usa los de la cortinilla (`PageLoader.css`, en [`page_loader.md`](../loader/page_loader.md)), que ya respeta `prefers-reduced-motion`, `role="status"` y el tema claro y oscuro. La antigua pantalla `.joli-route-loader-screen` con ícono `Loader2` queda reemplazada.

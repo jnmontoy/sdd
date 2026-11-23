@@ -60,7 +60,7 @@ Con **SDD** (*Spec-Driven Development*: desarrollo guiado por especificaciones) 
 | **Calendario** | [`calendar/corporate_calendar.md`](./calendar/corporate_calendar.md) | Turnos y novedades | Rejilla mensual, colores por tipo, fecha local | vibra |
 | **Tooltip de texto truncado** | [`tooltip/truncated_tooltip.md`](./tooltip/truncated_tooltip.md) | Leer texto cortado en tablas | Teclado y fijación por clic | tiendita, app_tic |
 | **Banner de instalación PWA** | [`pwa/pwa_install_banner.md`](./pwa/pwa_install_banner.md) | Instalar la app en celulares/quioscos | `beforeinstallprompt`, modo standalone, descarte por sesión | porterias |
-| **Cargadores y esqueletos** | [`loader/page_loader.md`](./loader/page_loader.md) | Estados de carga | Logo animado, spinner, `TableSkeleton` | contenedores, vibra, app_tic |
+| **Cargadores y esqueletos** | [`loader/page_loader.md`](./loader/page_loader.md) | Estados de carga | Logo con tres anillos, `TableSkeleton`, `BlockSkeleton` | contenedores, vibra, app_tic |
 | **Tiempo real (polling)** | [`realtime/js_polling_architecture.md`](./realtime/js_polling_architecture.md) | Datos en vivo | `useSmartPolling`: sin solapamiento, cancelación, pausa con pestaña oculta | app_tic, tiendita |
 | **Roles y permisos** | [`roles/roles_admin_sidebar.md`](./roles/roles_admin_sidebar.md) | Administrar permisos | Drawer con matriz por grupos, permisos en `JSONField`, validación en backend | tiendita |
 | **Gráficas** | [`charts/analytics_charts.md`](./charts/analytics_charts.md) | Visualización de datos | Área, barras, dona y minigráfica en SVG | — |
