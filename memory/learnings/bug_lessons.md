@@ -496,3 +496,35 @@
   `find /app/media /app/privado \! -user pandora`. Si hay archivos de otro dueño, corregirlos con un contenedor
   temporal: `docker run --rm -u root -v <volumen>:/m --entrypoint chown <imagen> -R 10001:10001 /m`. Las cargas
   con `tar` dentro del volumen se hacen con `exec` como el usuario de la app, nunca como root.
+
+## psycopg[binary]: `sslrootcert=system` falla con `certificate verify failed` en Debian (2026-11-24)
+- **Síntoma:** en el VPS, la conexión a pg1 (`sslmode=verify-full`, `sslrootcert=system`) fallaba con
+  `SSL error: certificate verify failed`, aunque el certificado de pg1 (Let's Encrypt) era válido: `openssl s_client
+  -starttls postgres` daba `Verify return code: 0 (ok)`.
+- **Causa:** la libpq que trae la rueda `psycopg[binary]` usa su propio OpenSSL, que con «system» no busca los
+  certificados raíz en la ruta de Debian (`/etc/ssl/certs`).
+- **Regla:** en imágenes `python:*-slim` con `psycopg[binary]`, apuntar `sslrootcert` a
+  `/etc/ssl/certs/ca-certificates.crt` en lugar de «system». Para diagnosticar, separar la red (si el error es de
+  SSL, la conexión ya llegó) del certificado (`openssl s_client`) y de la ruta de los certificados raíz.
+
+## Capa oscura pegada al cerrar una hoja (React Native Modal, Android)
+- **Síntoma:** a veces, al cerrar una hoja que sube desde abajo, la pantalla quedaba oscura y sin responder.
+- **Causa:** el Modal solo se desmontaba si `Animated.timing(...).start(({ finished }) => …)` llegaba con
+  `finished: true`; si la animación se interrumpía o la app pasaba a segundo plano, quedaba montado con el fondo
+  oscuro. Además, cerrar una hoja y abrir otra en el mismo instante (menú → confirmación) superponía dos Modal
+  nativos.
+- **Regla:** desmontar al terminar la animación sin depender de `finished` (revisando la visibilidad vigente en un
+  ref) y con un temporizador de respaldo; animar la opacidad del fondo junto con la hoja; y que una hoja nueva
+  espere a que termine de cerrarse la anterior (`frontend/src/components/modals/hojasAbiertas.ts`).
+
+## Inclinar la cámara sin moverla (MapLibre React Native v11)
+- **Síntoma:** `camaraRef.current.easeTo({ pitch })` no compila: en v11 `easeTo`, `flyTo` y `jumpTo` exigen `center`.
+- **Regla:** para cambiar solo la inclinación, el giro o el zoom sin mover el centro, usar
+  `camaraRef.current.setStop({ pitch, duration })`; y pasar `pitch` también en `fitBounds`, que si no endereza la
+  vista al encuadrar.
+
+## Mapa sin nombres de calles sin señal (MapLibre, offline)
+- **Síntoma:** sin conexión o con señal lenta, el mapa mostraba las calles pero no sus nombres ni los números de las casas.
+- **Causa:** la caché automática de MapLibre solo guarda lo que ya se miró; los nombres necesitan además las letras (glyphs `.pbf`), que se piden aparte, y los números de las casas vienen en las teselas del zoom 14. Sin eso no se dibuja el texto.
+- **Solución:** descargar con red un paquete sin conexión (`OfflineManager.createPack`) de la zona de trabajo (zoom 8–14, que trae teselas, letras e íconos). `mapStyle` debe ser la **dirección** del estilo, no el JSON; si el mapa usa un estilo armado en JSON, sirve igual siempre que apunte a las mismas direcciones de teselas, letras e íconos (la caché va por dirección). Respetar los límites del proveedor de teselas (OpenFreeMap: menos de 3.000 teselas por zona).
+- **Relacionado:** sin red, la ruta desde la ubicación del usuario no tiene tramo guardado; en vez de una línea recta se busca un camino por la red que forman los tramos ya guardados (Dijkstra sobre sus geometrías).
