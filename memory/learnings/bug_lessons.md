@@ -398,3 +398,101 @@
   ni `getItemLayout`, y el chat invertido con `maintainVisibleContentPosition={{ disabled: true }}`.
 - **Prettier:** la APK no tiene archivo de configuración; el código va a 120 columnas. Nunca correr `prettier --write`
   sin `--print-width 120` (a 80 reformatea el archivo entero).
+
+## Tiempo real con Redis/Celery: avisos que no llegan y memoria por proceso (2026-11-23)
+- **Síntoma:** con el sondeo apagado mientras el WebSocket está abierto, los cambios del panel no llegaban a la APK y la
+  APK recibía 304 con datos viejos justo después del aviso.
+- **Causa:** el mapa de avisos por prefijo de ruta usaba `/api/v1/rutero`, `/catalogo`... pero el panel escribe en
+  `/api/v1/admin/...`. La memoria de respuestas (`etag`) y el candado de actualizaciones vivían en cada proceso: una
+  actualización en Celery no los tocaba en la API.
+- **Regla:** sacar los prefijos de `backend/openapi.json`, no de memoria; excluir los POST que solo consultan (trazado).
+  Todo estado que deban compartir la API y Celery (candado, cancelación, descarte de memoria) va por Redis. Los avisos
+  llevan `origen` y la APK ignora los de otra APK. Nunca apagar del todo el sondeo: espaciarlo (respaldo de 5 min)
+  y que vuelva solo si el WebSocket se cae.
+
+## Panel en celular: el pie del sidebar (cerrar sesión) queda oculto bajo la barra del navegador (2026-11-23)
+- **Síntoma:** en el navegador del celular el pie del menú lateral (tema, usuario, cerrar sesión) no quedaba fijo abajo:
+  se cortaba o había que desplazar la página para verlo.
+- **Causa:** `100vh` en móvil mide la pantalla con la barra de direcciones escondida, así que el contenedor
+  (`.admin-app-layout`, `.admin-body-layout`, con `overflow: hidden`) quedaba más alto que lo visible.
+- **Regla:** todo alto ligado a la pantalla va con `100vh` de respaldo seguido de `100dvh` (alto visible real), p. ej.
+  `height: calc(100vh - 50px); height: calc(100dvh - 50px);`. Aplica a layout, drawers y modales.
+
+## FastAPI + ORM de Django: conexiones muertas tras reiniciar PostgreSQL (2026-11-23)
+- **Síntoma:** después de reiniciar el contenedor de la base, todo endpoint (login incluido) responde 500 con
+  `OperationalError: the connection is closed` hasta reiniciar la API.
+- **Causa:** Django solo renueva conexiones con las señales `request_started/finished`, que FastAPI nunca dispara; cada
+  hilo del threadpool conserva su conexión para siempre. `CONN_HEALTH_CHECKS` solo no basta (revisa una vez por
+  conexión).
+- **Regla:** usar el backend `core.bd_postgres` (descarta antes de cada cursor la conexión que psycopg marca cerrada,
+  la que tiene el aviso de cierre del servidor pendiente en el socket —`pgconn.consume_input()`, sin consulta— o la
+  que lleva >30 s quieta y falla un `SELECT 1`). Probarlo reiniciando `db` y pidiendo un endpoint: debe dar 200 de una.
+
+## APK en Docker: cada compilación volvía a bajar el NDK y el SDK (2026-11-23)
+- **Síntoma:** el `apk-builder` tardaba cerca de una hora en cada versión.
+- **Causa:** contenedor `--rm` sin cachés: Gradle bajaba NDK, plataforma y build-tools (>1 GB), npm y las dependencias
+  de Gradle en cada corrida; además compilaba 4 arquitecturas y corría el lint del release.
+- **Regla:** volúmenes para `/opt/android-sdk`, `/root/.gradle`, `/root/.npm` y `node_modules` (ahí quedan también las
+  `.cxx` de las librerías nativas); solo `arm64-v8a`; `--build-cache --parallel`; lint del release apagado por plugin.
+
+## APK: el mapa cerraba la app (Google Maps sin clave) y MapLibre cierra Expo Go (2026-11-23)
+- **Síntoma:** la APK propia se cerraba al abrir el mapa; en Expo Go funcionaba.
+- **Causa:** en Android, `react-native-maps` usa Google Maps, que exige `com.google.android.geo.API_KEY` (Expo Go trae
+  la clave de Expo, que solo vale para Expo Go). Al cambiar a MapLibre: sus módulos usan
+  `TurboModuleRegistry.getEnforcing`, así que solo importarlo en Expo Go (que no lo trae) cierra la app.
+- **Regla:** mapa con `@maplibre/maplibre-react-native` + estilo sin clave (OpenFreeMap) y plugin en app.json; el
+  componente que lo importa se carga con `require` solo si `!isRunningInExpoGo()` y en Expo Go se muestra un aviso.
+
+## APK: cierres al salir del mapa y al navegar tras recrear la pantalla (2026-11-23)
+- **Síntoma 1:** SIGSEGV en `libmaplibre.so` justo después de `surfaceDestroyed` al salir de la pantalla del mapa
+  (MapLibre RN v11, que usa GLSurfaceView por defecto). **Regla:** `<Map androidView="texture">` en Android.
+- **Síntoma 2:** «The imperative router is unavailable before the first render has finished» desde
+  `continueAfterLogin`. Android recreó MainActivity por `CONFIG_DENSITY`/`CONFIG_SCREEN_LAYOUT` (zoom o letra del
+  celular, que la plantilla de Expo no declara) y la navegación con huella cayó entre la superficie vieja y la nueva.
+  **Regla:** plugin `frontend/plugins/cambiosPantalla.js` agrega `density|fontScale|…` a `configChanges`, y
+  `router.replace` imperativo va por un ayudante que reintenta si el router aún no está listo.
+- **Cómo diagnosticar:** `adb logcat -d -b crash` (cierres JS y nativos) y en el buffer principal buscar
+  `Checking to restart <actividad>: changed={...}` para ver qué cambio recreó la pantalla.
+
+## APK: notificación del servicio de ubicación con fondo de color (2026-11-23)
+- **Síntoma:** la notificación fija de «Registrando tu ubicación» salía con todo el fondo morado.
+- **Causa:** en `expo-location`, pasar `foregroundService.notificationColor` activa `setColorized(true)` en Android.
+- **Regla:** no pasar `notificationColor`. Como las opciones quedan guardadas mientras la tarea siga registrada,
+  versionar las opciones (clave en SecureStore) y reiniciar la tarea una vez cuando cambien.
+
+## Django y Expo: tropiezos al montar las actualizaciones por aire (2026-11-23)
+- **`--version` propio en un comando de `manage.py`:** choca con el `--version` de Django y el comando se cae al
+  arrancar (`argparse.ArgumentError: conflicting option string`). `suppressed_base_arguments` no lo evita.
+  **Regla:** sobrescribir `create_parser` con `kwargs.setdefault("conflict_handler", "resolve")`.
+- **`npx expo export` en Windows** escribe en `dist/metadata.json` las rutas con `\`. **Regla:** pasarlas a `/`
+  antes de armar URL.
+- **Heredocs de shell con `\r\n` o tildes** dañan el texto que se escribe en archivos fuente. **Regla:** editar con
+  la herramienta de edición, no con heredocs, cuando el texto lleva escapes o caracteres no ASCII.
+
+## Django + psycopg 3: revisión de salud propia que rompe las conexiones nuevas (2026-11-23)
+- **Síntoma:** `transaction.atomic()` (y la primera consulta de cada hilo) respondía 500 con `can't change
+  'autocommit' now: connection in transaction status INTRANS`.
+- **Causa:** Django llama `close_if_health_check_failed()` dentro de `connect()`, al pasar la conexión nueva a
+  autocommit. En ese momento la conexión todavía no está en autocommit, y un `SELECT 1` de revisión abre una
+  transacción que impide el cambio.
+- **Regla:** en un backend que sobrescribe esa revisión, tratar como sana la conexión recién abierta y correr consultas
+  de revisión solo si `connection.autocommit` está activo.
+
+## MapLibre React Native (Android): cierre nativo al destruir el mapa mientras carga (2026-11-24)
+- **Síntoma:** la APK se cerraba sin error de JavaScript al elegir un rutero en el mapa y pasar enseguida a otra vista
+  (SIGSEGV en `libmaplibre.so`, visto solo con `adb logcat`).
+- **Causa:** desmontar `<Map>` mientras aún descarga teselas o anima la cámara deja al hilo nativo con referencias nulas.
+- **Regla:** no desmontar el mapa al cambiar de vista. Montarlo la primera vez y luego ocultarlo con `display: none`,
+  pausando el GPS y la ubicación del usuario mientras está oculto. Los cierres nativos no los ve JavaScript: se
+  detectan con una marca «en uso» que se borra al pasar a segundo plano y se reportan al abrir de nuevo.
+
+## Docker: volumen de medios con dueño root tras pasar la imagen a usuario sin privilegios (2026-11-24)
+- **Síntoma:** desde la APK construida, subir la foto de perfil devolvía 500 (`PermissionError: [Errno 13] Permission
+  denied: '/app/media/profile/...'`). Las imágenes del chat y del catálogo tenían el mismo riesgo.
+- **Causa:** las carpetas del volumen `media` (`profile`, `mensajes`, `catalogo`, `plantilla`) se crearon cuando el
+  contenedor corría como root. Un volumen con nombre conserva los dueños viejos: el `chown` del Dockerfile no lo
+  toca, y la API ahora corre como `pandora` (uid 10001), sin la capacidad de cambiar dueños.
+- **Regla:** después de pasar una imagen a un usuario sin privilegios, revisar los volumenes que ya existen con
+  `find /app/media /app/privado \! -user pandora`. Si hay archivos de otro dueño, corregirlos con un contenedor
+  temporal: `docker run --rm -u root -v <volumen>:/m --entrypoint chown <imagen> -R 10001:10001 /m`. Las cargas
+  con `tar` dentro del volumen se hacen con `exec` como el usuario de la app, nunca como root.

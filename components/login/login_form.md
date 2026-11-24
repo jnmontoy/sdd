@@ -432,3 +432,23 @@ export const LoginForm: React.FC = () => {
   }
 }
 ```
+
+### Versión móvil (obligatoria)
+
+Encoger la tarjeta de escritorio no es una versión móvil. Puntos de quiebre del login:
+
+| Ancho | Comportamiento |
+|---|---|
+| > 960px | Dos paneles: marca a la izquierda, tarjeta del formulario a la derecha. |
+| ≤ 960px | Se oculta el panel de marca; aparece la marca compacta (logo + nombre) dentro del formulario; tarjeta centrada. |
+| ≤ 600px | **Sin tarjeta** y centrado vertical (nunca pegado arriba): fondo, borde, sombra y radio fuera; el formulario ocupa el ancho con margen lateral de 1.25rem (o el área segura si es mayor). |
+| ≤ 360px | El botón de Microsoft baja a `--font-size-xs` y no parte su texto en dos líneas. |
+| ≤ 960px y alto ≤ 520px | Celular en horizontal: menos relleno arriba y menos separación entre marca y encabezado. |
+
+Reglas del móvil (≤ 600px):
+- Campos con letra de 16px (`1rem`): por debajo, iOS hace zoom al enfocar.
+- Toques de al menos 44px de alto en «Recordarme», «¿Olvidaste tu contraseña?» y «Volver»; botones de 52px.
+- Alto mínimo con `100dvh` (con `100vh` de respaldo): `100vh` en móvil incluye la barra del navegador y obliga a desplazar.
+- Márgenes con `env(safe-area-inset-*)` dentro de `max()`/`calc()`, sin activar `viewport-fit=cover` en todo el panel.
+- Botón «Descargar Pandora» (APK) abajo a la derecha del panel del formulario en todos los anchos; el panel reserva 5.5rem abajo para que no tape el formulario. Usa el mismo enlace `URL_APK` del encabezado.
+- Verificar con emulación móvil real (Chrome de escritorio no baja de ~500px de ventana, así que una captura con `--window-size=390` miente).
