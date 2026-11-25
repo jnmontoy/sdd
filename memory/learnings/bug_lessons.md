@@ -528,3 +528,26 @@
 - **Causa:** la caché automática de MapLibre solo guarda lo que ya se miró; los nombres necesitan además las letras (glyphs `.pbf`), que se piden aparte, y los números de las casas vienen en las teselas del zoom 14. Sin eso no se dibuja el texto.
 - **Solución:** descargar con red un paquete sin conexión (`OfflineManager.createPack`) de la zona de trabajo (zoom 8–14, que trae teselas, letras e íconos). `mapStyle` debe ser la **dirección** del estilo, no el JSON; si el mapa usa un estilo armado en JSON, sirve igual siempre que apunte a las mismas direcciones de teselas, letras e íconos (la caché va por dirección). Respetar los límites del proveedor de teselas (OpenFreeMap: menos de 3.000 teselas por zona).
 - **Relacionado:** sin red, la ruta desde la ubicación del usuario no tiene tramo guardado; en vez de una línea recta se busca un camino por la red que forman los tramos ya guardados (Dijkstra sobre sus geometrías).
+
+## Logger hijo sin su archivo tras arrancar Django (logging dictConfig)
+- **Síntoma:** `apk.log` quedaba vacío aunque el endpoint respondía 200; los reportes aparecían en `backend.log`.
+- **Causa:** el router le ponía su handler a `pandora.apk` al importarse, y `django.setup()` corre después. `dictConfig`
+  configura el logger `pandora` y a sus hijos ya creados les borra los handlers y les pone `propagate=True`
+  (aunque `disable_existing_loggers` sea `False`).
+- **Regla:** todo logger con archivo propio va en `LOGGING` de `core/settings.py` (handler + logger con
+  `propagate: False`), nunca con `addHandler` al importar un módulo.
+
+## Android cierra la app al dar permisos y no queda registro
+- **Síntoma:** al dar permisos la app «se cierra» y vuelve al login; el registro de cierres no reporta nada.
+- **Causa:** la ventana del permiso y los Ajustes dejan la app en segundo plano (se borra la marca «en uso»), y
+  Android mata el proceso al quitar o bajar un permiso, o por memoria. El desbloqueo vive en memoria: al reabrir pide login.
+- **Regla:** pedir permisos con `pedirPermiso` (`frontend/src/services/colaPermisos.ts`): van en fila y dejan una
+  marca que, si la app se cierra en medio, se reporta como cierre al abrirla de nuevo.
+
+## El punto de ubicación salta y la ruta sale de otra zona (mapa de la APK)
+- **Síntoma:** el punto azul brincaba cientos de metros y el recorrido empezaba lejos del usuario.
+- **Causa:** `getLastKnownPositionAsync` sin límites devolvía posiciones de horas atrás o de antenas, y el punto
+  nativo del mapa (`NativeUserLocation`) dibuja cada lectura cruda, sin filtrar.
+- **Regla:** última ubicación solo con `maxAge` y `requiredAccuracy`; el punto del usuario se dibuja con un
+  marcador propio alimentado por lecturas filtradas (descartar precisión > 50 m y saltos imposibles, suavizar
+  según la precisión). Ver `frontend/src/utils/gpsFiltro.ts`.
