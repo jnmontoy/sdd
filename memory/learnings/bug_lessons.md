@@ -551,3 +551,52 @@
 - **Regla:** última ubicación solo con `maxAge` y `requiredAccuracy`; el punto del usuario se dibuja con un
   marcador propio alimentado por lecturas filtradas (descartar precisión > 50 m y saltos imposibles, suavizar
   según la precisión). Ver `frontend/src/utils/gpsFiltro.ts`.
+
+## Un `require` perezoso dentro de try/catch igual cierra la app (Expo / Metro)
+- **Síntoma:** cierre inesperado «Tried to register two views with the same name MLRNCamera» al guardar el mapa
+  sin conexión, aunque el `require("…")` del módulo nativo estaba en un try/catch.
+- **Causa:** el `require` de Metro (`guardedLoadModule`) reporta como error fatal la falla al evaluar un módulo,
+  antes de que el catch la vea; y una segunda carga de un paquete nativo que registra vistas (MapLibre) choca con
+  la primera.
+- **Regla:** un paquete nativo con vistas se carga una sola vez, con `import`, en el componente que lo usa; los
+  servicios que necesiten algo de él (p. ej. `OfflineManager`) lo reciben registrado desde ese componente
+  (`frontend/src/services/mapLibreCargado.ts`), nunca con un `require` en plena ejecución.
+
+## Un `zIndex` en una vista hija se cuela por encima de un panel lateral (React Native, nueva arquitectura)
+- **Síntoma:** en Mis documentos, los selectores de mes y año se veían encima del panel lateral del documento.
+- **Causa:** el contenedor de los selectores tenía `zIndex: 50` y su padre solo tenía estilos de diseño (`padding`,
+  `gap`). Fabric aplana ese padre, así que el contenedor queda como hermano del panel (`zIndex: 20`) y se pinta
+  encima.
+- **Regla:** no pongas `zIndex` en contenidos de una pantalla para que se vean los menús desplegables; muestra las
+  listas en un `Modal` o en una capa propia. El `zIndex` alto solo va en las capas de panel.
+
+## Reintentos en cola que saturan el Service Layer de SAP (Celery + Service Layer)
+- **Síntoma:** con varios pedidos y recaudos por subir, el Service Layer quedó bloqueado para los demás usuarios
+  mientras Celery seguía reintentando.
+- **Causa:** cada intento abría dos sesiones (revisar el número y enviar), varios workers entraban a la vez sin
+  límite, y un inicio de sesión que se vencía por tiempo podía dejar abierta en SAP una sesión que nadie cerraba. Con
+  el Service Layer lento, más reintentos hacían más sesiones y lo volvían más lento.
+- **Regla:** un solo Login por intento, con Logout siempre y corto; un turno único (candado en Redis con
+  vencimiento) para que solo una sesión de la app esté en el Service Layer; y un freno que pausa el envío tras
+  varios intentos seguidos sin respuesta, en vez de seguir reintentando (`backend/api/ventas/sap_guardia.py`).
+- **Mejor aún:** reutilizar una sola sesión (cookies B1SESSION/ROUTEID en Redis con vencimiento menor al de SAP;
+  ante 401 se entra de nuevo una vez) y cerrarla tras unos minutos sin uso; con un Login por envío, cada Login que
+  vence por tiempo deja una sesión huérfana (`backend/api/sap_sesion_compartida.py`). Esperar el turno poco y
+  devolver la tarea a la cola, sin gastar los reintentos de fallo ni retener el proceso de Celery. La pausa
+  automática se quita sola con una sola consulta de prueba y espera creciente; la manual nunca.
+- **Ojo al diagnosticar:** contar intentos solo cuando el Login sale bien esconde los Login fallidos; contar las
+  entradas al Service Layer aparte (correctas y fallidas) y dejarlas en el log persistente.
+- **Sin candado de la base mientras se espera a la API externa:** `select_for_update` alrededor de llamadas HTTP de
+  hasta 30 s retiene la fila y la conexión. Reclamar el documento con un UPDATE condicional (`sap_enviando_en` libre o
+  vencido), llamar fuera de transacción, guardar con un UPDATE corto y soltar en un `finally`
+  (`backend/api/ventas/sap_reclamo.py`). Las tareas de la API externa van en su propia cola de Celery con un solo
+  proceso, para que su lentitud no frene las demás tareas.
+
+## MapLibre 11: el toque de un Marker llega también al onPress del Map
+- **Síntoma:** al tocar un `Marker` (o una capa de un `GeoJSONSource` con `onPress`) no pasa nada visible si el
+  `Map` tiene un `onPress` que limpia la selección: los dos manejadores corren en el mismo toque y React deja el
+  último estado (vacío).
+- **Causa:** en `@maplibre/maplibre-react-native` 11 los eventos de toque de Marker y de las fuentes son
+  «burbujeantes» y suben al `onPress` del `Map`.
+- **Arreglo:** llamar `e.stopPropagation()` en el `onPress` del Marker o de la fuente
+  (`frontend/src/components/map/mapaUbicacion/CapasRuta.tsx`).
