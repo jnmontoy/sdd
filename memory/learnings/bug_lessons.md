@@ -600,3 +600,41 @@
   «burbujeantes» y suben al `onPress` del `Map`.
 - **Arreglo:** llamar `e.stopPropagation()` en el `onPress` del Marker o de la fuente
   (`frontend/src/components/map/mapaUbicacion/CapasRuta.tsx`).
+
+## expo-updates no envía la llave de sesión
+- **Síntoma:** si el manifiesto OTA (o su descarga) exige sesión, las APK dejan de recibir actualizaciones por aire.
+- **Causa:** la URL de `updates.url` queda fija en la APK al compilar y el cliente nativo la pide sin `Authorization`.
+- **Regla:** el manifiesto OTA es público; los paquetes no deben llevar secretos (la protección es la firma del
+  código, no la sesión).
+
+## Filtros `__date` sobre DateTimeField no usan el índice
+- **Síntoma:** filtros por día lentos en tablas grandes (historial, documentos).
+- **Causa:** `campo__date__gte` aplica una función de fecha sobre la columna y la base no puede usar su índice.
+- **Arreglo:** rango de fecha y hora con la medianoche en la zona del proyecto: `campo__gte=inicio` y
+  `campo__lt=inicio_del_dia_siguiente` (`backend/api/routers/rutero/panel.py`, `_inicio_del_dia`).
+
+## Cachés de permisos: invalidar al guardar y tope corto
+- **Regla:** lo que se revisa en cada petición (secciones del rol, contrato aceptado) puede ir en la caché compartida
+  con 60 s de vida, siempre que el guardado desde la app la borre en `transaction.on_commit` (o cambie una
+  generación) y que un error de Redis caiga a la consulta de la base. Solo se guarda el estado «sin restricción»
+  cuando el cambio contrario debe verse al instante (`backend/api/permisos.py`, `users/models/usuarios.py`).
+
+## Copia local editada con ETag guardado queda congelada (2026-11-26)
+- **Síntoma:** una cotización editada sin señal seguía con su vigencia local aunque el servidor descartara la edición.
+- **Causa:** la APK reescribía la copia de «Mis documentos» y conservaba el ETag; el servidor, sin cambios, respondía
+  304 y la app daba por buena la copia modificada.
+- **Regla:** quien modifica en el celular una copia con ETag DEBE borrar su ETag; una respuesta 200 sin ETag también
+  lo borra (`frontend/src/services/sincronizacion/ventas.ts`).
+
+## Íconos de Expo: importar por familia (2026-11-26)
+- **Causa:** `import { Ionicons } from "@expo/vector-icons"` arrastra el índice con todas las familias de íconos.
+- **Regla:** importar solo la familia usada: `import Ionicons from "@expo/vector-icons/Ionicons"` (y en tipos,
+  `import type Ionicons from ...`). El proyecto no tiene configuración de Prettier: no formatear archivos con el
+  ancho por defecto (80); el código usa líneas de hasta 120.
+
+## Sesión de la APK: nunca sacar al usuario al volver la señal (2026-11-26)
+- Síntoma: el ATC entraba sin conexión (sin token) y al volver la señal la app lo mandaba al login en plena venta.
+- Causa: `validateSession` trataba «entró sin conexión y ya hay red» como sesión vencida a propósito.
+- Regla: un 401 o la falta de token con red primero renuevan en silencio (credencial de la huella o clave en
+  memoria). Solo un rechazo real de la credencial (401/403 al renovar) lleva al login; sin red, error 5xx o portal
+  Wi-Fi, la sesión queda «por confirmar» y se sigue trabajando con lo local. Un 5xx nunca desactiva la huella.
