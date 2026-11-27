@@ -433,7 +433,7 @@
 - **Causa:** contenedor `--rm` sin cachés: Gradle bajaba NDK, plataforma y build-tools (>1 GB), npm y las dependencias
   de Gradle en cada corrida; además compilaba 4 arquitecturas y corría el lint del release.
 - **Regla:** volúmenes para `/opt/android-sdk`, `/root/.gradle`, `/root/.npm` y `node_modules` (ahí quedan también las
-  `.cxx` de las librerías nativas); solo `arm64-v8a`; `--build-cache --parallel`; lint del release apagado por plugin.
+  `.cxx` de las librerías nativas); solo `arm64-v8a` (desde el 2026-11-27 también `armeabi-v7a` para celulares de 32 bits); `--build-cache --parallel`; lint del release apagado por plugin.
 
 ## APK: el mapa cerraba la app (Google Maps sin clave) y MapLibre cierra Expo Go (2026-11-23)
 - **Síntoma:** la APK propia se cerraba al abrir el mapa; en Expo Go funcionaba.
@@ -638,3 +638,18 @@
 - Regla: un 401 o la falta de token con red primero renuevan en silencio (credencial de la huella o clave en
   memoria). Solo un rechazo real de la credencial (401/403 al renovar) lleva al login; sin red, error 5xx o portal
   Wi-Fi, la sesión queda «por confirmar» y se sigue trabajando con lo local. Un 5xx nunca desactiva la huella.
+
+## Detener un docker compose run en segundo plano (2026-11-27)
+- Síntoma: se detuvo la tarea de la compilación de la APK y el contenedor siguió compilando 10 minutos más.
+- Causa: detener la tarea mata el cliente `docker compose run`, no el contenedor que lanzó.
+- Regla: después de detenerla, revisar `docker ps` y hacer `docker stop <contenedor>` (nunca borrar volúmenes).
+- Pantalla de arranque de Android 12+ (expo-splash-screen): lienzo de 288 dp con la imagen a `imageWidth` dp en el
+  centro y solo un círculo de 192 dp visible. Si la app sigue con una animación en JS, calcular su tamaño con ese
+  `imageWidth` para que el primer cuadro coincida con la imagen nativa.
+
+## Texto con máscara e imágenes en animaciones de la APK (2026-11-27)
+- Texto dentro de una máscara de alto fijo (`overflow: "hidden"`): ponerle `allowFontScaling={false}`. Con la letra
+  grande del sistema (común en Redmi) el `lineHeight` crece y la máscara recorta las letras.
+- `Image` de Android aplica un fundido de 300 ms a todo lo que no sea recurso compilado en la APK (en desarrollo y
+  con OTA las imágenes son http/file://). En animaciones que deben empatar con la pantalla nativa: `fadeDuration={0}`
+  y retener la pantalla nativa (`SplashScreen.preventAutoHideAsync`) hasta el `onLoad`, con tiempo máximo de respaldo.
